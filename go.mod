@@ -28,3 +28,6 @@ require (
 )
 
 go 1.13
+
+// Temporary fix, waiting for https://github.com/go-git/go-git-fixtures/pull/6.
+replace github.com/go-git/go-git-fixtures/v4 => github.com/ZauberNerd/go-git-fixtures/v4 v4.3.2-0.20221206142533-16c45f9dbd0a
