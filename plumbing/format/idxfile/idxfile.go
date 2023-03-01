@@ -53,8 +53,8 @@ type MemoryIndex struct {
 	Offset32         [][]byte
 	CRC32            [][]byte
 	Offset64         []byte
-	PackfileChecksum [20]byte
-	IdxChecksum      [20]byte
+	PackfileChecksum [32]byte
+	IdxChecksum      [32]byte
 
 	offsetHash       map[int64]plumbing.Hash
 	offsetHashIsFull bool

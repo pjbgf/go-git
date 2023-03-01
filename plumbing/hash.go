@@ -11,7 +11,7 @@ import (
 )
 
 // Hash SHA1 hashed content
-type Hash [20]byte
+type Hash [32]byte
 
 // ZeroHash is Hash with value zero
 var ZeroHash Hash
@@ -47,7 +47,7 @@ type Hasher struct {
 }
 
 func NewHasher(t ObjectType, size int64) Hasher {
-	h := Hasher{hash.New(crypto.SHA1)}
+	h := Hasher{hash.New(crypto.SHA256)}
 	h.Write(t.Bytes())
 	h.Write([]byte(" "))
 	h.Write([]byte(strconv.FormatInt(size, 10)))
@@ -75,10 +75,12 @@ func (p HashSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 // IsHash returns true if the given string is a valid hash.
 func IsHash(s string) bool {
-	if len(s) != 40 {
+	switch len(s) {
+	// Only attempt to decode SHA1 and SHA256 lengths.
+	case 40, 64:
+		_, err := hex.DecodeString(s)
+		return err == nil
+	default:
 		return false
 	}
-
-	_, err := hex.DecodeString(s)
-	return err == nil
 }

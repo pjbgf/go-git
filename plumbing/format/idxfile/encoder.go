@@ -16,7 +16,7 @@ type Encoder struct {
 
 // NewEncoder returns a new stream encoder that writes to w.
 func NewEncoder(w io.Writer) *Encoder {
-	h := hash.New(crypto.SHA1)
+	h := hash.New(crypto.SHA256)
 	mw := io.MultiWriter(w, h)
 	return &Encoder{mw, h}
 }
@@ -133,7 +133,7 @@ func (e *Encoder) encodeChecksums(idx *MemoryIndex) (int, error) {
 		return 0, err
 	}
 
-	copy(idx.IdxChecksum[:], e.hash.Sum(nil)[:20])
+	copy(idx.IdxChecksum[:], e.hash.Sum(nil)[:64])
 	if _, err := e.Write(idx.IdxChecksum[:]); err != nil {
 		return 0, err
 	}

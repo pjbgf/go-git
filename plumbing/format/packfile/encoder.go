@@ -29,7 +29,7 @@ type Encoder struct {
 // OFSDeltaObject. To use Reference deltas, set useRefDeltas to true.
 func NewEncoder(w io.Writer, s storer.EncodedObjectStorer, useRefDeltas bool) *Encoder {
 	h := plumbing.Hasher{
-		Hash: hash.New(crypto.SHA1),
+		Hash: hash.New(crypto.SHA256),
 	}
 	mw := io.MultiWriter(w, h)
 	ow := newOffsetWriter(mw)

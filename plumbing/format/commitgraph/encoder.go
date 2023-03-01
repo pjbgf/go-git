@@ -17,7 +17,7 @@ type Encoder struct {
 
 // NewEncoder returns a new stream encoder that writes to w.
 func NewEncoder(w io.Writer) *Encoder {
-	h := hash.New(crypto.SHA1)
+	h := hash.New(crypto.SHA256)
 	mw := io.MultiWriter(w, h)
 	return &Encoder{mw, h}
 }
@@ -183,6 +183,6 @@ func (e *Encoder) encodeExtraEdges(extraEdges []uint32) (err error) {
 }
 
 func (e *Encoder) encodeChecksum() error {
-	_, err := e.Write(e.hash.Sum(nil)[:20])
+	_, err := e.Write(e.hash.Sum(nil)[:64])
 	return err
 }

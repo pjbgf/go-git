@@ -59,6 +59,8 @@ type Config struct {
 		// CommentChar is the character indicating the start of a
 		// comment for commands like commit and tag
 		CommentChar string
+		// RepositoryFormatVersion identifies the repository format and layout version.
+		RepositoryFormatVersion string
 	}
 
 	User struct {
@@ -96,6 +98,17 @@ type Config struct {
 		DefaultBranch string
 	}
 
+	Extensions struct {
+		// ObjectFormat specifies the hash algorithm to use. The
+		// acceptable values are sha1 and sha256. If not specified,
+		// sha1 is assumed. It is an error to specify this key unless
+		// core.repositoryFormatVersion is 1.
+		//
+		// This setting must not be changed after repository initialization
+		// (e.g. clone or init).
+		ObjectFormat string
+	}
+
 	// Remotes list of repository remotes, the key of the map is the name
 	// of the remote, should equal to RemoteConfig.Name.
 	Remotes map[string]*RemoteConfig
@@ -125,6 +138,8 @@ func NewConfig() *Config {
 	}
 
 	config.Pack.Window = DefaultPackWindow
+	config.Core.RepositoryFormatVersion = DefaultRepositoryFormatVersion
+	config.Extensions.ObjectFormat = DefaultObjectFormat
 
 	return config
 }
@@ -226,32 +241,38 @@ func (c *Config) Validate() error {
 }
 
 const (
-	remoteSection    = "remote"
-	submoduleSection = "submodule"
-	branchSection    = "branch"
-	coreSection      = "core"
-	packSection      = "pack"
-	userSection      = "user"
-	authorSection    = "author"
-	committerSection = "committer"
-	initSection      = "init"
-	urlSection       = "url"
-	fetchKey         = "fetch"
-	urlKey           = "url"
-	bareKey          = "bare"
-	worktreeKey      = "worktree"
-	commentCharKey   = "commentChar"
-	windowKey        = "window"
-	mergeKey         = "merge"
-	rebaseKey        = "rebase"
-	nameKey          = "name"
-	emailKey         = "email"
-	descriptionKey   = "description"
-	defaultBranchKey = "defaultBranch"
+	remoteSection              = "remote"
+	submoduleSection           = "submodule"
+	branchSection              = "branch"
+	coreSection                = "core"
+	packSection                = "pack"
+	userSection                = "user"
+	authorSection              = "author"
+	committerSection           = "committer"
+	initSection                = "init"
+	urlSection                 = "url"
+	extensionsSection          = "extensions"
+	fetchKey                   = "fetch"
+	urlKey                     = "url"
+	bareKey                    = "bare"
+	worktreeKey                = "worktree"
+	commentCharKey             = "commentChar"
+	windowKey                  = "window"
+	mergeKey                   = "merge"
+	rebaseKey                  = "rebase"
+	nameKey                    = "name"
+	emailKey                   = "email"
+	descriptionKey             = "description"
+	defaultBranchKey           = "defaultBranch"
+	repositoryFormatVersionKey = "repositoryformatversion"
+	objectFormat               = "objectformat"
 
 	// DefaultPackWindow holds the number of previous objects used to
 	// generate deltas. The value 10 is the same used by git command.
 	DefaultPackWindow = uint(10)
+
+	DefaultRepositoryFormatVersion = "0"
+	DefaultObjectFormat            = "sha1"
 )
 
 // Unmarshal parses a git-config file and stores it.
@@ -391,6 +412,7 @@ func (c *Config) unmarshalInit() {
 // Marshal returns Config encoded as a git-config file.
 func (c *Config) Marshal() ([]byte, error) {
 	c.marshalCore()
+	c.marshalExtensions()
 	c.marshalUser()
 	c.marshalPack()
 	c.marshalRemotes()
@@ -410,10 +432,16 @@ func (c *Config) Marshal() ([]byte, error) {
 func (c *Config) marshalCore() {
 	s := c.Raw.Section(coreSection)
 	s.SetOption(bareKey, fmt.Sprintf("%t", c.Core.IsBare))
+	s.SetOption(repositoryFormatVersionKey, c.Core.RepositoryFormatVersion)
 
 	if c.Core.Worktree != "" {
 		s.SetOption(worktreeKey, c.Core.Worktree)
 	}
+}
+
+func (c *Config) marshalExtensions() {
+	s := c.Raw.Section(extensionsSection)
+	s.SetOption(objectFormat, c.Extensions.ObjectFormat)
 }
 
 func (c *Config) marshalUser() {
