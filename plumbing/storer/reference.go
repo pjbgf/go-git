@@ -57,7 +57,7 @@ func (iter *referenceFilteredIter) Next() (*plumbing.Reference, error) {
 			return nil, err
 		}
 
-		if iter.ff(r) {
+		if iter.ff(refOrNil(r)) {
 			return r, nil
 		}
 
@@ -79,7 +79,7 @@ func (iter *referenceFilteredIter) ForEach(cb func(*plumbing.Reference) error) e
 			return err
 		}
 
-		if err := cb(r); err != nil {
+		if err := cb(refOrNil(r)); err != nil {
 			if err == ErrStop {
 				break
 			}
@@ -124,7 +124,8 @@ func (iter *ReferenceSliceIter) Next() (*plumbing.Reference, error) {
 
 	obj := iter.series[iter.pos]
 	iter.pos++
-	return obj, nil
+
+	return refOrNil(obj), nil
 }
 
 // ForEach call the cb function for each reference contained on this iter until
@@ -151,7 +152,7 @@ func forEachReferenceIter(iter bareReferenceIterator, cb func(*plumbing.Referenc
 			return err
 		}
 
-		if err := cb(obj); err != nil {
+		if err := cb(refOrNil(obj)); err != nil {
 			if err == ErrStop {
 				return nil
 			}
@@ -192,10 +193,10 @@ func (iter *MultiReferenceIter) Next() (*plumbing.Reference, error) {
 	if err == io.EOF {
 		iter.iters[0].Close()
 		iter.iters = iter.iters[1:]
-		return iter.Next()
+		obj, err = iter.Next()
 	}
 
-	return obj, err
+	return refOrNil(obj), err
 }
 
 // ForEach call the cb function for each reference contained on this iter until
@@ -223,7 +224,7 @@ func ResolveReference(s ReferenceStorer, n plumbing.ReferenceName) (*plumbing.Re
 
 func resolveReference(s ReferenceStorer, r *plumbing.Reference, recursion int) (*plumbing.Reference, error) {
 	if r.Type() != plumbing.SymbolicReference {
-		return r, nil
+		return refOrNil(r), nil
 	}
 
 	if recursion > MaxResolveRecursion {
@@ -237,4 +238,14 @@ func resolveReference(s ReferenceStorer, r *plumbing.Reference, recursion int) (
 
 	recursion++
 	return resolveReference(s, t, recursion)
+}
+
+func refOrNil(r *plumbing.Reference) *plumbing.Reference {
+	if r == nil {
+		return nil
+	}
+
+	var ref plumbing.Reference
+	ref = *r
+	return &ref
 }

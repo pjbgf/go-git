@@ -47,7 +47,8 @@ func GetTree(s storer.EncodedObjectStorer, h plumbing.Hash) (*Tree, error) {
 		return nil, err
 	}
 
-	return DecodeTree(s, o)
+	t, err := DecodeTree(s, o)
+	return refOrNil(t), err
 }
 
 // DecodeTree decodes an encoded object into a *Tree and associates it to the
@@ -459,7 +460,7 @@ func (w *TreeWalker) Tree() *Tree {
 		return nil
 	}
 
-	return w.stack[current].t
+	return refOrNil(w.stack[current].t)
 }
 
 // Close releases any resources used by the TreeWalker.
@@ -495,7 +496,8 @@ func (iter *TreeIter) Next() (*Tree, error) {
 			continue
 		}
 
-		return DecodeTree(iter.s, obj)
+		t, err := DecodeTree(iter.s, obj)
+		return refOrNil(t), err
 	}
 }
 
@@ -513,8 +515,18 @@ func (iter *TreeIter) ForEach(cb func(*Tree) error) error {
 			return err
 		}
 
-		return cb(t)
+		return cb(refOrNil(t))
 	})
+}
+
+func refOrNil(tree *Tree) *Tree {
+	if tree == nil {
+		return nil
+	}
+
+	var t Tree
+	t = *tree
+	return &t
 }
 
 func simpleJoin(parent, child string) string {

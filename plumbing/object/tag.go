@@ -303,7 +303,8 @@ func (iter *TagIter) Next() (*Tag, error) {
 		return nil, err
 	}
 
-	return DecodeTag(iter.s, obj)
+	t, err := DecodeTag(iter.s, obj)
+	return refOrNilT(t), err
 }
 
 // ForEach call the cb function for each tag contained on this iter until
@@ -316,8 +317,18 @@ func (iter *TagIter) ForEach(cb func(*Tag) error) error {
 			return err
 		}
 
-		return cb(t)
+		return cb(refOrNilT(t))
 	})
+}
+
+func refOrNilT(tag *Tag) *Tag {
+	if tag == nil {
+		return nil
+	}
+
+	var t Tag
+	t = *tag
+	return &t
 }
 
 func objectAsString(obj Object) string {

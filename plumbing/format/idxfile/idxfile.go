@@ -324,7 +324,17 @@ func (i *idxfileEntryOffsetIter) Next() (*Entry, error) {
 	entry := i.entries[i.pos]
 	i.pos++
 
-	return entry, nil
+	return refOrNil(entry), nil
+}
+
+func refOrNil(entry *Entry) *Entry {
+	if entry == nil {
+		return nil
+	}
+
+	var e Entry
+	e = *entry
+	return &e
 }
 
 func (i *idxfileEntryOffsetIter) Close() error {
