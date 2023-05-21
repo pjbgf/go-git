@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-billy/v5/osfs"
@@ -96,6 +97,24 @@ type DotGit struct {
 	packMap    map[plumbing.Hash]struct{}
 
 	files map[plumbing.Hash]billy.File
+
+	// objectMapOnce ensures that the object map will only be
+	// loaded once, while keeping the performance overhead of
+	// a mutex low.
+	objectMapOnce sync.Once
+	// objectMapOnceErr stores the error returned when the object map
+	// was last loaded, so that subsequent calls are consistent in
+	// behaviour.
+	objectMapOnceErr error
+
+	// packMapOnce ensures that the pack map will only be
+	// loaded once, while keeping the performance overhead of
+	// a mutex low.
+	packMapOnce sync.Once
+	// packMapOnceErr stores the error returned when the pack map
+	// was last loaded, so that subsequent calls are consistent in
+	// behaviour.
+	packMapOnceErr error
 }
 
 // New returns a DotGit value ready to be used. The path argument must
@@ -334,7 +353,6 @@ func (d *DotGit) DeleteOldObjectPackAndIndex(hash plumbing.Hash, t time.Time) er
 // NewObject return a writer for a new object file.
 func (d *DotGit) NewObject() (*ObjectWriter, error) {
 	d.cleanObjectList()
-
 	return newObjectWriter(d.fs)
 }
 
@@ -468,25 +486,26 @@ func (d *DotGit) forEachObjectHash(fun func(plumbing.Hash) error) error {
 func (d *DotGit) cleanObjectList() {
 	d.objectMap = nil
 	d.objectList = nil
+	d.objectMapOnceErr = nil
+	d.objectMapOnce = sync.Once{}
 }
 
 func (d *DotGit) genObjectList() error {
-	if d.objectMap != nil {
-		return nil
-	}
+	d.objectMapOnce.Do(func() {
+		d.objectMap = make(map[plumbing.Hash]struct{})
+		populate := func(h plumbing.Hash) error {
+			d.objectList = append(d.objectList, h)
+			d.objectMap[h] = struct{}{}
 
-	d.objectMap = make(map[plumbing.Hash]struct{})
-	populate := func(h plumbing.Hash) error {
-		d.objectList = append(d.objectList, h)
-		d.objectMap[h] = struct{}{}
+			return nil
+		}
+		if err := d.forEachObjectHash(populate); err != nil {
+			d.objectMapOnceErr = err
+		}
+		plumbing.HashesSort(d.objectList)
+	})
 
-		return nil
-	}
-	if err := d.forEachObjectHash(populate); err != nil {
-		return err
-	}
-	plumbing.HashesSort(d.objectList)
-	return nil
+	return d.objectMapOnceErr
 }
 
 func (d *DotGit) hasObject(h plumbing.Hash) error {
@@ -510,27 +529,26 @@ func (d *DotGit) hasObject(h plumbing.Hash) error {
 func (d *DotGit) cleanPackList() {
 	d.packMap = nil
 	d.packList = nil
+	d.packMapOnce = sync.Once{}
 }
 
 func (d *DotGit) genPackList() error {
-	if d.packMap != nil {
-		return nil
-	}
+	d.packMapOnce.Do(func() {
+		op, err := d.objectPacks()
+		if err != nil {
+			d.packMapOnceErr = err
+		}
 
-	op, err := d.objectPacks()
-	if err != nil {
-		return err
-	}
+		d.packMap = make(map[plumbing.Hash]struct{})
+		d.packList = nil
 
-	d.packMap = make(map[plumbing.Hash]struct{})
-	d.packList = nil
+		for _, h := range op {
+			d.packList = append(d.packList, h)
+			d.packMap[h] = struct{}{}
+		}
+	})
 
-	for _, h := range op {
-		d.packList = append(d.packList, h)
-		d.packMap[h] = struct{}{}
-	}
-
-	return nil
+	return d.packMapOnceErr
 }
 
 func (d *DotGit) hasPack(h plumbing.Hash) error {
