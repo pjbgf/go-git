@@ -32,8 +32,13 @@ type ObjectStorage struct {
 	packList    []plumbing.Hash
 	packListIdx int
 	packfiles   map[plumbing.Hash]*packfile.Packfile
-	muI         sync.RWMutex
-	muP         sync.RWMutex
+
+	// indexOnce ensures that the index will only be loaded once,
+	// while keeping the performance overhead of a mutex low.
+	indexOnce sync.Once
+	// indexOnceErr stores the error returned when the index was last
+	// loaded, this enables calls to requireIndex to be idempotent.
+	indexOnceErr error
 }
 
 // NewObjectStorage creates a new ObjectStorage with the given .git directory and cache.
@@ -51,28 +56,33 @@ func NewObjectStorageWithOptions(dir *dotgit.DotGit, objectCache cache.Object, o
 }
 
 func (s *ObjectStorage) requireIndex() error {
-	if s.index != nil {
-		return nil
-	}
-
-	s.index = make(map[plumbing.Hash]idxfile.Index)
-	packs, err := s.dir.ObjectPacks()
-	if err != nil {
-		return err
-	}
-
-	for _, h := range packs {
-		if err := s.loadIdxFile(h); err != nil {
-			return err
+	s.indexOnce.Do(func() {
+		if s.index != nil {
+			return
 		}
-	}
 
-	return nil
+		s.index = make(map[plumbing.Hash]idxfile.Index)
+		packs, err := s.dir.ObjectPacks()
+		if err != nil {
+			s.indexOnceErr = err
+		}
+
+		for _, h := range packs {
+			if err := s.loadIdxFile(h); err != nil {
+				s.indexOnceErr = err
+			}
+		}
+
+	})
+
+	return s.indexOnceErr
 }
 
 // Reindex indexes again all packfiles. Useful if git changed packfiles externally
 func (s *ObjectStorage) Reindex() {
 	s.index = nil
+	s.indexOnceErr = nil
+	s.indexOnce = sync.Once{}
 }
 
 func (s *ObjectStorage) loadIdxFile(h plumbing.Hash) (err error) {
@@ -216,9 +226,6 @@ func (s *ObjectStorage) packfile(idx idxfile.Index, pack plumbing.Hash) (*packfi
 }
 
 func (s *ObjectStorage) packfileFromCache(hash plumbing.Hash) *packfile.Packfile {
-	s.muP.Lock()
-	defer s.muP.Unlock()
-
 	if s.packfiles == nil {
 		if s.options.KeepDescriptors {
 			s.packfiles = make(map[plumbing.Hash]*packfile.Packfile)
@@ -232,9 +239,6 @@ func (s *ObjectStorage) packfileFromCache(hash plumbing.Hash) *packfile.Packfile
 }
 
 func (s *ObjectStorage) storePackfileInCache(hash plumbing.Hash, p *packfile.Packfile) error {
-	s.muP.Lock()
-	defer s.muP.Unlock()
-
 	if s.options.KeepDescriptors {
 		s.packfiles[hash] = p
 		return nil
@@ -457,10 +461,7 @@ func (s *ObjectStorage) getFromPackfile(h plumbing.Hash, canBeDelta bool) (
 		return nil, plumbing.ErrObjectNotFound
 	}
 
-	s.muI.RLock()
 	idx := s.index[pack]
-	s.muI.RUnlock()
-
 	p, err := s.packfile(idx, pack)
 	if err != nil {
 		return nil, err
@@ -538,9 +539,6 @@ func (s *ObjectStorage) decodeDeltaObjectAt(
 }
 
 func (s *ObjectStorage) findObjectInPackfile(h plumbing.Hash) (plumbing.Hash, plumbing.Hash, int64) {
-	defer s.muI.Unlock()
-	s.muI.Lock()
-
 	for packfile, index := range s.index {
 		offset, err := index.FindOffset(h)
 		if err == nil {
@@ -646,9 +644,6 @@ func (s *ObjectStorage) buildPackfileIters(
 // Close closes all opened files.
 func (s *ObjectStorage) Close() error {
 	var firstError error
-
-	s.muP.RLock()
-	defer s.muP.RUnlock()
 
 	if s.options.KeepDescriptors || s.options.MaxOpenDescriptors > 0 {
 		for _, packfile := range s.packfiles {
