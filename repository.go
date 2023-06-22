@@ -298,7 +298,7 @@ func PlainOpenWithOptions(path string, o *PlainOpenOptions) (*Repository, error)
 	}
 
 	if _, err := dot.Stat(""); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil, ErrRepositoryNotExists
 		}
 
@@ -338,7 +338,7 @@ func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, 
 		fs = osfs.New(path)
 
 		pathinfo, err := fs.Stat("/")
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, os.ErrNotExist) {
 			if pathinfo == nil {
 				return nil, nil, err
 			}
@@ -352,7 +352,7 @@ func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, 
 			// no error; stop
 			break
 		}
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, os.ErrNotExist) {
 			// unknown error; stop
 			return nil, nil, err
 		}
@@ -411,7 +411,7 @@ func dotGitFileToOSFilesystem(path string, fs billy.Filesystem) (bfs billy.Files
 
 func dotGitCommonDirectory(fs billy.Filesystem) (commonDir billy.Filesystem, err error) {
 	f, err := fs.Open("commondir")
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
@@ -430,7 +430,7 @@ func dotGitCommonDirectory(fs billy.Filesystem) (commonDir billy.Filesystem, err
 			commonDir = osfs.New(filepath.Join(fs.Root(), path))
 		}
 		if _, err := commonDir.Stat(""); err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, os.ErrNotExist) {
 				return nil, ErrRepositoryIncomplete
 			}
 
@@ -495,7 +495,7 @@ func newRepository(s storage.Storer, worktree billy.Filesystem) *Repository {
 func checkIfCleanupIsNeeded(path string) (cleanup bool, cleanParent bool, err error) {
 	fi, err := osfs.Default.Stat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return true, true, nil
 		}
 
