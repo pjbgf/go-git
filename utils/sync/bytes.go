@@ -17,6 +17,12 @@ var (
 			return bytes.NewBuffer(nil)
 		},
 	}
+	smallByteSlice = sync.Pool{
+		New: func() interface{} {
+			b := make([]byte, 1024)
+			return &b
+		},
+	}
 )
 
 // GetByteSlice returns a *[]byte that is managed by a sync.Pool.
@@ -32,6 +38,17 @@ func GetByteSlice() *[]byte {
 // PutByteSlice puts buf back into its sync.Pool.
 func PutByteSlice(buf *[]byte) {
 	byteSlice.Put(buf)
+}
+
+// SmallByteSlice returns a small (1024 bytes) slice
+// which is managed by sync.Pool. The second return
+// value is a func that puts the slice back into the
+// pool after use.
+func SmallByteSlice() (*[]byte, func()) {
+	buf := smallByteSlice.Get().(*[]byte)
+	return buf, func() {
+		smallByteSlice.Put(buf)
+	}
 }
 
 // GetBytesBuffer returns a *bytes.Buffer that is managed by a sync.Pool.
