@@ -195,11 +195,17 @@ const (
 	// successful, it will send back an error message.  See pack-protocol.txt
 	// for example messages.
 	ReportStatus Capability = "report-status"
+	// ReportStatusV2 extends capability ReportStatus by adding new "option"
+	// directives in order to support reference rewritten by the "proc-receive"
+	// hook. The "proc-receive" hook may handle a command for a pseudo-reference
+	// which may create or update a reference with different name, new-oid, and
+	// old-oid. While the capability report-status cannot report for such case.
+	ReportStatusV2 Capability = "report-status-v2"
 	// DeleteRefs If the server sends back this capability, it means that
 	// it is capable of accepting a zero-id value as the target
 	// value of a reference update.  It is not sent back by the client, it
 	// simply informs the client that it can be sent zero-id values
-	// to delete references
+	// to delete references.
 	DeleteRefs Capability = "delete-refs"
 	// Quiet If the receive-pack server advertises this capability, it is
 	// capable of silencing human-readable progress output which otherwise may
@@ -239,8 +245,19 @@ const (
 	// server supports the given hash algorithms.
 	ObjectFormat Capability = "object-format"
 	// Filter if present, fetch-pack may send "filter" commands to request a
-	// partial clone or partial fetch and request that the server omit various objects from the packfile
+	// partial clone or partial fetch and request that the server omit various
+	// objects from the packfile.
 	Filter Capability = "filter"
+	// The server may advertise a session ID that can be used to identify this
+	// process across multiple requests. The client may advertise its own
+	// session ID back to the server as well.
+	//
+	// Session IDs should be unique to a given process. They must fit within a
+	// packet-line, and must not contain non-printable or whitespace characters.
+	// The current implementation uses trace2 session IDs (see api-trace2 for
+	// details), but this may change and users of the session ID should not rely
+	// on this fact.
+	SessionId Capability = "session-id"
 )
 
 const userAgent = "go-git/5.x"
