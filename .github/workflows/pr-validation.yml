@@ -1,0 +1,27 @@
+name: 'PR Validation'
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  check-commit-message:
+    name: Check Commit Messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Package Prefix
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^(\*|plumbing|utils|config|_examples|internal|storage|cli|build): .+'
+          error: 'Commit message(s) does not align with CONTRIBUTING.md'
+          excludeDescription: 'true'
+          excludeTitle: 'true'
+          checkAllCommitMessages: 'true'
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
