@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5/internal/url"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/protocol"
 )
 
 const (
@@ -21,6 +22,12 @@ const (
 	DefaultFetchRefSpec = "+refs/heads/*:refs/remotes/%s/*"
 	// DefaultPushRefSpec is the default refspec used for push.
 	DefaultPushRefSpec = "refs/heads/*:refs/heads/*"
+	// DefaultProtocolVersion is the value assumed if none is defined
+	// at the config file. This value is used to define when this section
+	// should be marshalled or not.
+	// Note that this does not need to align with the default protocol
+	// version from plumbing/protocol.
+	DefaultProtocolVersion = protocol.Unknown
 )
 
 // ConfigStorer generic storage of Config object
@@ -108,6 +115,20 @@ type Config struct {
 		ObjectFormat format.ObjectFormat
 	}
 
+	Protocol struct {
+		// Version sets the preferred version for the Git wire protocol.
+		// When set, clients will attempt to communicate with a server
+		// using the specified protocol version. If the server does not
+		// support it, communication falls back to version 0. If unset,
+		// the default is 2. Supported versions:
+		//
+		//   0 - the original wire protocol.
+		//   1 - the original wire protocol with the addition of a
+		// version string in the initial response from the server.
+		//   2 - Wire protocol version 2.
+		Version protocol.Version
+	}
+
 	// Remotes list of repository remotes, the key of the map is the name
 	// of the remote, should equal to RemoteConfig.Name.
 	Remotes map[string]*RemoteConfig
@@ -137,6 +158,7 @@ func NewConfig() *Config {
 	}
 
 	config.Pack.Window = DefaultPackWindow
+	config.Protocol.Version = DefaultProtocolVersion
 
 	return config
 }
@@ -249,6 +271,7 @@ const (
 	initSection                = "init"
 	urlSection                 = "url"
 	extensionsSection          = "extensions"
+	protocolSection            = "protocol"
 	fetchKey                   = "fetch"
 	urlKey                     = "url"
 	bareKey                    = "bare"
@@ -264,6 +287,7 @@ const (
 	repositoryFormatVersionKey = "repositoryformatversion"
 	objectFormat               = "objectformat"
 	mirrorKey                  = "mirror"
+	versionKey                 = "version"
 
 	// DefaultPackWindow holds the number of previous objects used to
 	// generate deltas. The value 10 is the same used by git command.
@@ -293,6 +317,10 @@ func (c *Config) Unmarshal(b []byte) error {
 	}
 
 	if err := c.unmarshalURLs(); err != nil {
+		return err
+	}
+
+	if err := c.unmarshalProtocol(); err != nil {
 		return err
 	}
 
@@ -399,6 +427,24 @@ func (c *Config) unmarshalBranches() error {
 	return nil
 }
 
+func (c *Config) unmarshalProtocol() error {
+	s := c.Raw.Section(protocolSection)
+
+	c.Protocol.Version = DefaultProtocolVersion
+
+	// If empty, don't try to parse and instead fallback
+	// to default protocol version.
+	if rv := s.Options.Get(versionKey); rv != "" {
+		v, err := protocol.Parse(rv)
+		if err != nil {
+			return err
+		}
+		c.Protocol.Version = v
+	}
+
+	return nil
+}
+
 func (c *Config) unmarshalInit() {
 	s := c.Raw.Section(initSection)
 	c.Init.DefaultBranch = s.Options.Get(defaultBranchKey)
@@ -414,6 +460,7 @@ func (c *Config) Marshal() ([]byte, error) {
 	c.marshalSubmodules()
 	c.marshalBranches()
 	c.marshalURLs()
+	c.marshalProtocol()
 	c.marshalInit()
 
 	buf := bytes.NewBuffer(nil)
@@ -561,6 +608,14 @@ func (c *Config) marshalURLs() {
 		// we should remove the non-valid options for the config file.
 		s.Subsections[i] = section
 		i++
+	}
+}
+
+func (c *Config) marshalProtocol() {
+	// Only marshal protocol section if a version was set.
+	if c.Protocol.Version != protocol.Unknown {
+		s := c.Raw.Section(protocolSection)
+		s.SetOption(versionKey, c.Protocol.Version.String())
 	}
 }
 
