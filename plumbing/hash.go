@@ -1,9 +1,7 @@
 package plumbing
 
 import (
-	"bytes"
 	"encoding/hex"
-	"sort"
 	"strconv"
 
 	"github.com/go-git/go-git/v5/plumbing/hash"
@@ -14,6 +12,42 @@ type Hash [hash.Size]byte
 
 // ZeroHash is Hash with value zero
 var ZeroHash Hash
+
+func (h Hash) IsZero() bool {
+	var empty Hash
+	return h == empty
+}
+
+func (h Hash) String() string {
+	return hex.EncodeToString(h[:])
+}
+
+func (h Hash) Zero() []byte {
+	return ZeroHash.Bytes()
+}
+
+func (h Hash) Bytes() []byte {
+	return h[:]
+}
+
+func (h Hash) Size() int {
+	return hash.Size
+}
+
+func (h Hash) Write(data []byte) (n int, err error) {
+	n = copy(h[:], data)
+	return
+}
+
+// TODO: maybe not
+func (_ Hash) Parse(s string) Hash {
+	b, _ := hex.DecodeString(s)
+
+	var h Hash
+	copy(h[:], b)
+
+	return h
+}
 
 // ComputeHash compute the hash for a given ObjectType and content
 func ComputeHash(t ObjectType, content []byte) Hash {
@@ -30,15 +64,6 @@ func NewHash(s string) Hash {
 	copy(h[:], b)
 
 	return h
-}
-
-func (h Hash) IsZero() bool {
-	var empty Hash
-	return h == empty
-}
-
-func (h Hash) String() string {
-	return hex.EncodeToString(h[:])
 }
 
 type Hasher struct {
@@ -58,19 +83,6 @@ func (h Hasher) Sum() (hash Hash) {
 	copy(hash[:], h.Hash.Sum(nil))
 	return
 }
-
-// HashesSort sorts a slice of Hashes in increasing order.
-func HashesSort(a []Hash) {
-	sort.Sort(HashSlice(a))
-}
-
-// HashSlice attaches the methods of sort.Interface to []Hash, sorting in
-// increasing order.
-type HashSlice []Hash
-
-func (p HashSlice) Len() int           { return len(p) }
-func (p HashSlice) Less(i, j int) bool { return bytes.Compare(p[i][:], p[j][:]) < 0 }
-func (p HashSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 // IsHash returns true if the given string is a valid hash.
 func IsHash(s string) bool {

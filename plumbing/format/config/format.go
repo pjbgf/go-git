@@ -1,5 +1,9 @@
 package config
 
+import (
+	"errors"
+)
+
 // RepositoryFormatVersion represents the repository format version,
 // as per defined at:
 //
@@ -51,3 +55,6 @@ const (
 	// DefaultObjectFormat holds the default object format.
 	DefaultObjectFormat = SHA1
 )
+
+// ErrInvalidObjectFormat is returned when an invalid ObjectFormat is used.
+var ErrInvalidObjectFormat = errors.New("invalid object format")
