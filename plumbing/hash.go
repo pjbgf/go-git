@@ -7,13 +7,34 @@ import (
 	"strconv"
 
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // Hash SHA1 hashed content
-type Hash [hash.Size]byte
+type Hash sha1.SHA1Hash
 
 // ZeroHash is Hash with value zero
 var ZeroHash Hash
+
+func (ih Hash) Size() int {
+	return len(ih)
+}
+
+func (ih Hash) IsZero() bool {
+	return sha1.SHA1Hash(ih).IsZero()
+}
+
+func (ih Hash) String() string {
+	return sha1.SHA1Hash(ih).String()
+}
+
+func (ih Hash) Sum() []byte {
+	return sha1.SHA1Hash(ih).Sum()
+}
+
+func (ih Hash) Compare(in []byte) int {
+	return sha1.SHA1Hash(ih).Compare(in)
+}
 
 // ComputeHash compute the hash for a given ObjectType and content
 func ComputeHash(t ObjectType, content []byte) Hash {
@@ -30,15 +51,6 @@ func NewHash(s string) Hash {
 	copy(h[:], b)
 
 	return h
-}
-
-func (h Hash) IsZero() bool {
-	var empty Hash
-	return h == empty
-}
-
-func (h Hash) String() string {
-	return hex.EncodeToString(h[:])
 }
 
 type Hasher struct {

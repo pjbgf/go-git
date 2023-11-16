@@ -8,6 +8,9 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha256"
 
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 )
@@ -25,7 +28,7 @@ type ObjectHasher interface {
 	// Compute calculates the hash of a Git object. The process involves
 	// first writing the object header, which contains the object type
 	// and content size, followed by the content itself.
-	Compute(ot plumbing.ObjectType, d []byte) (Hash, error)
+	Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error)
 }
 
 // FromObjectFormat returns the correct ObjectHasher for the given
@@ -51,9 +54,9 @@ func FromObjectFormat(f format.ObjectFormat) (ObjectHasher, error) {
 // error is returned.
 func FromHash(h hash.Hash) (ObjectHasher, error) {
 	switch h.Size() {
-	case hash.SHA1Size:
+	case sha1.Size:
 		return newHasherSHA1(), nil
-	case hash.SHA256Size:
+	case sha256.Size:
 		return newHasherSHA256(), nil
 	default:
 		return nil, hash.ErrUnsupportedHashFunction
@@ -71,7 +74,7 @@ type objectHasherSHA1 struct {
 	m      sync.Mutex
 }
 
-func (h *objectHasherSHA1) Compute(ot plumbing.ObjectType, d []byte) (Hash, error) {
+func (h *objectHasherSHA1) Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error) {
 	h.m.Lock()
 	h.hasher.Reset()
 
@@ -82,7 +85,7 @@ func (h *objectHasherSHA1) Compute(ot plumbing.ObjectType, d []byte) (Hash, erro
 		return nil, fmt.Errorf("failed to compute hash: %w", err)
 	}
 
-	var out SHA1Hash
+	var out sha1.SHA1Hash
 	copy(out[:], h.hasher.Sum(out[:0]))
 	h.m.Unlock()
 	return out, nil
@@ -103,7 +106,7 @@ type objectHasherSHA256 struct {
 	m      sync.Mutex
 }
 
-func (h *objectHasherSHA256) Compute(ot plumbing.ObjectType, d []byte) (Hash, error) {
+func (h *objectHasherSHA256) Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error) {
 	h.m.Lock()
 	h.hasher.Reset()
 
@@ -114,7 +117,7 @@ func (h *objectHasherSHA256) Compute(ot plumbing.ObjectType, d []byte) (Hash, er
 		return nil, fmt.Errorf("failed to compute hash: %w", err)
 	}
 
-	out := SHA256Hash{}
+	out := sha256.SHA256Hash{}
 	copy(out[:], h.hasher.Sum(out[:0]))
 	h.m.Unlock()
 	return out, nil
