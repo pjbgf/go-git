@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/objfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 )
 
@@ -14,12 +15,12 @@ var _ (plumbing.EncodedObject) = &EncodedObject{}
 
 type EncodedObject struct {
 	dir *DotGit
-	h   plumbing.Hash
+	h   common.ObjectHash
 	t   plumbing.ObjectType
 	sz  int64
 }
 
-func (e *EncodedObject) Hash() plumbing.Hash {
+func (e *EncodedObject) Hash() common.ObjectHash {
 	return e.h
 }
 
@@ -69,7 +70,7 @@ func (e *EncodedObject) Writer() (io.WriteCloser, error) {
 	return nil, fmt.Errorf("not supported")
 }
 
-func NewEncodedObject(dir *DotGit, h plumbing.Hash, t plumbing.ObjectType, size int64) *EncodedObject {
+func NewEncodedObject(dir *DotGit, h common.ObjectHash, t plumbing.ObjectType, size int64) *EncodedObject {
 	return &EncodedObject{
 		dir: dir,
 		h:   h,

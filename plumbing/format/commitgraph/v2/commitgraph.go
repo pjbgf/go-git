@@ -5,18 +5,18 @@ import (
 	"math"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // CommitData is a reduced representation of Commit as presented in the commit graph
 // file. It is merely useful as an optimization for walking the commit graphs.
 type CommitData struct {
 	// TreeHash is the hash of the root tree of the commit.
-	TreeHash plumbing.Hash
+	TreeHash common.ObjectHash
 	// ParentIndexes are the indexes of the parent commits of the commit.
 	ParentIndexes []uint32
 	// ParentHashes are the hashes of the parent commits of the commit.
-	ParentHashes []plumbing.Hash
+	ParentHashes []common.ObjectHash
 	// Generation number is the pre-computed generation in the commit graph
 	// or zero if not available.
 	Generation uint64
@@ -40,14 +40,14 @@ func (c *CommitData) GenerationV2Data() uint64 {
 // access to the nodes using commit object hash
 type Index interface {
 	// GetIndexByHash gets the index in the commit graph from commit hash, if available
-	GetIndexByHash(h plumbing.Hash) (uint32, error)
+	GetIndexByHash(h common.ObjectHash) (uint32, error)
 	// GetHashByIndex gets the hash given an index in the commit graph
-	GetHashByIndex(i uint32) (plumbing.Hash, error)
+	GetHashByIndex(i uint32) (common.ObjectHash, error)
 	// GetNodeByIndex gets the commit node from the commit graph using index
 	// obtained from child node, if available
 	GetCommitDataByIndex(i uint32) (*CommitData, error)
 	// Hashes returns all the hashes that are available in the index
-	Hashes() []plumbing.Hash
+	Hashes() []common.ObjectHash
 	// HasGenerationV2 returns true if the commit graph has the corrected commit date data
 	HasGenerationV2() bool
 	// MaximumNumberOfHashes returns the maximum number of hashes within the index

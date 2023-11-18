@@ -1,7 +1,9 @@
 package object
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -13,7 +15,7 @@ type CommitWalkerSuite struct {
 var _ = Suite(&CommitWalkerSuite{})
 
 func (s *CommitWalkerSuite) TestCommitPreIterator(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
 	NewCommitPreorderIter(commit, nil, nil).ForEach(func(c *Commit) error {
@@ -39,11 +41,11 @@ func (s *CommitWalkerSuite) TestCommitPreIterator(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitPreIteratorWithIgnore(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
-	NewCommitPreorderIter(commit, nil, []plumbing.Hash{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
+	NewCommitPreorderIter(commit, nil, []common.ObjectHash{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
 	}).ForEach(func(c *Commit) error {
 		commits = append(commits, c)
 		return nil
@@ -61,11 +63,11 @@ func (s *CommitWalkerSuite) TestCommitPreIteratorWithIgnore(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitPreIteratorWithSeenExternal(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
-	seenExternal := map[plumbing.Hash]bool{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"): true,
+	seenExternal := map[common.ObjectHash]bool{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")): true,
 	}
 	NewCommitPreorderIter(commit, seenExternal, nil).
 		ForEach(func(c *Commit) error {
@@ -85,7 +87,7 @@ func (s *CommitWalkerSuite) TestCommitPreIteratorWithSeenExternal(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitPostIterator(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
 	NewCommitPostorderIter(commit, nil).ForEach(func(c *Commit) error {
@@ -112,11 +114,11 @@ func (s *CommitWalkerSuite) TestCommitPostIterator(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitPostIteratorWithIgnore(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
-	NewCommitPostorderIter(commit, []plumbing.Hash{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
+	NewCommitPostorderIter(commit, []common.ObjectHash{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
 	}).ForEach(func(c *Commit) error {
 		commits = append(commits, c)
 		return nil
@@ -134,7 +136,7 @@ func (s *CommitWalkerSuite) TestCommitPostIteratorWithIgnore(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitCTimeIterator(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
 	NewCommitIterCTime(commit, nil, nil).ForEach(func(c *Commit) error {
@@ -160,11 +162,11 @@ func (s *CommitWalkerSuite) TestCommitCTimeIterator(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitCTimeIteratorWithIgnore(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
-	NewCommitIterCTime(commit, nil, []plumbing.Hash{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
+	NewCommitIterCTime(commit, nil, []common.ObjectHash{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
 	}).ForEach(func(c *Commit) error {
 		commits = append(commits, c)
 		return nil
@@ -182,7 +184,7 @@ func (s *CommitWalkerSuite) TestCommitCTimeIteratorWithIgnore(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitBSFIterator(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
 	NewCommitIterBSF(commit, nil, nil).ForEach(func(c *Commit) error {
@@ -208,11 +210,11 @@ func (s *CommitWalkerSuite) TestCommitBSFIterator(c *C) {
 }
 
 func (s *CommitWalkerSuite) TestCommitBSFIteratorWithIgnore(c *C) {
-	commit := s.commit(c, plumbing.NewHash(s.Fixture.Head))
+	commit := s.commit(c, X(sha1.FromHex(s.Fixture.Head)))
 
 	var commits []*Commit
-	NewCommitIterBSF(commit, nil, []plumbing.Hash{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
+	NewCommitIterBSF(commit, nil, []common.ObjectHash{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
 	}).ForEach(func(c *Commit) error {
 		commits = append(commits, c)
 		return nil

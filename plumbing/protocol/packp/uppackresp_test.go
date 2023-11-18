@@ -5,7 +5,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -121,9 +123,9 @@ func (s *UploadPackResponseSuite) TestEncodeMultiACK(c *C) {
 
 	res := NewUploadPackResponseWithPackfile(req, pf)
 	defer func() { c.Assert(res.Close(), IsNil) }()
-	res.ACKs = []plumbing.Hash{
-		plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f81"),
-		plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f82"),
+	res.ACKs = []common.ObjectHash{
+		X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f81")),
+		X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f82")),
 	}
 
 	b := bytes.NewBuffer(nil)

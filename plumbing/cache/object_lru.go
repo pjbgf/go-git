@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // ObjectLRU implements an object cache with an LRU eviction policy and a
@@ -77,7 +78,7 @@ func (c *ObjectLRU) Put(obj plumbing.EncodedObject) {
 
 // Get returns an object by its hash. It marks the object as used. If the object
 // is not in the cache, (nil, false) will be returned.
-func (c *ObjectLRU) Get(k plumbing.Hash) (plumbing.EncodedObject, bool) {
+func (c *ObjectLRU) Get(k common.ObjectHash) (plumbing.EncodedObject, bool) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 

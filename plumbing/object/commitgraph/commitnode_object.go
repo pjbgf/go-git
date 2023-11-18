@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
@@ -23,7 +23,7 @@ func NewObjectCommitNodeIndex(s storer.EncodedObjectStorer) CommitNodeIndex {
 	return &objectCommitNodeIndex{s}
 }
 
-func (oci *objectCommitNodeIndex) Get(hash plumbing.Hash) (CommitNode, error) {
+func (oci *objectCommitNodeIndex) Get(hash common.ObjectHash) (CommitNode, error) {
 	commit, err := object.GetCommit(oci.s, hash)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (c *objectCommitNode) CommitTime() time.Time {
 	return c.commit.Committer.When
 }
 
-func (c *objectCommitNode) ID() plumbing.Hash {
+func (c *objectCommitNode) ID() common.ObjectHash {
 	return c.commit.ID()
 }
 
@@ -74,7 +74,7 @@ func (c *objectCommitNode) ParentNode(i int) (CommitNode, error) {
 	return c.nodeIndex.Get(c.commit.ParentHashes[i])
 }
 
-func (c *objectCommitNode) ParentHashes() []plumbing.Hash {
+func (c *objectCommitNode) ParentHashes() []common.ObjectHash {
 	return c.commit.ParentHashes
 }
 

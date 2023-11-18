@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -58,7 +59,7 @@ func (s *ServerResponseSuite) TestDecodeACK(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(sr.ACKs, HasLen, 1)
-	c.Assert(sr.ACKs[0], Equals, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(sr.ACKs[0], Equals, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }
 
 func (s *ServerResponseSuite) TestDecodeMultipleACK(c *C) {
@@ -72,8 +73,8 @@ func (s *ServerResponseSuite) TestDecodeMultipleACK(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(sr.ACKs, HasLen, 2)
-	c.Assert(sr.ACKs[0], Equals, plumbing.NewHash("1111111111111111111111111111111111111111"))
-	c.Assert(sr.ACKs[1], Equals, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(sr.ACKs[0], Equals, X(sha1.FromHex("1111111111111111111111111111111111111111")))
+	c.Assert(sr.ACKs[1], Equals, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }
 
 func (s *ServerResponseSuite) TestDecodeMultipleACKWithSideband(c *C) {
@@ -87,8 +88,8 @@ func (s *ServerResponseSuite) TestDecodeMultipleACKWithSideband(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(sr.ACKs, HasLen, 2)
-	c.Assert(sr.ACKs[0], Equals, plumbing.NewHash("1111111111111111111111111111111111111111"))
-	c.Assert(sr.ACKs[1], Equals, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(sr.ACKs[0], Equals, X(sha1.FromHex("1111111111111111111111111111111111111111")))
+	c.Assert(sr.ACKs[1], Equals, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }
 
 func (s *ServerResponseSuite) TestDecodeMalformed(c *C) {
@@ -114,6 +115,6 @@ func (s *ServerResponseSuite) TestDecodeMultiACK(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(sr.ACKs, HasLen, 2)
-	c.Assert(sr.ACKs[0], Equals, plumbing.NewHash("1111111111111111111111111111111111111111"))
-	c.Assert(sr.ACKs[1], Equals, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(sr.ACKs[0], Equals, X(sha1.FromHex("1111111111111111111111111111111111111111")))
+	c.Assert(sr.ACKs[1], Equals, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }

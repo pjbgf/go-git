@@ -1,8 +1,8 @@
 package object
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -19,7 +19,8 @@ func (s *PatchSuite) TestStatsWithSubmodules(c *C) {
 	storer := filesystem.NewStorage(
 		fixtures.ByURL("https://github.com/git-fixtures/submodule.git").One().DotGit(), cache.NewObjectLRUDefault())
 
-	commit, err := GetCommit(storer, plumbing.NewHash("b685400c1f9316f350965a5993d350bc746b0bf4"))
+	h, _ := sha1.FromHex("b685400c1f9316f350965a5993d350bc746b0bf4")
+	commit, err := GetCommit(storer, h)
 	c.Assert(err, IsNil)
 
 	tree, err := commit.Tree()

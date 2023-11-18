@@ -5,7 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	"github.com/google/go-cmp/cmp"
 	. "gopkg.in/check.v1"
@@ -23,7 +26,7 @@ func (s *IndexSuite) TestEncode(c *C) {
 			GID:        8484,
 			Size:       42,
 			Stage:      TheirMode,
-			Hash:       plumbing.NewHash("e25b29c8946e0e192fae2edc1dabf7be71e8ecf3"),
+			Hash:       X(sha1.FromHex("e25b29c8946e0e192fae2edc1dabf7be71e8ecf3")),
 			Name:       "foo",
 		}, {
 			CreatedAt:  time.Now(),
@@ -39,12 +42,12 @@ func (s *IndexSuite) TestEncode(c *C) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	e := NewEncoder(buf)
+	e := NewEncoder(buf, hash.NewHasher(config.SHA1))
 	err := e.Encode(idx)
 	c.Assert(err, IsNil)
 
 	output := &Index{}
-	d := NewDecoder(buf)
+	d := NewDecoder(buf, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(output)
 	c.Assert(err, IsNil)
 
@@ -60,7 +63,7 @@ func (s *IndexSuite) TestEncodeUnsupportedVersion(c *C) {
 	idx := &Index{Version: 4}
 
 	buf := bytes.NewBuffer(nil)
-	e := NewEncoder(buf)
+	e := NewEncoder(buf, hash.NewHasher(config.SHA1))
 	err := e.Encode(idx)
 	c.Assert(err, Equals, ErrUnsupportedVersion)
 }
@@ -72,12 +75,12 @@ func (s *IndexSuite) TestEncodeWithIntentToAddUnsupportedVersion(c *C) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	e := NewEncoder(buf)
+	e := NewEncoder(buf, hash.NewHasher(config.SHA1))
 	err := e.Encode(idx)
 	c.Assert(err, IsNil)
 
 	output := &Index{}
-	d := NewDecoder(buf)
+	d := NewDecoder(buf, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(output)
 	c.Assert(err, IsNil)
 
@@ -92,12 +95,12 @@ func (s *IndexSuite) TestEncodeWithSkipWorktreeUnsupportedVersion(c *C) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	e := NewEncoder(buf)
+	e := NewEncoder(buf, hash.NewHasher(config.SHA1))
 	err := e.Encode(idx)
 	c.Assert(err, IsNil)
 
 	output := &Index{}
-	d := NewDecoder(buf)
+	d := NewDecoder(buf, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(output)
 	c.Assert(err, IsNil)
 

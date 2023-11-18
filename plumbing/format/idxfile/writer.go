@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -20,12 +22,12 @@ type Writer struct {
 	m sync.Mutex
 
 	count    uint32
-	checksum plumbing.Hash
+	checksum common.ObjectHash
 	objects  objects
 	offset64 uint32
 	finished bool
 	index    *MemoryIndex
-	added    map[plumbing.Hash]struct{}
+	added    map[common.ObjectHash]struct{}
 }
 
 // Index returns a previously created MemoryIndex or creates a new one if
@@ -42,19 +44,18 @@ func (w *Writer) Index() (*MemoryIndex, error) {
 }
 
 // Add appends new object data.
-func (w *Writer) Add(h plumbing.Hash, pos uint64, crc uint32) {
+func (w *Writer) Add(h common.ObjectHash, pos uint64, crc uint32) {
 	w.m.Lock()
 	defer w.m.Unlock()
 
 	if w.added == nil {
-		w.added = make(map[plumbing.Hash]struct{})
+		w.added = make(map[common.ObjectHash]struct{})
 	}
 
 	if _, ok := w.added[h]; !ok {
 		w.added[h] = struct{}{}
-		w.objects = append(w.objects, Entry{h, crc, pos})
+		w.objects = append(w.objects, Entry{nil, crc, pos})
 	}
-
 }
 
 func (w *Writer) Finished() bool {
@@ -74,13 +75,13 @@ func (w *Writer) OnInflatedObjectHeader(t plumbing.ObjectType, objSize int64, po
 }
 
 // OnInflatedObjectContent implements packfile.Observer interface.
-func (w *Writer) OnInflatedObjectContent(h plumbing.Hash, pos int64, crc uint32, _ []byte) error {
+func (w *Writer) OnInflatedObjectContent(h common.ObjectHash, pos int64, crc uint32, _ []byte) error {
 	w.Add(h, uint64(pos), crc)
 	return nil
 }
 
 // OnFooter implements packfile.Observer interface.
-func (w *Writer) OnFooter(h plumbing.Hash) error {
+func (w *Writer) OnFooter(h common.ObjectHash) error {
 	w.checksum = h
 	w.finished = true
 	_, err := w.createIndex()
@@ -95,7 +96,9 @@ func (w *Writer) createIndex() (*MemoryIndex, error) {
 		return nil, fmt.Errorf("the index still hasn't finished building")
 	}
 
-	idx := new(MemoryIndex)
+	// TODO: How does the writer get object format?
+	// TODO: reset fanout mapping
+	idx := NewMemoryIndex(sha1.Factory)
 	w.index = idx
 
 	sort.Sort(w.objects)
@@ -109,8 +112,13 @@ func (w *Writer) createIndex() (*MemoryIndex, error) {
 
 	last := -1
 	bucket := -1
+
 	for i, o := range w.objects {
-		fan := o.Hash[0]
+		h := idx.factory.ZeroHash().Sum()
+		if o.Hash != nil {
+			h = o.Hash.Sum()
+		}
+		fan := h[0]
 
 		// fill the gaps between fans
 		for j := last + 1; j < int(fan); j++ {
@@ -132,7 +140,7 @@ func (w *Writer) createIndex() (*MemoryIndex, error) {
 			idx.CRC32 = append(idx.CRC32, make([]byte, 0))
 		}
 
-		idx.Names[bucket] = append(idx.Names[bucket], o.Hash[:]...)
+		idx.Names[bucket] = append(idx.Names[bucket], h...)
 
 		offset := o.Offset
 		if offset > math.MaxInt32 {
@@ -160,8 +168,8 @@ func (w *Writer) createIndex() (*MemoryIndex, error) {
 		idx.Fanout[j] = uint32(len(w.objects))
 	}
 
-	idx.Version = VersionSupported
-	idx.PackfileChecksum = w.checksum
+	idx.Version = Version2
+	idx.PackfileChecksum = w.checksum.Sum()
 
 	return idx, nil
 }
@@ -184,7 +192,17 @@ func (o objects) Len() int {
 }
 
 func (o objects) Less(i int, j int) bool {
-	cmp := bytes.Compare(o[i].Hash[:], o[j].Hash[:])
+	if o[i].Hash == nil && o[j].Hash == nil {
+		return false
+	}
+	if o[i].Hash == nil {
+		return true
+	}
+	if o[j].Hash == nil {
+		return false
+	}
+
+	cmp := o[i].Hash.Compare(o[j].Hash.Sum())
 	return cmp < 0
 }
 

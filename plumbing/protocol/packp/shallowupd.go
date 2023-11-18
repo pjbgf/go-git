@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 const (
@@ -15,8 +16,8 @@ const (
 )
 
 type ShallowUpdate struct {
-	Shallows   []plumbing.Hash
-	Unshallows []plumbing.Hash
+	Shallows   []common.ObjectHash
+	Unshallows []common.ObjectHash
 }
 
 func (r *ShallowUpdate) Decode(reader io.Reader) error {
@@ -64,13 +65,13 @@ func (r *ShallowUpdate) decodeUnshallowLine(line []byte) error {
 	return nil
 }
 
-func (r *ShallowUpdate) decodeLine(line, prefix []byte, expLen int) (plumbing.Hash, error) {
+func (r *ShallowUpdate) decodeLine(line, prefix []byte, expLen int) (common.ObjectHash, error) {
 	if len(line) != expLen {
-		return plumbing.ZeroHash, fmt.Errorf("malformed %s%q", prefix, line)
+		return sha1.ZeroHash(), fmt.Errorf("malformed %s%q", prefix, line)
 	}
 
-	raw := string(line[expLen-40 : expLen])
-	return plumbing.NewHash(raw), nil
+	raw := line[expLen-40 : expLen]
+	return sha1.FromBytes(raw), nil
 }
 
 func (r *ShallowUpdate) Encode(w io.Writer) error {

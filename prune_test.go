@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -29,7 +30,7 @@ func (s *PruneSuite) testPrune(c *C, deleteTime time.Time) {
 	c.Assert(los, NotNil)
 
 	count := 0
-	err = los.ForEachObjectHash(func(_ plumbing.Hash) error {
+	err = los.ForEachObjectHash(func(_ common.ObjectHash) error {
 		count++
 		return nil
 	})
@@ -52,7 +53,7 @@ func (s *PruneSuite) testPrune(c *C, deleteTime time.Time) {
 	c.Assert(err, IsNil)
 
 	newCount := 0
-	err = los.ForEachObjectHash(func(_ plumbing.Hash) error {
+	err = los.ForEachObjectHash(func(_ common.ObjectHash) error {
 		newCount++
 		return nil
 	})

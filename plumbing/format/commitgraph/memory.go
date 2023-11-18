@@ -2,6 +2,7 @@ package commitgraph
 
 import (
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // MemoryIndex provides a way to build the commit-graph in memory
@@ -11,7 +12,7 @@ import (
 // Use the v2 package instead.
 type MemoryIndex struct {
 	commitData []*CommitData
-	indexMap   map[plumbing.Hash]int
+	indexMap   map[common.ObjectHash]int
 }
 
 // NewMemoryIndex creates in-memory commit graph representation
@@ -20,12 +21,12 @@ type MemoryIndex struct {
 // Use the v2 package instead.
 func NewMemoryIndex() *MemoryIndex {
 	return &MemoryIndex{
-		indexMap: make(map[plumbing.Hash]int),
+		indexMap: make(map[common.ObjectHash]int),
 	}
 }
 
 // GetIndexByHash gets the index in the commit graph from commit hash, if available
-func (mi *MemoryIndex) GetIndexByHash(h plumbing.Hash) (int, error) {
+func (mi *MemoryIndex) GetIndexByHash(h common.ObjectHash) (int, error) {
 	i, ok := mi.indexMap[h]
 	if ok {
 		return i, nil
@@ -59,8 +60,8 @@ func (mi *MemoryIndex) GetCommitDataByIndex(i int) (*CommitData, error) {
 }
 
 // Hashes returns all the hashes that are available in the index
-func (mi *MemoryIndex) Hashes() []plumbing.Hash {
-	hashes := make([]plumbing.Hash, 0, len(mi.indexMap))
+func (mi *MemoryIndex) Hashes() []common.ObjectHash {
+	hashes := make([]common.ObjectHash, 0, len(mi.indexMap))
 	for k := range mi.indexMap {
 		hashes = append(hashes, k)
 	}
@@ -68,7 +69,7 @@ func (mi *MemoryIndex) Hashes() []plumbing.Hash {
 }
 
 // Add adds new node to the memory index
-func (mi *MemoryIndex) Add(hash plumbing.Hash, commitData *CommitData) {
+func (mi *MemoryIndex) Add(hash common.ObjectHash, commitData *CommitData) {
 	// The parent indexes are calculated lazily in GetNodeByIndex
 	// which allows adding nodes out of order as long as all parents
 	// are eventually resolved

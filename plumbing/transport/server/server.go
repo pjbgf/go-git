@@ -9,7 +9,10 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/revlist"
@@ -112,7 +115,7 @@ func (s *upSession) AdvertisedReferences() (*packp.AdvRefs, error) {
 }
 
 func (s *upSession) AdvertisedReferencesContext(ctx context.Context) (*packp.AdvRefs, error) {
-	ar := packp.NewAdvRefs()
+	ar := packp.NewAdvRefs(hash.HashFactory(config.SHA1))
 
 	if err := s.setSupportedCapabilities(ar.Capabilities); err != nil {
 		return nil, err
@@ -167,7 +170,7 @@ func (s *upSession) UploadPack(ctx context.Context, req *packp.UploadPackRequest
 	}
 
 	pr, pw := ioutil.Pipe()
-	e := packfile.NewEncoder(pw, s.storer, false)
+	e := packfile.NewEncoder(pw, s.storer, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	go func() {
 		// TODO: plumb through a pack window.
 		_, err := e.Encode(objs, 10)
@@ -179,7 +182,7 @@ func (s *upSession) UploadPack(ctx context.Context, req *packp.UploadPackRequest
 	), nil
 }
 
-func (s *upSession) objectsToUpload(req *packp.UploadPackRequest) ([]plumbing.Hash, error) {
+func (s *upSession) objectsToUpload(req *packp.UploadPackRequest) ([]common.ObjectHash, error) {
 	haves, err := revlist.Objects(s.storer, req.Haves, nil)
 	if err != nil {
 		return nil, err
@@ -212,7 +215,7 @@ func (s *rpSession) AdvertisedReferences() (*packp.AdvRefs, error) {
 }
 
 func (s *rpSession) AdvertisedReferencesContext(ctx context.Context) (*packp.AdvRefs, error) {
-	ar := packp.NewAdvRefs()
+	ar := packp.NewAdvRefs(hash.HashFactory(config.SHA1))
 
 	if err := s.setSupportedCapabilities(ar.Capabilities); err != nil {
 		return nil, err
@@ -400,7 +403,7 @@ func setHEAD(s storer.Storer, ar *packp.AdvRefs) error {
 	}
 
 	h := ref.Hash()
-	ar.Head = &h
+	ar.Head = h
 
 	return nil
 }

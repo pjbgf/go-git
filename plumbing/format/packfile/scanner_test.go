@@ -5,8 +5,10 @@ import (
 	"io"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -257,7 +259,7 @@ var expectedCRCOFS = []uint32{
 var expectedHeadersREF = []ObjectHeader{
 	{Type: plumbing.CommitObject, Offset: 12, Length: 254},
 	{Type: plumbing.REFDeltaObject, Offset: 186, Length: 93,
-		Reference: plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881")},
+		Reference: X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881"))},
 	{Type: plumbing.CommitObject, Offset: 304, Length: 242},
 	{Type: plumbing.CommitObject, Offset: 467, Length: 242},
 	{Type: plumbing.CommitObject, Offset: 633, Length: 333},
@@ -280,17 +282,17 @@ var expectedHeadersREF = []ObjectHeader{
 	{Type: plumbing.BlobObject, Offset: 84797, Length: 78},
 	{Type: plumbing.TreeObject, Offset: 84880, Length: 271},
 	{Type: plumbing.REFDeltaObject, Offset: 85141, Length: 6,
-		Reference: plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c")},
+		Reference: X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))},
 	{Type: plumbing.REFDeltaObject, Offset: 85176, Length: 37,
-		Reference: plumbing.NewHash("fb72698cab7617ac416264415f13224dfd7a165e")},
+		Reference: X(sha1.FromHex("fb72698cab7617ac416264415f13224dfd7a165e"))},
 	{Type: plumbing.BlobObject, Offset: 85244, Length: 9},
 	{Type: plumbing.REFDeltaObject, Offset: 85262, Length: 9,
-		Reference: plumbing.NewHash("fb72698cab7617ac416264415f13224dfd7a165e")},
+		Reference: X(sha1.FromHex("fb72698cab7617ac416264415f13224dfd7a165e"))},
 	{Type: plumbing.REFDeltaObject, Offset: 85300, Length: 6,
-		Reference: plumbing.NewHash("fb72698cab7617ac416264415f13224dfd7a165e")},
+		Reference: X(sha1.FromHex("fb72698cab7617ac416264415f13224dfd7a165e"))},
 	{Type: plumbing.TreeObject, Offset: 85335, Length: 110},
 	{Type: plumbing.REFDeltaObject, Offset: 85448, Length: 8,
-		Reference: plumbing.NewHash("eba74343e2f15d62adedfd8c883ee0262b5c8021")},
+		Reference: X(sha1.FromHex("eba74343e2f15d62adedfd8c883ee0262b5c8021"))},
 	{Type: plumbing.TreeObject, Offset: 85485, Length: 73},
 }
 

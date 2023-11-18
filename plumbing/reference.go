@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 const (
@@ -134,7 +136,7 @@ const (
 type Reference struct {
 	t      ReferenceType
 	n      ReferenceName
-	h      Hash
+	h      common.ObjectHash
 	target ReferenceName
 }
 
@@ -162,7 +164,7 @@ func NewSymbolicReference(n, target ReferenceName) *Reference {
 }
 
 // NewHashReference creates a new HashReference reference
-func NewHashReference(n ReferenceName, h Hash) *Reference {
+func NewHashReference(n ReferenceName, h common.ObjectHash) *Reference {
 	return &Reference{
 		t: HashReference,
 		n: n,
@@ -181,7 +183,7 @@ func (r *Reference) Name() ReferenceName {
 }
 
 // Hash returns the hash of a hash reference
-func (r *Reference) Hash() Hash {
+func (r *Reference) Hash() common.ObjectHash {
 	return r.h
 }
 

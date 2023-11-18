@@ -8,6 +8,8 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
 )
@@ -25,6 +27,7 @@ type Storage struct {
 	IndexStorage
 	ReferenceStorage
 	ModuleStorage
+	factory common.HashFactory
 }
 
 // NewStorage returns a new Storage base on memory
@@ -34,13 +37,14 @@ func NewStorage() *Storage {
 		ConfigStorage:    ConfigStorage{},
 		ShallowStorage:   ShallowStorage{},
 		ObjectStorage: ObjectStorage{
-			Objects: make(map[plumbing.Hash]plumbing.EncodedObject),
-			Commits: make(map[plumbing.Hash]plumbing.EncodedObject),
-			Trees:   make(map[plumbing.Hash]plumbing.EncodedObject),
-			Blobs:   make(map[plumbing.Hash]plumbing.EncodedObject),
-			Tags:    make(map[plumbing.Hash]plumbing.EncodedObject),
+			Objects: make(map[common.ObjectHash]plumbing.EncodedObject),
+			Commits: make(map[common.ObjectHash]plumbing.EncodedObject),
+			Trees:   make(map[common.ObjectHash]plumbing.EncodedObject),
+			Blobs:   make(map[common.ObjectHash]plumbing.EncodedObject),
+			Tags:    make(map[common.ObjectHash]plumbing.EncodedObject),
 		},
 		ModuleStorage: make(ModuleStorage),
+		factory:       sha1.Factory,
 	}
 }
 
@@ -83,18 +87,19 @@ func (c *IndexStorage) Index() (*index.Index, error) {
 }
 
 type ObjectStorage struct {
-	Objects map[plumbing.Hash]plumbing.EncodedObject
-	Commits map[plumbing.Hash]plumbing.EncodedObject
-	Trees   map[plumbing.Hash]plumbing.EncodedObject
-	Blobs   map[plumbing.Hash]plumbing.EncodedObject
-	Tags    map[plumbing.Hash]plumbing.EncodedObject
+	Objects map[common.ObjectHash]plumbing.EncodedObject
+	Commits map[common.ObjectHash]plumbing.EncodedObject
+	Trees   map[common.ObjectHash]plumbing.EncodedObject
+	Blobs   map[common.ObjectHash]plumbing.EncodedObject
+	Tags    map[common.ObjectHash]plumbing.EncodedObject
+	factory common.HashFactory
 }
 
 func (o *ObjectStorage) NewEncodedObject() plumbing.EncodedObject {
 	return &plumbing.MemoryObject{}
 }
 
-func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.Hash, error) {
+func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (common.ObjectHash, error) {
 	h := obj.Hash()
 	o.Objects[h] = obj
 
@@ -114,14 +119,14 @@ func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.H
 	return h, nil
 }
 
-func (o *ObjectStorage) HasEncodedObject(h plumbing.Hash) (err error) {
+func (o *ObjectStorage) HasEncodedObject(h common.ObjectHash) (err error) {
 	if _, ok := o.Objects[h]; !ok {
 		return plumbing.ErrObjectNotFound
 	}
 	return nil
 }
 
-func (o *ObjectStorage) EncodedObjectSize(h plumbing.Hash) (
+func (o *ObjectStorage) EncodedObjectSize(h common.ObjectHash) (
 	size int64, err error) {
 	obj, ok := o.Objects[h]
 	if !ok {
@@ -131,7 +136,7 @@ func (o *ObjectStorage) EncodedObjectSize(h plumbing.Hash) (
 	return obj.Size(), nil
 }
 
-func (o *ObjectStorage) EncodedObject(t plumbing.ObjectType, h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (o *ObjectStorage) EncodedObject(t plumbing.ObjectType, h common.ObjectHash) (plumbing.EncodedObject, error) {
 	obj, ok := o.Objects[h]
 	if !ok || (plumbing.AnyObject != t && obj.Type() != t) {
 		return nil, plumbing.ErrObjectNotFound
@@ -158,7 +163,7 @@ func (o *ObjectStorage) IterEncodedObjects(t plumbing.ObjectType) (storer.Encode
 	return storer.NewEncodedObjectSliceIter(series), nil
 }
 
-func flattenObjectMap(m map[plumbing.Hash]plumbing.EncodedObject) []plumbing.EncodedObject {
+func flattenObjectMap(m map[common.ObjectHash]plumbing.EncodedObject) []plumbing.EncodedObject {
 	objects := make([]plumbing.EncodedObject, 0, len(m))
 	for _, obj := range m {
 		objects = append(objects, obj)
@@ -169,11 +174,11 @@ func flattenObjectMap(m map[plumbing.Hash]plumbing.EncodedObject) []plumbing.Enc
 func (o *ObjectStorage) Begin() storer.Transaction {
 	return &TxObjectStorage{
 		Storage: o,
-		Objects: make(map[plumbing.Hash]plumbing.EncodedObject),
+		Objects: make(map[common.ObjectHash]plumbing.EncodedObject),
 	}
 }
 
-func (o *ObjectStorage) ForEachObjectHash(fun func(plumbing.Hash) error) error {
+func (o *ObjectStorage) ForEachObjectHash(fun func(common.ObjectHash) error) error {
 	for h := range o.Objects {
 		err := fun(h)
 		if err != nil {
@@ -186,19 +191,19 @@ func (o *ObjectStorage) ForEachObjectHash(fun func(plumbing.Hash) error) error {
 	return nil
 }
 
-func (o *ObjectStorage) ObjectPacks() ([]plumbing.Hash, error) {
+func (o *ObjectStorage) ObjectPacks() ([]common.ObjectHash, error) {
 	return nil, nil
 }
-func (o *ObjectStorage) DeleteOldObjectPackAndIndex(plumbing.Hash, time.Time) error {
+func (o *ObjectStorage) DeleteOldObjectPackAndIndex(common.ObjectHash, time.Time) error {
 	return nil
 }
 
 var errNotSupported = fmt.Errorf("not supported")
 
-func (o *ObjectStorage) LooseObjectTime(hash plumbing.Hash) (time.Time, error) {
+func (o *ObjectStorage) LooseObjectTime(hash common.ObjectHash) (time.Time, error) {
 	return time.Time{}, errNotSupported
 }
-func (o *ObjectStorage) DeleteLooseObject(plumbing.Hash) error {
+func (o *ObjectStorage) DeleteLooseObject(common.ObjectHash) error {
 	return errNotSupported
 }
 
@@ -208,17 +213,17 @@ func (o *ObjectStorage) AddAlternate(remote string) error {
 
 type TxObjectStorage struct {
 	Storage *ObjectStorage
-	Objects map[plumbing.Hash]plumbing.EncodedObject
+	Objects map[common.ObjectHash]plumbing.EncodedObject
 }
 
-func (tx *TxObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.Hash, error) {
+func (tx *TxObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (common.ObjectHash, error) {
 	h := obj.Hash()
 	tx.Objects[h] = obj
 
 	return h, nil
 }
 
-func (tx *TxObjectStorage) EncodedObject(t plumbing.ObjectType, h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (tx *TxObjectStorage) EncodedObject(t plumbing.ObjectType, h common.ObjectHash) (plumbing.EncodedObject, error) {
 	obj, ok := tx.Objects[h]
 	if !ok || (plumbing.AnyObject != t && obj.Type() != t) {
 		return nil, plumbing.ErrObjectNotFound
@@ -239,7 +244,7 @@ func (tx *TxObjectStorage) Commit() error {
 }
 
 func (tx *TxObjectStorage) Rollback() error {
-	tx.Objects = make(map[plumbing.Hash]plumbing.EncodedObject)
+	tx.Objects = make(map[common.ObjectHash]plumbing.EncodedObject)
 	return nil
 }
 
@@ -299,14 +304,14 @@ func (r ReferenceStorage) RemoveReference(n plumbing.ReferenceName) error {
 	return nil
 }
 
-type ShallowStorage []plumbing.Hash
+type ShallowStorage []common.ObjectHash
 
-func (s *ShallowStorage) SetShallow(commits []plumbing.Hash) error {
+func (s *ShallowStorage) SetShallow(commits []common.ObjectHash) error {
 	*s = commits
 	return nil
 }
 
-func (s ShallowStorage) Shallow() ([]plumbing.Hash, error) {
+func (s ShallowStorage) Shallow() ([]common.ObjectHash, error) {
 	return s, nil
 }
 

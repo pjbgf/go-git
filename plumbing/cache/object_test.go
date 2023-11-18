@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -58,8 +60,9 @@ func (s *ObjectSuite) TestPutSameObjectWithDifferentSize(c *C) {
 	c.Assert(cache.actualSize, Equals, 7*Byte)
 	c.Assert(cache.ll.Len(), Equals, 1)
 
-	obj, ok := cache.Get(plumbing.NewHash(hash))
-	c.Assert(obj.Hash(), Equals, plumbing.NewHash(hash))
+	h, _ := sha1.FromHex(hash)
+	obj, ok := cache.Get(h)
+	c.Assert(obj.Hash(), Equals, h)
 	c.Assert(FileSize(obj.Size()), Equals, 7*Byte)
 	c.Assert(ok, Equals, true)
 }
@@ -138,7 +141,9 @@ func (s *ObjectSuite) TestConcurrentAccess(c *C) {
 			}(i)
 
 			go func(i int) {
-				o.Get(plumbing.NewHash(fmt.Sprint(i)))
+				h, err := sha1.FromHex(fmt.Sprint(i))
+				c.Assert(err, IsNil)
+				o.Get(h)
 				wg.Done()
 			}(i)
 		}
@@ -167,18 +172,19 @@ func (s *ObjectSuite) TestObjectUpdateOverflow(c *C) {
 }
 
 type dummyObject struct {
-	hash plumbing.Hash
+	hash common.ObjectHash
 	size FileSize
 }
 
 func newObject(hash string, size FileSize) plumbing.EncodedObject {
+	h, _ := sha1.FromHex(hash)
 	return &dummyObject{
-		hash: plumbing.NewHash(hash),
+		hash: h,
 		size: size,
 	}
 }
 
-func (d *dummyObject) Hash() plumbing.Hash           { return d.hash }
+func (d *dummyObject) Hash() common.ObjectHash       { return d.hash }
 func (*dummyObject) Type() plumbing.ObjectType       { return plumbing.InvalidObject }
 func (*dummyObject) SetType(plumbing.ObjectType)     {}
 func (d *dummyObject) Size() int64                   { return int64(d.size) }

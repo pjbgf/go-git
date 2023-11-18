@@ -11,6 +11,8 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	formatcfg "github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/sideband"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -275,7 +277,7 @@ type ForceWithLease struct {
 	RefName plumbing.ReferenceName
 	// Hash is the expected object id of RefName. The push will be rejected unless this
 	// matches the corresponding object id of RefName in the refs advertisement.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 }
 
 // Validate validates the fields and sets the default values.
@@ -327,7 +329,7 @@ type CheckoutOptions struct {
 	// Hash is the hash of the commit to be checked out. If used, HEAD will be
 	// in detached mode. If Create is not used, Branch and Hash are mutually
 	// exclusive.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	// Branch to be checked out, if Branch and Hash are empty is set to `master`.
 	Branch plumbing.ReferenceName
 	// Create a new branch named Branch and start it at Hash.
@@ -389,7 +391,7 @@ const (
 // ResetOptions describes how a reset operation should be performed.
 type ResetOptions struct {
 	// Commit, if commit is present set the current branch head (HEAD) to it.
-	Commit plumbing.Hash
+	Commit common.ObjectHash
 	// Mode, form resets the current branch head to Commit and possibly updates
 	// the index (resetting it to the tree of Commit) and the working tree
 	// depending on Mode. If empty MixedReset is used.
@@ -398,7 +400,7 @@ type ResetOptions struct {
 
 // Validate validates the fields and sets the default values.
 func (o *ResetOptions) Validate(r *Repository) error {
-	if o.Commit == plumbing.ZeroHash {
+	if o.Commit == sha1.ZeroHash() {
 		ref, err := r.Head()
 		if err != nil {
 			return err
@@ -425,7 +427,7 @@ type LogOptions struct {
 	// When the From option is set the log will only contain commits
 	// reachable from it. If this option is not set, HEAD will be used as
 	// the default From.
-	From plumbing.Hash
+	From common.ObjectHash
 
 	// The default traversal algorithm is Depth-first search
 	// set Order=LogOrderCommitterTime for ordering by committer time (more compatible with `git log`)
@@ -502,7 +504,7 @@ type CommitOptions struct {
 	Committer *object.Signature
 	// Parents are the parents commits for the new commit, by default when
 	// len(Parents) is zero, the hash of HEAD reference is used.
-	Parents []plumbing.Hash
+	Parents []common.ObjectHash
 	// SignKey denotes a key to sign the commit with. A nil value here means the
 	// commit will not be signed. The private key must be present and already
 	// decrypted.
@@ -539,7 +541,7 @@ func (o *CommitOptions) Validate(r *Repository) error {
 		}
 
 		if head != nil {
-			o.Parents = []plumbing.Hash{head.Hash()}
+			o.Parents = []common.ObjectHash{head.Hash()}
 		}
 	}
 
@@ -604,7 +606,7 @@ type CreateTagOptions struct {
 }
 
 // Validate validates the fields and sets the default values.
-func (o *CreateTagOptions) Validate(r *Repository, hash plumbing.Hash) error {
+func (o *CreateTagOptions) Validate(r *Repository, hash common.ObjectHash) error {
 	if o.Tagger == nil {
 		if err := o.loadConfigTagger(r); err != nil {
 			return err
@@ -695,7 +697,7 @@ type GrepOptions struct {
 	// InvertMatch selects non-matching lines.
 	InvertMatch bool
 	// CommitHash is the hash of the commit from which worktree should be derived.
-	CommitHash plumbing.Hash
+	CommitHash common.ObjectHash
 	// ReferenceName is the branch or tag name from which worktree should be derived.
 	ReferenceName plumbing.ReferenceName
 	// PathSpecs are compiled Regexp objects of pathspec to use in the matching.

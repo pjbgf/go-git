@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/sync"
 )
 
@@ -93,7 +94,7 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 
 // Hash returns the hash of the object data stream that has been written so far.
 // It can be called before or after Close.
-func (w *Writer) Hash() plumbing.Hash {
+func (w *Writer) Hash() common.ObjectHash {
 	return w.hasher.Sum() // Not yet closed, return hash of data written so far
 }
 

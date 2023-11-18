@@ -10,9 +10,13 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem/dotgit"
+	"github.com/stretchr/testify/assert"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
@@ -31,14 +35,14 @@ var objectTypes = []plumbing.ObjectType{
 
 var _ = Suite(&FsSuite{})
 
-func (s *FsSuite) TestGetFromObjectFile(c *C) {
+func TestGetFromObjectFile(t *testing.T) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
-	expected := plumbing.NewHash("f3dfe29d268303fc6e1bbce268605fc99573406e")
+	expected, _ := sha1.FromHex("f3dfe29d268303fc6e1bbce268605fc99573406e")
 	obj, err := o.EncodedObject(plumbing.AnyObject, expected)
-	c.Assert(err, IsNil)
-	c.Assert(obj.Hash(), Equals, expected)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, obj.Hash())
 }
 
 func (s *FsSuite) TestGetFromPackfile(c *C) {
@@ -46,7 +50,7 @@ func (s *FsSuite) TestGetFromPackfile(c *C) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
-		expected := plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+		expected := X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 		obj, err := o.EncodedObject(plumbing.AnyObject, expected)
 		c.Assert(err, IsNil)
 		c.Assert(obj.Hash(), Equals, expected)
@@ -59,7 +63,7 @@ func (s *FsSuite) TestGetFromPackfileKeepDescriptors(c *C) {
 		dg := dotgit.NewWithOptions(fs, dotgit.Options{KeepDescriptors: true})
 		o := NewObjectStorageWithOptions(dg, cache.NewObjectLRUDefault(), Options{KeepDescriptors: true})
 
-		expected := plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+		expected := X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 		obj, err := o.EncodedObject(plumbing.AnyObject, expected)
 		c.Assert(err, IsNil)
 		c.Assert(obj.Hash(), Equals, expected)
@@ -88,22 +92,22 @@ func (s *FsSuite) TestGetFromPackfileKeepDescriptors(c *C) {
 	})
 }
 
-func (s *FsSuite) TestGetFromPackfileMaxOpenDescriptors(c *C) {
+func TestGetFromPackfileMaxOpenDescriptors(t *testing.T) {
 	fs := fixtures.ByTag(".git").ByTag("multi-packfile").One().DotGit()
 	o := NewObjectStorageWithOptions(dotgit.New(fs), cache.NewObjectLRUDefault(), Options{MaxOpenDescriptors: 1})
 
-	expected := plumbing.NewHash("8d45a34641d73851e01d3754320b33bb5be3c4d3")
+	expected, _ := sha1.FromHex("8d45a34641d73851e01d3754320b33bb5be3c4d3")
 	obj, err := o.getFromPackfile(expected, false)
-	c.Assert(err, IsNil)
-	c.Assert(obj.Hash(), Equals, expected)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, obj.Hash())
 
-	expected = plumbing.NewHash("e9cfa4c9ca160546efd7e8582ec77952a27b17db")
+	expected, _ = sha1.FromHex("e9cfa4c9ca160546efd7e8582ec77952a27b17db")
 	obj, err = o.getFromPackfile(expected, false)
-	c.Assert(err, IsNil)
-	c.Assert(obj.Hash(), Equals, expected)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, obj.Hash())
 
 	err = o.Close()
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 }
 
 func (s *FsSuite) TestGetFromPackfileMaxOpenDescriptorsLargeObjectThreshold(c *C) {
@@ -113,12 +117,12 @@ func (s *FsSuite) TestGetFromPackfileMaxOpenDescriptorsLargeObjectThreshold(c *C
 		LargeObjectThreshold: 1,
 	})
 
-	expected := plumbing.NewHash("8d45a34641d73851e01d3754320b33bb5be3c4d3")
+	expected := X(sha1.FromHex("8d45a34641d73851e01d3754320b33bb5be3c4d3"))
 	obj, err := o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
 
-	expected = plumbing.NewHash("e9cfa4c9ca160546efd7e8582ec77952a27b17db")
+	expected = X(sha1.FromHex("e9cfa4c9ca160546efd7e8582ec77952a27b17db"))
 	obj, err = o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
@@ -132,7 +136,7 @@ func (s *FsSuite) TestGetSizeOfObjectFile(c *C) {
 	o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
 	// Get the size of `tree_walker.go`.
-	expected := plumbing.NewHash("cbd81c47be12341eb1185b379d1c82675aeded6a")
+	expected := X(sha1.FromHex("cbd81c47be12341eb1185b379d1c82675aeded6a"))
 	size, err := o.EncodedObjectSize(expected)
 	c.Assert(err, IsNil)
 	c.Assert(size, Equals, int64(2412))
@@ -144,7 +148,7 @@ func (s *FsSuite) TestGetSizeFromPackfile(c *C) {
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
 		// Get the size of `binary.jpg`.
-		expected := plumbing.NewHash("d5c0f4ab811897cadf03aec358ae60d21f91c50d")
+		expected := X(sha1.FromHex("d5c0f4ab811897cadf03aec358ae60d21f91c50d"))
 		size, err := o.EncodedObjectSize(expected)
 		c.Assert(err, IsNil)
 		c.Assert(size, Equals, int64(76110))
@@ -156,7 +160,7 @@ func (s *FsSuite) TestGetSizeOfAllObjectFiles(c *C) {
 	o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
 	// Get the size of `tree_walker.go`.
-	err := o.ForEachObjectHash(func(h plumbing.Hash) error {
+	err := o.ForEachObjectHash(func(h common.ObjectHash) error {
 		size, err := o.EncodedObjectSize(h)
 		c.Assert(err, IsNil)
 		c.Assert(size, Not(Equals), int64(0))
@@ -169,12 +173,12 @@ func (s *FsSuite) TestGetFromPackfileMultiplePackfiles(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("multi-packfile").One().DotGit()
 	o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
-	expected := plumbing.NewHash("8d45a34641d73851e01d3754320b33bb5be3c4d3")
+	expected := X(sha1.FromHex("8d45a34641d73851e01d3754320b33bb5be3c4d3"))
 	obj, err := o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
 
-	expected = plumbing.NewHash("e9cfa4c9ca160546efd7e8582ec77952a27b17db")
+	expected = X(sha1.FromHex("e9cfa4c9ca160546efd7e8582ec77952a27b17db"))
 	obj, err = o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
@@ -184,12 +188,12 @@ func (s *FsSuite) TestGetFromPackfileMultiplePackfilesLargeObjectThreshold(c *C)
 	fs := fixtures.ByTag(".git").ByTag("multi-packfile").One().DotGit()
 	o := NewObjectStorageWithOptions(dotgit.New(fs), cache.NewObjectLRUDefault(), Options{LargeObjectThreshold: 1})
 
-	expected := plumbing.NewHash("8d45a34641d73851e01d3754320b33bb5be3c4d3")
+	expected := X(sha1.FromHex("8d45a34641d73851e01d3754320b33bb5be3c4d3"))
 	obj, err := o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
 
-	expected = plumbing.NewHash("e9cfa4c9ca160546efd7e8582ec77952a27b17db")
+	expected = X(sha1.FromHex("e9cfa4c9ca160546efd7e8582ec77952a27b17db"))
 	obj, err = o.getFromPackfile(expected, false)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
@@ -306,7 +310,7 @@ func (s *FsSuite) TestPackfileReindex(c *C) {
 	packFile := packFixture.Packfile()
 	idxFile := packFixture.Idx()
 	packFilename := packFixture.PackfileHash
-	testObjectHash := plumbing.NewHash("a771b1e94141480861332fd0e4684d33071306c6") // this is an object we know exists in the standalone packfile
+	testObjectHash := X(sha1.FromHex("a771b1e94141480861332fd0e4684d33071306c6")) // this is an object we know exists in the standalone packfile
 	fixtures.ByTag(".git").Test(c, func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		storer := NewStorage(fs, cache.NewObjectLRUDefault())
@@ -380,7 +384,7 @@ func (s *FsSuite) TestGetFromObjectFileSharedCache(c *C) {
 	o1 := NewObjectStorage(dotgit.New(f1), ch)
 	o2 := NewObjectStorage(dotgit.New(f2), ch)
 
-	expected := plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")
+	expected := X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"))
 	obj, err := o1.EncodedObject(plumbing.CommitObject, expected)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
@@ -393,7 +397,7 @@ func (s *FsSuite) TestHashesWithPrefix(c *C) {
 	// Same setup as TestGetFromObjectFile.
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
-	expected := plumbing.NewHash("f3dfe29d268303fc6e1bbce268605fc99573406e")
+	expected := X(sha1.FromHex("f3dfe29d268303fc6e1bbce268605fc99573406e"))
 	obj, err := o.EncodedObject(plumbing.AnyObject, expected)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Hash(), Equals, expected)
@@ -411,7 +415,7 @@ func (s *FsSuite) TestHashesWithPrefixFromPackfile(c *C) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
-		expected := plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+		expected, _ := sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
 		// Only pass the first 8 bytes
 		hashes, err := o.HashesWithPrefix(expected[:8])
 		c.Assert(err, IsNil)
@@ -534,7 +538,7 @@ func BenchmarkGetObjectFromPackfile(b *testing.B) {
 			fs := f.DotGit()
 			o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 			for i := 0; i < b.N; i++ {
-				expected := plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+				expected := X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 				obj, err := o.EncodedObject(plumbing.AnyObject, expected)
 				if err != nil {
 					b.Fatal(err)

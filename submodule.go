@@ -11,6 +11,8 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
@@ -176,10 +178,10 @@ func (s *Submodule) Update(o *SubmoduleUpdateOptions) error {
 // operation is complete, an error is returned. The context only affects the
 // transport operations.
 func (s *Submodule) UpdateContext(ctx context.Context, o *SubmoduleUpdateOptions) error {
-	return s.update(ctx, o, plumbing.ZeroHash)
+	return s.update(ctx, o, sha1.ZeroHash())
 }
 
-func (s *Submodule) update(ctx context.Context, o *SubmoduleUpdateOptions, forceHash plumbing.Hash) error {
+func (s *Submodule) update(ctx context.Context, o *SubmoduleUpdateOptions, forceHash common.ObjectHash) error {
 	if !s.initialized && !o.Init {
 		return ErrSubmoduleNotInitialized
 	}
@@ -240,7 +242,7 @@ func (s *Submodule) doRecursiveUpdate(r *Repository, o *SubmoduleUpdateOptions) 
 }
 
 func (s *Submodule) fetchAndCheckout(
-	ctx context.Context, r *Repository, o *SubmoduleUpdateOptions, hash plumbing.Hash,
+	ctx context.Context, r *Repository, o *SubmoduleUpdateOptions, hash common.ObjectHash,
 ) error {
 	if !o.NoFetch {
 		err := r.FetchContext(ctx, &FetchOptions{Auth: o.Auth, Depth: o.Depth})
@@ -357,8 +359,8 @@ func (s SubmodulesStatus) String() string {
 // SubmoduleStatus contains the status for a submodule in the worktree
 type SubmoduleStatus struct {
 	Path     string
-	Current  plumbing.Hash
-	Expected plumbing.Hash
+	Current  common.ObjectHash
+	Expected common.ObjectHash
 	Branch   plumbing.ReferenceName
 }
 

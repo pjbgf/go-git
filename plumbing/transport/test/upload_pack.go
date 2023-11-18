@@ -8,8 +8,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -48,7 +49,7 @@ func (s *UploadPackSuite) TestAdvertisedReferencesNotExists(c *C) {
 	r, err = s.Client.NewUploadPackSession(s.NonExistentEndpoint, s.EmptyAuth)
 	c.Assert(err, IsNil)
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, Equals, transport.ErrRepositoryNotFound)
 	c.Assert(reader, IsNil)
@@ -105,7 +106,7 @@ func (s *UploadPackSuite) TestUploadPack(c *C) {
 	defer func() { c.Assert(r.Close(), IsNil) }()
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, IsNil)
@@ -126,7 +127,7 @@ func (s *UploadPackSuite) TestUploadPackWithContext(c *C) {
 	c.Assert(info, NotNil)
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	reader, err := r.UploadPack(ctx, req)
 	c.Assert(err, NotNil)
@@ -144,7 +145,7 @@ func (s *UploadPackSuite) TestUploadPackWithContextOnRead(c *C) {
 	c.Assert(info, NotNil)
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	reader, err := r.UploadPack(ctx, req)
 	c.Assert(err, IsNil)
@@ -171,7 +172,7 @@ func (s *UploadPackSuite) TestUploadPackFull(c *C) {
 	c.Assert(info, NotNil)
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, IsNil)
@@ -185,7 +186,7 @@ func (s *UploadPackSuite) TestUploadPackInvalidReq(c *C) {
 	defer func() { c.Assert(r.Close(), IsNil) }()
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 	req.Capabilities.Set(capability.Sideband)
 	req.Capabilities.Set(capability.Sideband64k)
 
@@ -199,8 +200,8 @@ func (s *UploadPackSuite) TestUploadPackNoChanges(c *C) {
 	defer func() { c.Assert(r.Close(), IsNil) }()
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
-	req.Haves = append(req.Haves, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
+	req.Haves = append(req.Haves, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, Equals, transport.ErrEmptyUploadPackRequest)
@@ -213,8 +214,8 @@ func (s *UploadPackSuite) TestUploadPackMulti(c *C) {
 	defer func() { c.Assert(r.Close(), IsNil) }()
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
-	req.Wants = append(req.Wants, plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
+	req.Wants = append(req.Wants, X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, IsNil)
@@ -228,8 +229,8 @@ func (s *UploadPackSuite) TestUploadPackPartial(c *C) {
 	defer func() { c.Assert(r.Close(), IsNil) }()
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
-	req.Haves = append(req.Haves, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
+	req.Haves = append(req.Haves, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, IsNil)
@@ -242,7 +243,7 @@ func (s *UploadPackSuite) TestFetchError(c *C) {
 	c.Assert(err, IsNil)
 
 	req := packp.NewUploadPackRequest()
-	req.Wants = append(req.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	req.Wants = append(req.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 
 	reader, err := r.UploadPack(context.Background(), req)
 	c.Assert(err, NotNil)

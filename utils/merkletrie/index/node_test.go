@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/go-git/go-git/v5/utils/merkletrie/noder"
 
@@ -22,19 +23,19 @@ var _ = Suite(&NoderSuite{})
 func (s *NoderSuite) TestDiff(c *C) {
 	indexA := &index.Index{
 		Entries: []*index.Entry{
-			{Name: "foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/qux", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/baz/foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
+			{Name: "foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/qux", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/baz/foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
 		},
 	}
 
 	indexB := &index.Index{
 		Entries: []*index.Entry{
-			{Name: "foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/qux", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "bar/baz/foo", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
+			{Name: "foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/qux", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "bar/baz/foo", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
 		},
 	}
 
@@ -47,14 +48,14 @@ func (s *NoderSuite) TestDiffChange(c *C) {
 	indexA := &index.Index{
 		Entries: []*index.Entry{{
 			Name: filepath.Join("bar", "baz", "bar"),
-			Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d"),
+			Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d")),
 		}},
 	}
 
 	indexB := &index.Index{
 		Entries: []*index.Entry{{
 			Name: filepath.Join("bar", "baz", "foo"),
-			Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d"),
+			Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d")),
 		}},
 	}
 
@@ -67,14 +68,14 @@ func (s *NoderSuite) TestDiffDir(c *C) {
 	indexA := &index.Index{
 		Entries: []*index.Entry{{
 			Name: "foo",
-			Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d"),
+			Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d")),
 		}},
 	}
 
 	indexB := &index.Index{
 		Entries: []*index.Entry{{
 			Name: filepath.Join("foo", "bar"),
-			Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d"),
+			Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d")),
 		}},
 	}
 
@@ -86,15 +87,15 @@ func (s *NoderSuite) TestDiffDir(c *C) {
 func (s *NoderSuite) TestDiffSameRoot(c *C) {
 	indexA := &index.Index{
 		Entries: []*index.Entry{
-			{Name: "foo.go", Hash: plumbing.NewHash("aab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "foo/bar", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
+			{Name: "foo.go", Hash: X(sha1.FromHex("aab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "foo/bar", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
 		},
 	}
 
 	indexB := &index.Index{
 		Entries: []*index.Entry{
-			{Name: "foo/bar", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
-			{Name: "foo.go", Hash: plumbing.NewHash("8ab686eafeb1f44702738c8b0f24f2567c36da6d")},
+			{Name: "foo/bar", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
+			{Name: "foo.go", Hash: X(sha1.FromHex("8ab686eafeb1f44702738c8b0f24f2567c36da6d"))},
 		},
 	}
 

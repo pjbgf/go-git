@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 
@@ -68,7 +68,7 @@ func (s *CommitStatsSuite) TestStats_WithoutNewLine(c *C) {
 	c.Assert(fileStats[0].String(), Equals, " foo | 2 +-\n")
 }
 
-func (s *CommitStatsSuite) writeHistory(c *C, files ...[]byte) (*git.Repository, plumbing.Hash) {
+func (s *CommitStatsSuite) writeHistory(c *C, files ...[]byte) (*git.Repository, common.ObjectHash) {
 	cm := &git.CommitOptions{
 		Author: &object.Signature{Name: "Foo", Email: "foo@example.local", When: time.Now()},
 	}
@@ -80,7 +80,7 @@ func (s *CommitStatsSuite) writeHistory(c *C, files ...[]byte) (*git.Repository,
 	w, err := r.Worktree()
 	c.Assert(err, IsNil)
 
-	var hash plumbing.Hash
+	var hash common.ObjectHash
 	for _, content := range files {
 		util.WriteFile(fs, "foo", content, 0644)
 
@@ -89,7 +89,6 @@ func (s *CommitStatsSuite) writeHistory(c *C, files ...[]byte) (*git.Repository,
 
 		hash, err = w.Commit("foo\n", cm)
 		c.Assert(err, IsNil)
-
 	}
 
 	return r, hash

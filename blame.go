@@ -10,7 +10,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/diff"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -21,7 +22,7 @@ type BlameResult struct {
 	// Path is the path of the File that we're blaming.
 	Path string
 	// Rev (Revision) is the hash of the specified Commit used to generate this result.
-	Rev plumbing.Hash
+	Rev common.ObjectHash
 	// Lines contains every line with its authorship.
 	Lines []*Line
 }
@@ -133,10 +134,10 @@ type Line struct {
 	// Date is when the original text of the line was introduced
 	Date time.Time
 	// Hash is the commit hash that introduced the original line
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 }
 
-func newLine(author, authorName, text string, date time.Time, hash plumbing.Hash) *Line {
+func newLine(author, authorName, text string, date time.Time, hash common.ObjectHash) *Line {
 	return &Line{
 		Author:     author,
 		AuthorName: authorName,
@@ -581,10 +582,10 @@ func parentsContainingPath(path string, c *object.Commit) ([]parentCommit, error
 	}
 }
 
-func blobHash(path string, commit *object.Commit) (plumbing.Hash, error) {
+func blobHash(path string, commit *object.Commit) (common.ObjectHash, error) {
 	file, err := commit.File(path)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 	return file.Hash, nil
 }

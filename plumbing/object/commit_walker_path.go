@@ -3,7 +3,7 @@ package object
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -127,7 +127,7 @@ func (c *commitPathIter) hasFileChange(changes Changes, parent *Commit) bool {
 	return false
 }
 
-func isParentHash(hash plumbing.Hash, commit *Commit) bool {
+func isParentHash(hash common.ObjectHash, commit *Commit) bool {
 	for _, h := range commit.ParentHashes {
 		if h == hash {
 			return true

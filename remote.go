@@ -13,7 +13,11 @@ import (
 	"github.com/go-git/go-git/v5/internal/url"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -190,7 +194,7 @@ func (r *Remote) PushContext(ctx context.Context, o *PushOptions) (err error) {
 	// we are aware.
 	haves = append(haves, stop...)
 
-	var hashesToPush []plumbing.Hash
+	var hashesToPush []common.ObjectHash
 	// Avoid the expensive revlist operation if we're only doing deletes.
 	if !allDelete {
 		if url.IsLocalEndpoint(o.RemoteURL) {
@@ -489,7 +493,7 @@ func (r *Remote) fetch(ctx context.Context, o *FetchOptions) (sto storer.Referen
 	return remoteRefs, nil
 }
 
-func depthChanged(before []plumbing.Hash, s storage.Storer) (bool, error) {
+func depthChanged(before []common.ObjectHash, s storage.Storer) (bool, error) {
 	after, err := s.Shallow()
 	if err != nil {
 		return false, err
@@ -499,7 +503,7 @@ func depthChanged(before []plumbing.Hash, s storage.Storer) (bool, error) {
 		return true, nil
 	}
 
-	bm := make(map[plumbing.Hash]bool, len(before))
+	bm := make(map[common.ObjectHash]bool, len(before))
 	for _, b := range before {
 		bm[b] = true
 	}
@@ -619,7 +623,8 @@ func (r *Remote) addOrUpdateReferences(
 	if !rs.IsWildcard() {
 		ref, ok := refsDict[rs.Src()]
 		if !ok {
-			commit, err := object.GetCommit(r.s, plumbing.NewHash(rs.Src()))
+			h, _ := sha1.FromHex(rs.Src())
+			commit, err := object.GetCommit(r.s, h)
 			if err == nil {
 				return r.addCommit(rs, remoteRefs, commit.Hash, req)
 			}
@@ -670,7 +675,7 @@ func (r *Remote) deleteReferences(rs config.RefSpec,
 		cmd := &packp.Command{
 			Name: ref.Name(),
 			Old:  ref.Hash(),
-			New:  plumbing.ZeroHash,
+			New:  sha1.ZeroHash(),
 		}
 		req.Commands = append(req.Commands, cmd)
 		return nil
@@ -678,7 +683,7 @@ func (r *Remote) deleteReferences(rs config.RefSpec,
 }
 
 func (r *Remote) addCommit(rs config.RefSpec,
-	remoteRefs storer.ReferenceStorer, localCommit plumbing.Hash,
+	remoteRefs storer.ReferenceStorer, localCommit common.ObjectHash,
 	req *packp.ReferenceUpdateRequest) error {
 
 	if rs.IsWildcard() {
@@ -687,7 +692,7 @@ func (r *Remote) addCommit(rs config.RefSpec,
 
 	cmd := &packp.Command{
 		Name: rs.Dst(""),
-		Old:  plumbing.ZeroHash,
+		Old:  sha1.ZeroHash(),
 		New:  localCommit,
 	}
 	remoteRef, err := remoteRefs.Reference(cmd.Name)
@@ -728,7 +733,7 @@ func (r *Remote) addReferenceIfRefSpecMatches(rs config.RefSpec,
 
 	cmd := &packp.Command{
 		Name: rs.Dst(localRef.Name()),
-		Old:  plumbing.ZeroHash,
+		Old:  sha1.ZeroHash(),
 		New:  localRef.Hash(),
 	}
 
@@ -812,8 +817,8 @@ func (r *Remote) references() ([]*plumbing.Reference, error) {
 }
 
 func getRemoteRefsFromStorer(remoteRefStorer storer.ReferenceStorer) (
-	map[plumbing.Hash]bool, error) {
-	remoteRefs := map[plumbing.Hash]bool{}
+	map[common.ObjectHash]bool, error) {
+	remoteRefs := map[common.ObjectHash]bool{}
 	iter, err := remoteRefStorer.IterReferences()
 	if err != nil {
 		return nil, err
@@ -835,9 +840,9 @@ func getRemoteRefsFromStorer(remoteRefStorer storer.ReferenceStorer) (
 // reference, and up to `maxHavesToVisitPerRef` ancestor commits.
 func getHavesFromRef(
 	ref *plumbing.Reference,
-	remoteRefs map[plumbing.Hash]bool,
+	remoteRefs map[common.ObjectHash]bool,
 	s storage.Storer,
-	haves map[plumbing.Hash]bool,
+	haves map[common.ObjectHash]bool,
 	depth int,
 ) error {
 	h := ref.Hash()
@@ -890,8 +895,8 @@ func getHaves(
 	remoteRefStorer storer.ReferenceStorer,
 	s storage.Storer,
 	depth int,
-) ([]plumbing.Hash, error) {
-	haves := map[plumbing.Hash]bool{}
+) ([]common.ObjectHash, error) {
+	haves := map[common.ObjectHash]bool{}
 
 	// Build a map of all the remote references, to avoid loading too
 	// many parent commits for references we know don't need to be
@@ -916,7 +921,7 @@ func getHaves(
 		}
 	}
 
-	var result []plumbing.Hash
+	var result []common.ObjectHash
 	for h := range haves {
 		result = append(result, h)
 	}
@@ -957,7 +962,8 @@ func doCalculateRefs(
 	var refList []*plumbing.Reference
 
 	if s.IsExactSHA1() {
-		ref := plumbing.NewHashReference(s.Dst(""), plumbing.NewHash(s.Src()))
+		h, _ := sha1.FromHex(s.Src())
+		ref := plumbing.NewHashReference(s.Dst(""), h)
 
 		refList = append(refList, ref)
 		return refList, refs.SetReference(ref)
@@ -1012,7 +1018,7 @@ func doCalculateRefs(
 	return refList, ret
 }
 
-func getWants(localStorer storage.Storer, refs memory.ReferenceStorage, depth int) ([]plumbing.Hash, error) {
+func getWants(localStorer storage.Storer, refs memory.ReferenceStorage, depth int) ([]common.ObjectHash, error) {
 	// If depth is anything other than 1 and the repo has shallow commits then just because we have the commit
 	// at the reference doesn't mean that we don't still need to fetch the parents
 	shallow := false
@@ -1022,7 +1028,7 @@ func getWants(localStorer storage.Storer, refs memory.ReferenceStorage, depth in
 		}
 	}
 
-	wants := map[plumbing.Hash]bool{}
+	wants := map[common.ObjectHash]bool{}
 	for _, ref := range refs {
 		hash := ref.Hash()
 		exists, err := objectExists(localStorer, ref.Hash())
@@ -1035,7 +1041,7 @@ func getWants(localStorer storage.Storer, refs memory.ReferenceStorage, depth in
 		}
 	}
 
-	var result []plumbing.Hash
+	var result []common.ObjectHash
 	for h := range wants {
 		result = append(result, h)
 	}
@@ -1043,7 +1049,7 @@ func getWants(localStorer storage.Storer, refs memory.ReferenceStorage, depth in
 	return result, nil
 }
 
-func objectExists(s storer.EncodedObjectStorer, h plumbing.Hash) (bool, error) {
+func objectExists(s storer.EncodedObjectStorer, h common.ObjectHash) (bool, error) {
 	_, err := s.EncodedObject(plumbing.AnyObject, h)
 	if err == plumbing.ErrObjectNotFound {
 		return false, nil
@@ -1053,7 +1059,7 @@ func objectExists(s storer.EncodedObjectStorer, h plumbing.Hash) (bool, error) {
 }
 
 func checkFastForwardUpdate(s storer.EncodedObjectStorer, remoteRefs storer.ReferenceStorer, cmd *packp.Command) error {
-	if cmd.Old == plumbing.ZeroHash {
+	if cmd.Old == sha1.ZeroHash() {
 		_, err := remoteRefs.Reference(cmd.Name)
 		if err == plumbing.ErrReferenceNotFound {
 			return nil
@@ -1078,7 +1084,7 @@ func checkFastForwardUpdate(s storer.EncodedObjectStorer, remoteRefs storer.Refe
 	return nil
 }
 
-func isFastForward(s storer.EncodedObjectStorer, old, new plumbing.Hash) (bool, error) {
+func isFastForward(s storer.EncodedObjectStorer, old, new common.ObjectHash) (bool, error) {
 	c, err := object.GetCommit(s, new)
 	if err != nil {
 		return false, err
@@ -1344,10 +1350,10 @@ func (r *Remote) list(ctx context.Context, o *ListOptions) (rfs []*plumbing.Refe
 	return resultRefs, nil
 }
 
-func objectsToPush(commands []*packp.Command) []plumbing.Hash {
-	objects := make([]plumbing.Hash, 0, len(commands))
+func objectsToPush(commands []*packp.Command) []common.ObjectHash {
+	objects := make([]common.ObjectHash, 0, len(commands))
 	for _, cmd := range commands {
-		if cmd.New == plumbing.ZeroHash {
+		if cmd.New == sha1.ZeroHash() {
 			continue
 		}
 		objects = append(objects, cmd.New)
@@ -1355,13 +1361,13 @@ func objectsToPush(commands []*packp.Command) []plumbing.Hash {
 	return objects
 }
 
-func referencesToHashes(refs storer.ReferenceStorer) ([]plumbing.Hash, error) {
+func referencesToHashes(refs storer.ReferenceStorer) ([]common.ObjectHash, error) {
 	iter, err := refs.IterReferences()
 	if err != nil {
 		return nil, err
 	}
 
-	var hs []plumbing.Hash
+	var hs []common.ObjectHash
 	err = iter.ForEach(func(ref *plumbing.Reference) error {
 		if ref.Type() != plumbing.HashReference {
 			return nil
@@ -1382,7 +1388,7 @@ func pushHashes(
 	sess transport.ReceivePackSession,
 	s storage.Storer,
 	req *packp.ReferenceUpdateRequest,
-	hs []plumbing.Hash,
+	hs []common.ObjectHash,
 	useRefDeltas bool,
 	allDelete bool,
 ) (*packp.ReportStatus, error) {
@@ -1402,7 +1408,7 @@ func pushHashes(
 	if !allDelete {
 		req.Packfile = rd
 		go func() {
-			e := packfile.NewEncoder(wr, s, useRefDeltas)
+			e := packfile.NewEncoder(wr, s, useRefDeltas, hash.NewHasher(format.SHA1), hash.HashFactory(format.SHA1))
 			if _, err := e.Encode(hs, config.Pack.Window); err != nil {
 				done <- wr.CloseWithError(err)
 				return

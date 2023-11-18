@@ -15,10 +15,12 @@ import (
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	"github.com/go-git/go-git/v5/config"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 
@@ -708,14 +710,14 @@ func (s *WorktreeSuite) TestCheckoutCreateWithHash(c *C) {
 	err := w.Checkout(&CheckoutOptions{
 		Create: true,
 		Branch: "refs/heads/foo",
-		Hash:   plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		Hash:   X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 	c.Assert(err, IsNil)
 
 	head, err := w.r.Head()
 	c.Assert(err, IsNil)
 	c.Assert(head.Name().String(), Equals, "refs/heads/foo")
-	c.Assert(head.Hash(), Equals, plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"))
+	c.Assert(head.Hash(), Equals, X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")))
 
 	status, err := w.Status()
 	c.Assert(err, IsNil)
@@ -737,7 +739,7 @@ func (s *WorktreeSuite) TestCheckoutCreate(c *C) {
 	head, err := w.r.Head()
 	c.Assert(err, IsNil)
 	c.Assert(head.Name().String(), Equals, "refs/heads/foo")
-	c.Assert(head.Hash(), Equals, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(head.Hash(), Equals, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	status, err := w.Status()
 	c.Assert(err, IsNil)
@@ -752,7 +754,7 @@ func (s *WorktreeSuite) TestCheckoutBranchAndHash(c *C) {
 
 	err := w.Checkout(&CheckoutOptions{
 		Branch: "refs/heads/foo",
-		Hash:   plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		Hash:   X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 
 	c.Assert(err, Equals, ErrBranchHashExclusive)
@@ -946,7 +948,7 @@ func (s *WorktreeSuite) TestReset(c *C) {
 		Filesystem: fs,
 	}
 
-	commit := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commit := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -974,7 +976,7 @@ func (s *WorktreeSuite) TestResetWithUntracked(c *C) {
 		Filesystem: fs,
 	}
 
-	commit := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commit := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -997,7 +999,7 @@ func (s *WorktreeSuite) TestResetSoft(c *C) {
 		Filesystem: fs,
 	}
 
-	commit := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commit := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -1022,7 +1024,7 @@ func (s *WorktreeSuite) TestResetMixed(c *C) {
 		Filesystem: fs,
 	}
 
-	commit := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commit := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -1047,8 +1049,8 @@ func (s *WorktreeSuite) TestResetMerge(c *C) {
 		Filesystem: fs,
 	}
 
-	commitA := plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294")
-	commitB := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commitA := X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294"))
+	commitB := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -1082,7 +1084,7 @@ func (s *WorktreeSuite) TestResetHard(c *C) {
 		Filesystem: fs,
 	}
 
-	commit := plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9")
+	commit := X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9"))
 
 	err := w.Checkout(&CheckoutOptions{})
 	c.Assert(err, IsNil)
@@ -1517,12 +1519,12 @@ func (s *WorktreeSuite) TestAddRemovedInDirectory(c *C) {
 
 	e, err := idx.Entry("go/example.go")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("880cd14280f4b9b6ed3986d6671f907d7cc2a198"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("880cd14280f4b9b6ed3986d6671f907d7cc2a198")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	e, err = idx.Entry("json/short.json")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("c8f1d8c61f9da76f4cb49fd86322b6e685dba956"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("c8f1d8c61f9da76f4cb49fd86322b6e685dba956")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	status, err := w.Status()
@@ -1562,12 +1564,12 @@ func (s *WorktreeSuite) TestAddRemovedInDirectoryWithTrailingSlash(c *C) {
 
 	e, err := idx.Entry("go/example.go")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("880cd14280f4b9b6ed3986d6671f907d7cc2a198"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("880cd14280f4b9b6ed3986d6671f907d7cc2a198")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	e, err = idx.Entry("json/short.json")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("c8f1d8c61f9da76f4cb49fd86322b6e685dba956"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("c8f1d8c61f9da76f4cb49fd86322b6e685dba956")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	status, err := w.Status()
@@ -1607,12 +1609,12 @@ func (s *WorktreeSuite) TestAddRemovedInDirectoryDot(c *C) {
 
 	e, err := idx.Entry("go/example.go")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("880cd14280f4b9b6ed3986d6671f907d7cc2a198"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("880cd14280f4b9b6ed3986d6671f907d7cc2a198")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	e, err = idx.Entry("json/short.json")
 	c.Assert(err, IsNil)
-	c.Assert(e.Hash, Equals, plumbing.NewHash("c8f1d8c61f9da76f4cb49fd86322b6e685dba956"))
+	c.Assert(e.Hash, Equals, X(sha1.FromHex("c8f1d8c61f9da76f4cb49fd86322b6e685dba956")))
 	c.Assert(e.Mode, Equals, filemode.Regular)
 
 	status, err := w.Status()
@@ -1641,11 +1643,11 @@ func (s *WorktreeSuite) TestAddSymlink(c *C) {
 	c.Assert(err, IsNil)
 	h, err := w.Add("foo")
 	c.Assert(err, IsNil)
-	c.Assert(h, Not(Equals), plumbing.NewHash("19102815663d23f8b75a47e7a01965dcdc96468c"))
+	c.Assert(h, Not(Equals), X(sha1.FromHex("19102815663d23f8b75a47e7a01965dcdc96468c")))
 
 	h, err = w.Add("bar")
 	c.Assert(err, IsNil)
-	c.Assert(h, Equals, plumbing.NewHash("19102815663d23f8b75a47e7a01965dcdc96468c"))
+	c.Assert(h, Equals, X(sha1.FromHex("19102815663d23f8b75a47e7a01965dcdc96468c")))
 
 	obj, err := w.r.Storer.EncodedObject(plumbing.BlobObject, h)
 	c.Assert(err, IsNil)
@@ -2224,7 +2226,7 @@ func (s *WorktreeSuite) TestGrep(c *C) {
 			name: "match at a given commit hash",
 			options: GrepOptions{
 				Patterns:   []*regexp.Regexp{regexp.MustCompile("The MIT License")},
-				CommitHash: plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+				CommitHash: X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 			},
 			wantResult: []GrepResult{
 				{
@@ -2282,7 +2284,7 @@ func (s *WorktreeSuite) TestGrep(c *C) {
 			name: "ambiguous options",
 			options: GrepOptions{
 				Patterns:      []*regexp.Regexp{regexp.MustCompile("import")},
-				CommitHash:    plumbing.NewHash("2d55a722f3c3ecc36da919dfd8b6de38352f3507"),
+				CommitHash:    X(sha1.FromHex("2d55a722f3c3ecc36da919dfd8b6de38352f3507")),
 				ReferenceName: "somereferencename",
 			},
 			wantError: ErrHashOrReference,
@@ -2405,7 +2407,7 @@ func (s *WorktreeSuite) TestGrepBare(c *C) {
 			name: "basic word match",
 			options: GrepOptions{
 				Patterns:   []*regexp.Regexp{regexp.MustCompile("import")},
-				CommitHash: plumbing.ZeroHash,
+				CommitHash: sha1.ZeroHash(),
 			},
 			wantResult: []GrepResult{
 				{

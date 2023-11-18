@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"io"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -148,8 +150,8 @@ func (s *UpdReqDecodeSuite) TestInvalidCommandMissingName(c *C) {
 }
 
 func (s *UpdReqDecodeSuite) TestOneUpdateCommand(c *C) {
-	hash1 := plumbing.NewHash("1ecf0ef2c2dffb796033e5a02219af86ec6584e5")
-	hash2 := plumbing.NewHash("2ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash1 := X(sha1.FromHex("1ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	hash2 := X(sha1.FromHex("2ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 	name := plumbing.ReferenceName("myref")
 
 	expected := NewReferenceUpdateRequest()
@@ -167,14 +169,14 @@ func (s *UpdReqDecodeSuite) TestOneUpdateCommand(c *C) {
 }
 
 func (s *UpdReqDecodeSuite) TestMultipleCommands(c *C) {
-	hash1 := plumbing.NewHash("1ecf0ef2c2dffb796033e5a02219af86ec6584e5")
-	hash2 := plumbing.NewHash("2ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash1 := X(sha1.FromHex("1ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	hash2 := X(sha1.FromHex("2ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 
 	expected := NewReferenceUpdateRequest()
 	expected.Commands = []*Command{
 		{Name: plumbing.ReferenceName("myref1"), Old: hash1, New: hash2},
-		{Name: plumbing.ReferenceName("myref2"), Old: plumbing.ZeroHash, New: hash2},
-		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: plumbing.ZeroHash},
+		{Name: plumbing.ReferenceName("myref2"), Old: sha1.ZeroHash(), New: hash2},
+		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: sha1.ZeroHash()},
 	}
 	expected.Packfile = io.NopCloser(bytes.NewReader([]byte{}))
 
@@ -189,14 +191,14 @@ func (s *UpdReqDecodeSuite) TestMultipleCommands(c *C) {
 }
 
 func (s *UpdReqDecodeSuite) TestMultipleCommandsAndCapabilities(c *C) {
-	hash1 := plumbing.NewHash("1ecf0ef2c2dffb796033e5a02219af86ec6584e5")
-	hash2 := plumbing.NewHash("2ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash1 := X(sha1.FromHex("1ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	hash2 := X(sha1.FromHex("2ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 
 	expected := NewReferenceUpdateRequest()
 	expected.Commands = []*Command{
 		{Name: plumbing.ReferenceName("myref1"), Old: hash1, New: hash2},
-		{Name: plumbing.ReferenceName("myref2"), Old: plumbing.ZeroHash, New: hash2},
-		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: plumbing.ZeroHash},
+		{Name: plumbing.ReferenceName("myref2"), Old: sha1.ZeroHash(), New: hash2},
+		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: sha1.ZeroHash()},
 	}
 	expected.Capabilities.Add("shallow")
 	expected.Packfile = io.NopCloser(bytes.NewReader([]byte{}))
@@ -212,17 +214,17 @@ func (s *UpdReqDecodeSuite) TestMultipleCommandsAndCapabilities(c *C) {
 }
 
 func (s *UpdReqDecodeSuite) TestMultipleCommandsAndCapabilitiesShallow(c *C) {
-	hash1 := plumbing.NewHash("1ecf0ef2c2dffb796033e5a02219af86ec6584e5")
-	hash2 := plumbing.NewHash("2ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash1 := X(sha1.FromHex("1ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	hash2 := X(sha1.FromHex("2ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 
 	expected := NewReferenceUpdateRequest()
 	expected.Commands = []*Command{
 		{Name: plumbing.ReferenceName("myref1"), Old: hash1, New: hash2},
-		{Name: plumbing.ReferenceName("myref2"), Old: plumbing.ZeroHash, New: hash2},
-		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: plumbing.ZeroHash},
+		{Name: plumbing.ReferenceName("myref2"), Old: sha1.ZeroHash(), New: hash2},
+		{Name: plumbing.ReferenceName("myref3"), Old: hash1, New: sha1.ZeroHash()},
 	}
 	expected.Capabilities.Add("shallow")
-	expected.Shallow = &hash1
+	expected.Shallow = hash1
 	expected.Packfile = io.NopCloser(bytes.NewReader([]byte{}))
 
 	payloads := []string{
@@ -237,8 +239,8 @@ func (s *UpdReqDecodeSuite) TestMultipleCommandsAndCapabilitiesShallow(c *C) {
 }
 
 func (s *UpdReqDecodeSuite) TestWithPackfile(c *C) {
-	hash1 := plumbing.NewHash("1ecf0ef2c2dffb796033e5a02219af86ec6584e5")
-	hash2 := plumbing.NewHash("2ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash1 := X(sha1.FromHex("1ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	hash2 := X(sha1.FromHex("2ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 	name := plumbing.ReferenceName("myref")
 
 	expected := NewReferenceUpdateRequest()

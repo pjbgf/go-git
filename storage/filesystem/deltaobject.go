@@ -2,19 +2,20 @@ package filesystem
 
 import (
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 type deltaObject struct {
 	plumbing.EncodedObject
-	base plumbing.Hash
-	hash plumbing.Hash
+	base common.ObjectHash
+	hash common.ObjectHash
 	size int64
 }
 
 func newDeltaObject(
 	obj plumbing.EncodedObject,
-	hash plumbing.Hash,
-	base plumbing.Hash,
+	hash common.ObjectHash,
+	base common.ObjectHash,
 	size int64) plumbing.DeltaObject {
 	return &deltaObject{
 		EncodedObject: obj,
@@ -24,7 +25,7 @@ func newDeltaObject(
 	}
 }
 
-func (o *deltaObject) BaseHash() plumbing.Hash {
+func (o *deltaObject) BaseHash() common.ObjectHash {
 	return o.base
 }
 
@@ -32,6 +33,6 @@ func (o *deltaObject) ActualSize() int64 {
 	return o.size
 }
 
-func (o *deltaObject) ActualHash() plumbing.Hash {
+func (o *deltaObject) ActualHash() common.ObjectHash {
 	return o.hash
 }

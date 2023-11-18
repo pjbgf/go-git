@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/color"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 
 	. "gopkg.in/check.v1"
 )
@@ -1048,7 +1049,7 @@ type testFile struct {
 	seed string
 }
 
-func (t testFile) Hash() plumbing.Hash {
+func (t testFile) Hash() common.ObjectHash {
 	return plumbing.ComputeHash(plumbing.BlobObject, []byte(t.seed))
 }
 

@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -44,15 +45,16 @@ type Decoder struct {
 	lastEntry *Entry
 
 	extReader *bufio.Reader
+	factory   common.HashFactory
 }
 
 // NewDecoder returns a new decoder that reads from r.
-func NewDecoder(r io.Reader) *Decoder {
-	h := hash.New(hash.CryptoType)
+func NewDecoder(r io.Reader, h hash.Hash, f common.HashFactory) *Decoder {
 	return &Decoder{
 		r:         io.TeeReader(r, h),
 		hash:      h,
 		extReader: bufio.NewReader(nil),
+		factory:   f,
 	}
 }
 
@@ -291,14 +293,13 @@ func (d *Decoder) getExtensionReader() (*bufio.Reader, error) {
 }
 
 func (d *Decoder) readChecksum(expected []byte, alreadyRead [4]byte) error {
-	var h plumbing.Hash
-	copy(h[:4], alreadyRead[:])
-
-	if _, err := io.ReadFull(d.r, h[4:]); err != nil {
+	h := d.factory.FromBytes(alreadyRead[:])
+	// TODO: confirm this is working
+	if _, err := io.ReadFull(d.r, h.Sum()[4:]); err != nil {
 		return err
 	}
 
-	if !bytes.Equal(h[:], expected) {
+	if !bytes.Equal(h.Sum(), expected) {
 		return ErrInvalidChecksum
 	}
 
@@ -388,7 +389,7 @@ func (d *treeExtensionDecoder) readEntry() (*TreeEntry, error) {
 	}
 
 	e.Trees = i
-	_, err = io.ReadFull(d.r, e.Hash[:])
+	_, err = io.ReadFull(d.r, e.Hash.Sum())
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +417,7 @@ func (d *resolveUndoDecoder) Decode(ru *ResolveUndo) error {
 
 func (d *resolveUndoDecoder) readEntry() (*ResolveUndoEntry, error) {
 	e := &ResolveUndoEntry{
-		Stages: make(map[Stage]plumbing.Hash),
+		Stages: make(map[Stage]common.ObjectHash),
 	}
 
 	path, err := binary.ReadUntil(d.r, '\x00')
@@ -432,13 +433,14 @@ func (d *resolveUndoDecoder) readEntry() (*ResolveUndoEntry, error) {
 		}
 	}
 
+	hash := make([]byte, sha1.Factory.Size())
 	for s := range e.Stages {
-		var hash plumbing.Hash
-		if _, err := io.ReadFull(d.r, hash[:]); err != nil {
+		hash := hash[:0]
+		if _, err := io.ReadFull(d.r, hash); err != nil {
 			return nil, err
 		}
 
-		e.Stages[s] = hash
+		e.Stages[s] = sha1.FromBytes(hash)
 	}
 
 	return e, nil
@@ -456,7 +458,7 @@ func (d *resolveUndoDecoder) readStage(e *ResolveUndoEntry, s Stage) error {
 	}
 
 	if stage != 0 {
-		e.Stages[s] = plumbing.ZeroHash
+		e.Stages[s] = sha1.ZeroHash()
 	}
 
 	return nil
@@ -473,6 +475,6 @@ func (d *endOfIndexEntryDecoder) Decode(e *EndOfIndexEntry) error {
 		return err
 	}
 
-	_, err = io.ReadFull(d.r, e.Hash[:])
+	_, err = io.ReadFull(d.r, e.Hash.Sum())
 	return err
 }

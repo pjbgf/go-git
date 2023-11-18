@@ -4,6 +4,8 @@ package plumbing
 import (
 	"errors"
 	"io"
+
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 var (
@@ -14,7 +16,7 @@ var (
 
 // Object is a generic representation of any git object
 type EncodedObject interface {
-	Hash() Hash
+	Hash() common.ObjectHash
 	Type() ObjectType
 	SetType(ObjectType)
 	Size() int64
@@ -27,9 +29,9 @@ type EncodedObject interface {
 type DeltaObject interface {
 	EncodedObject
 	// BaseHash returns the hash of the object used as base for this delta.
-	BaseHash() Hash
+	BaseHash() common.ObjectHash
 	// ActualHash returns the hash of the object after applying the delta.
-	ActualHash() Hash
+	ActualHash() common.ObjectHash
 	// Size returns the size of the object after applying the delta.
 	ActualSize() int64
 }

@@ -7,12 +7,13 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 )
 
 // FSObject is an object from the packfile on the filesystem.
 type FSObject struct {
-	hash                 plumbing.Hash
+	hash                 common.ObjectHash
 	offset               int64
 	size                 int64
 	typ                  plumbing.ObjectType
@@ -25,7 +26,7 @@ type FSObject struct {
 
 // NewFSObject creates a new filesystem object.
 func NewFSObject(
-	hash plumbing.Hash,
+	hash common.ObjectHash,
 	finalType plumbing.ObjectType,
 	offset int64,
 	contentSize int64,
@@ -102,7 +103,7 @@ func (o *FSObject) SetSize(int64) {}
 func (o *FSObject) SetType(plumbing.ObjectType) {}
 
 // Hash implements the plumbing.EncodedObject interface.
-func (o *FSObject) Hash() plumbing.Hash { return o.hash }
+func (o *FSObject) Hash() common.ObjectHash { return o.hash }
 
 // Size implements the plumbing.EncodedObject interface.
 func (o *FSObject) Size() int64 { return o.size }

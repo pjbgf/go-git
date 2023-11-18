@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/memory"
 	. "gopkg.in/check.v1"
 )
@@ -315,7 +316,8 @@ type SimilarityIndexSuite struct {
 var _ = Suite(&SimilarityIndexSuite{})
 
 func (s *SimilarityIndexSuite) TestScoreFiles(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	h, _ := sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")
+	tree := s.tree(c, h)
 	binary, err := tree.File("binary.jpg")
 	c.Assert(err, IsNil)
 	binIndex, err := fileSimilarityIndex(binary)

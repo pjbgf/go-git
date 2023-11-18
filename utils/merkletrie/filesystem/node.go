@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/merkletrie/noder"
 
 	"github.com/go-git/go-billy/v5"
@@ -23,7 +25,7 @@ var ignore = map[string]bool{
 // compared with any other noder.Noder implementation inside of go-git.
 type node struct {
 	fs         billy.Filesystem
-	submodules map[string]plumbing.Hash
+	submodules map[string]common.ObjectHash
 
 	path     string
 	hash     []byte
@@ -33,18 +35,18 @@ type node struct {
 
 // NewRootNode returns the root node based on a given billy.Filesystem.
 //
-// In order to provide the submodule hash status, a map[string]plumbing.Hash
+// In order to provide the submodule hash status, a map[string]common.ObjectHash
 // should be provided where the key is the path of the submodule and the commit
 // of the submodule HEAD
 func NewRootNode(
 	fs billy.Filesystem,
-	submodules map[string]plumbing.Hash,
+	submodules map[string]common.ObjectHash,
 ) noder.Noder {
 	return &node{fs: fs, submodules: submodules, isDir: true}
 }
 
 // Hash the hash of a filesystem is the result of concatenating the computed
-// plumbing.Hash of the file as a Blob and its plumbing.FileMode; that way the
+// common.ObjectHash of the file as a Blob and its plumbing.FileMode; that way the
 // difftree algorithm will detect changes in the contents of files and also in
 // their mode.
 //
@@ -132,7 +134,7 @@ func (n *node) newChildNode(file os.FileInfo) (*node, error) {
 	}
 
 	if hash, isSubmodule := n.submodules[path]; isSubmodule {
-		node.hash = append(hash[:], filemode.Submodule.Bytes()...)
+		node.hash = append(hash.Sum(), filemode.Submodule.Bytes()...)
 		node.isDir = false
 	}
 
@@ -144,7 +146,7 @@ func (n *node) calculateHash(path string, file os.FileInfo) ([]byte, error) {
 		return make([]byte, 24), nil
 	}
 
-	var hash plumbing.Hash
+	var hash common.ObjectHash
 	var err error
 	if file.Mode()&os.ModeSymlink != 0 {
 		hash, err = n.doCalculateHashForSymlink(path, file)
@@ -161,34 +163,38 @@ func (n *node) calculateHash(path string, file os.FileInfo) ([]byte, error) {
 		return nil, err
 	}
 
-	return append(hash[:], mode.Bytes()...), nil
+	if hash == nil {
+		hash = sha1.Factory.ZeroHash()
+	}
+
+	return append(hash.Sum(), mode.Bytes()...), nil
 }
 
-func (n *node) doCalculateHashForRegular(path string, file os.FileInfo) (plumbing.Hash, error) {
+func (n *node) doCalculateHashForRegular(path string, file os.FileInfo) (common.ObjectHash, error) {
 	f, err := n.fs.Open(path)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	defer f.Close()
 
 	h := plumbing.NewHasher(plumbing.BlobObject, file.Size())
 	if _, err := io.Copy(h, f); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return h.Sum(), nil
 }
 
-func (n *node) doCalculateHashForSymlink(path string, file os.FileInfo) (plumbing.Hash, error) {
+func (n *node) doCalculateHashForSymlink(path string, file os.FileInfo) (common.ObjectHash, error) {
 	target, err := n.fs.Readlink(path)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	h := plumbing.NewHasher(plumbing.BlobObject, file.Size())
 	if _, err := h.Write([]byte(target)); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return h.Sum(), nil

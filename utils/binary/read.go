@@ -7,7 +7,8 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // Read reads structured binary data from r into data. Bytes are read and
@@ -80,10 +81,9 @@ func ReadUntilFromBufioReader(r *bufio.Reader, delim byte) ([]byte, error) {
 //
 // This is how the offset is saved in C:
 //
-//     dheader[pos] = ofs & 127;
-//     while (ofs >>= 7)
-//         dheader[--pos] = 128 | (--ofs & 127);
-//
+//	dheader[pos] = ofs & 127;
+//	while (ofs >>= 7)
+//	    dheader[--pos] = 128 | (--ofs & 127);
 func ReadVariableWidthInt(r io.Reader) (int64, error) {
 	var c byte
 	if err := Read(r, &c); err != nil {
@@ -139,14 +139,14 @@ func ReadUint16(r io.Reader) (uint16, error) {
 	return v, nil
 }
 
-// ReadHash reads a plumbing.Hash from r
-func ReadHash(r io.Reader) (plumbing.Hash, error) {
-	var h plumbing.Hash
-	if err := binary.Read(r, binary.BigEndian, h[:]); err != nil {
-		return plumbing.ZeroHash, err
+// ReadHash reads a common.ObjectHash from r
+func ReadHash(r io.Reader) (common.ObjectHash, error) {
+	tmp := make([]byte, sha1.Factory.Size())
+	if err := binary.Read(r, binary.BigEndian, tmp); err != nil {
+		return sha1.Factory.ZeroHash(), err
 	}
 
-	return h, nil
+	return sha1.Factory.FromBytes(tmp), nil
 }
 
 const sniffLen = 8000

@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	commitgraph_fmt "github.com/go-git/go-git/v5/plumbing/format/commitgraph"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/object/commitgraph"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -99,7 +100,7 @@ type commitAndPaths struct {
 	// Paths that are still on the branch represented by commit
 	paths []string
 	// Set of hashes for the paths
-	hashes map[string]plumbing.Hash
+	hashes map[string]common.ObjectHash
 }
 
 func getCommitTree(c commitgraph.CommitNode, treePath string) (*object.Tree, error) {
@@ -129,17 +130,17 @@ func getFullPath(treePath, path string) string {
 	return path
 }
 
-func getFileHashes(c commitgraph.CommitNode, treePath string, paths []string) (map[string]plumbing.Hash, error) {
+func getFileHashes(c commitgraph.CommitNode, treePath string, paths []string) (map[string]common.ObjectHash, error) {
 	tree, err := getCommitTree(c, treePath)
 	if err == object.ErrDirectoryNotFound {
 		// The whole tree didn't exist, so return empty map
-		return make(map[string]plumbing.Hash), nil
+		return make(map[string]common.ObjectHash), nil
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	hashes := make(map[string]plumbing.Hash)
+	hashes := make(map[string]common.ObjectHash)
 	for _, path := range paths {
 		if path != "" {
 			entry, err := tree.FindEntry(path)
@@ -192,7 +193,7 @@ func getLastCommitForPaths(c commitgraph.CommitNode, treePath string, paths []st
 
 		// Examine the current commit and set of interesting paths
 		pathUnchanged := make([]bool, len(current.paths))
-		parentHashes := make([]map[string]plumbing.Hash, len(parents))
+		parentHashes := make([]map[string]common.ObjectHash, len(parents))
 		for j, parent := range parents {
 			parentHashes[j], err = getFileHashes(parent, treePath, current.paths)
 			if err != nil {

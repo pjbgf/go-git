@@ -7,57 +7,102 @@ import (
 	"io"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	. "github.com/go-git/go-git/v5/plumbing/format/idxfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha256"
+	"github.com/stretchr/testify/assert"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
-	. "gopkg.in/check.v1"
 )
 
-func Test(t *testing.T) { TestingT(t) }
-
-type IdxfileSuite struct {
-	fixtures.Suite
+func TestDecodeNilReader(t *testing.T) {
+	_, err := NewDecoder(nil, sha1.Factory)
+	assert.ErrorContains(t, err, "nil reader")
 }
 
-var _ = Suite(&IdxfileSuite{})
-
-func (s *IdxfileSuite) TestDecode(c *C) {
+func TestDecodeNilIndex(t *testing.T) {
 	f := fixtures.Basic().One()
 
-	d := NewDecoder(f.Idx())
-	idx := new(MemoryIndex)
-	err := d.Decode(idx)
-	c.Assert(err, IsNil)
+	d, err := NewDecoder(f.Idx(), sha1.Factory)
+	assert.NoError(t, err)
 
-	count, _ := idx.Count()
-	c.Assert(count, Equals, int64(31))
-
-	hash := plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea")
-	ok, err := idx.Contains(hash)
-	c.Assert(err, IsNil)
-	c.Assert(ok, Equals, true)
-
-	offset, err := idx.FindOffset(hash)
-	c.Assert(err, IsNil)
-	c.Assert(offset, Equals, int64(615))
-
-	crc32, err := idx.FindCRC32(hash)
-	c.Assert(err, IsNil)
-	c.Assert(crc32, Equals, uint32(3645019190))
-
-	c.Assert(fmt.Sprintf("%x", idx.IdxChecksum), Equals, "fb794f1ec720b9bc8e43257451bd99c4be6fa1c9")
-	c.Assert(fmt.Sprintf("%x", idx.PackfileChecksum), Equals, f.PackfileHash)
+	err = d.Decode(nil)
+	assert.ErrorContains(t, err, "target index is nil")
 }
 
-func (s *IdxfileSuite) TestDecode64bitsOffsets(c *C) {
+func TestDecode(t *testing.T) {
+	f := fixtures.Basic().One()
+
+	d, err := NewDecoder(f.Idx(), sha1.Factory)
+	assert.NoError(t, err)
+
+	idx := NewMemoryIndex(sha1.Factory)
+	err = d.Decode(idx)
+	assert.NoError(t, err)
+
+	count, err := idx.Count()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(31), count)
+
+	h, ok := sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea")
+	assert.True(t, ok)
+	ok, err = idx.Contains(h)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	offset, err := idx.FindOffset(h)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(615), offset)
+
+	crc32, err := idx.FindCRC32(h)
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(3645019190), crc32)
+
+	assert.Equal(t, "fb794f1ec720b9bc8e43257451bd99c4be6fa1c9", fmt.Sprintf("%x", idx.IdxChecksum))
+	assert.Equal(t, f.PackfileHash, fmt.Sprintf("%x", idx.PackfileChecksum))
+}
+
+func TestDecodeSHA256(t *testing.T) {
+	f := fixtures.ByTag("packfile-sha256").One()
+
+	d, err := NewDecoder(f.Idx(), sha256.Factory)
+	assert.NoError(t, err)
+	idx := NewMemoryIndex(sha256.Factory)
+	err = d.Decode(idx)
+	assert.NoError(t, err)
+
+	count, err := idx.Count()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(6), count)
+
+	hash, ok := sha256.FromHex("0d8d657df872bef9d0684fe4bc4ee3a088b6f0f72d64f951daff9465068905ac")
+	assert.True(t, ok)
+	ok, err = idx.Contains(hash)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	offset, err := idx.FindOffset(hash)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(459), offset)
+
+	crc32, err := idx.FindCRC32(hash)
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(2212914800), crc32)
+
+	assert.Equal(t, "c5bc22dd894603a3a0d498bb072f1391fd0c0452a18290cc8caa32b9842d876b", fmt.Sprintf("%x", idx.IdxChecksum))
+	assert.Equal(t, f.PackfileHash, fmt.Sprintf("%x", idx.PackfileChecksum))
+}
+
+func TestDecode64bitsOffsets(t *testing.T) {
 	f := bytes.NewBufferString(fixtureLarge4GB)
 
-	idx := new(MemoryIndex)
+	idx := NewMemoryIndex(sha1.Factory)
 
-	d := NewDecoder(base64.NewDecoder(base64.StdEncoding, f))
-	err := d.Decode(idx)
-	c.Assert(err, IsNil)
+	d, err := NewDecoder(base64.NewDecoder(base64.StdEncoding, f), sha1.Factory)
+	assert.NoError(t, err)
+	err = d.Decode(idx)
+	assert.NoError(t, err)
 
 	expected := map[string]uint64{
 		"303953e5aa461c203a324821bc1717f9b4fff895": 12,
@@ -72,7 +117,7 @@ func (s *IdxfileSuite) TestDecode64bitsOffsets(c *C) {
 	}
 
 	iter, err := idx.Entries()
-	c.Assert(err, IsNil)
+	assert.NoError(t, err)
 
 	var entries int
 	for {
@@ -80,13 +125,13 @@ func (s *IdxfileSuite) TestDecode64bitsOffsets(c *C) {
 		if err == io.EOF {
 			break
 		}
-		c.Assert(err, IsNil)
+		assert.NoError(t, err)
 		entries++
 
-		c.Assert(expected[e.Hash.String()], Equals, e.Offset)
+		assert.Equal(t, e.Offset, expected[e.Hash.String()])
 	}
 
-	c.Assert(entries, Equals, len(expected))
+	assert.Len(t, expected, entries)
 }
 
 const fixtureLarge4GB = `/3RPYwAAAAIAAAAAAAAAAAAAAAAAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEA
@@ -117,20 +162,40 @@ ch2xUA==
 `
 
 func BenchmarkDecode(b *testing.B) {
-	f := fixtures.Basic().One()
-	fixture, err := io.ReadAll(f.Idx())
-	if err != nil {
-		b.Errorf("unexpected error reading idx file: %s", err)
-	}
-
 	defer fixtures.Clean()
 
+	fixture := fixtures.Basic().One().Idx()
+	b.Run("sha1", func(b *testing.B) {
+		benchmarkDecode(b, fixture, sha1.Factory)
+	})
+	fixture256 := fixtures.ByTag("packfile-sha256").One().Idx()
+	b.Run("sha256", func(b *testing.B) {
+		benchmarkDecode(b, fixture256, sha256.Factory)
+	})
+
+	largeBytes := make([]byte, 1372)
+	base64.RawStdEncoding.Decode(largeBytes, []byte(fixtureLarge4GB))
+
+	largeFixture := bytes.NewReader(largeBytes)
+	b.Run("large-sha1", func(b *testing.B) {
+		benchmarkDecode(b, largeFixture, sha1.Factory)
+	})
+}
+
+func benchmarkDecode(b *testing.B, fixture io.ReadSeeker, f common.HashFactory) {
+	d, _ := NewDecoder(fixture, f)
+	idx := NewMemoryIndex(f)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		f := bytes.NewBuffer(fixture)
-		idx := new(MemoryIndex)
-		d := NewDecoder(f)
-		if err := d.Decode(idx); err != nil {
-			b.Errorf("unexpected error decoding: %s", err)
+		_, err := fixture.Seek(0, 0)
+		if err != nil {
+			b.Fatalf("failed seeking: %v", err)
+		}
+
+		err = d.Decode(idx)
+		if err != nil {
+			b.Fatalf("failed to decode: %v", err)
 		}
 	}
 }

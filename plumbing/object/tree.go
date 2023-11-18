@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -33,7 +34,8 @@ var (
 // and/or blobs (i.e. files and sub-directories)
 type Tree struct {
 	Entries []TreeEntry
-	Hash    plumbing.Hash
+	Hash    common.ObjectHash
+	factory common.HashFactory
 
 	s storer.EncodedObjectStorer
 	m map[string]*TreeEntry
@@ -41,7 +43,7 @@ type Tree struct {
 }
 
 // GetTree gets a tree from an object storer and decodes it.
-func GetTree(s storer.EncodedObjectStorer, h plumbing.Hash) (*Tree, error) {
+func GetTree(s storer.EncodedObjectStorer, h common.ObjectHash) (*Tree, error) {
 	o, err := s.EncodedObject(plumbing.TreeObject, h)
 	if err != nil {
 		return nil, err
@@ -65,7 +67,7 @@ func DecodeTree(s storer.EncodedObjectStorer, o plumbing.EncodedObject) (*Tree, 
 type TreeEntry struct {
 	Name string
 	Mode filemode.FileMode
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 }
 
 // File returns the hash of the file identified by the `path` argument.
@@ -201,7 +203,7 @@ func (t *Tree) Files() *FileIter {
 // the current value of Tree.Hash.
 //
 // ID is present to fulfill the Object interface.
-func (t *Tree) ID() plumbing.Hash {
+func (t *Tree) ID() common.ObjectHash {
 	return t.Hash
 }
 
@@ -233,6 +235,7 @@ func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 	r := sync.GetBufioReader(reader)
 	defer sync.PutBufioReader(r)
 
+	hash := make([]byte, t.factory.Size())
 	for {
 		str, err := r.ReadString(' ')
 		if err != nil {
@@ -254,14 +257,14 @@ func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 			return err
 		}
 
-		var hash plumbing.Hash
-		if _, err = io.ReadFull(r, hash[:]); err != nil {
+		hash := hash[:0]
+		if _, err = io.ReadFull(r, hash); err != nil {
 			return err
 		}
 
 		baseName := name[:len(name)-1]
 		t.Entries = append(t.Entries, TreeEntry{
-			Hash: hash,
+			Hash: t.factory.FromBytes(hash),
 			Mode: mode,
 			Name: baseName,
 		})
@@ -288,7 +291,7 @@ func (t *Tree) Encode(o plumbing.EncodedObject) (err error) {
 			return err
 		}
 
-		if _, err = w.Write(entry.Hash[:]); err != nil {
+		if _, err = w.Write(entry.Hash.Sum()); err != nil {
 			return err
 		}
 	}
@@ -358,7 +361,7 @@ type TreeWalker struct {
 	stack     []*treeEntryIter
 	base      string
 	recursive bool
-	seen      map[plumbing.Hash]bool
+	seen      map[common.ObjectHash]bool
 
 	s storer.EncodedObjectStorer
 	t *Tree
@@ -368,7 +371,7 @@ type TreeWalker struct {
 //
 // It is the caller's responsibility to call Close() when finished with the
 // tree walker.
-func NewTreeWalker(t *Tree, recursive bool, seen map[plumbing.Hash]bool) *TreeWalker {
+func NewTreeWalker(t *Tree, recursive bool, seen map[common.ObjectHash]bool) *TreeWalker {
 	stack := make([]*treeEntryIter, 0, startingStackSize)
 	stack = append(stack, &treeEntryIter{t, 0})
 

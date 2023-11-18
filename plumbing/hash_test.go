@@ -3,6 +3,7 @@ package plumbing
 import (
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	. "gopkg.in/check.v1"
 )
 
@@ -42,7 +43,7 @@ func (s *HashSuite) TestNewHasher(c *C) {
 }
 
 func (s *HashSuite) TestHashesSort(c *C) {
-	i := []Hash{
+	i := []common.ObjectHash{
 		NewHash("2222222222222222222222222222222222222222"),
 		NewHash("1111111111111111111111111111111111111111"),
 	}

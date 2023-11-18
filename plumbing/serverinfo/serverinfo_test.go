@@ -10,6 +10,8 @@ import (
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
@@ -42,14 +44,16 @@ func assertInfoRefs(c *C, st storage.Storer, fs billy.Filesystem) {
 	bts, err := io.ReadAll(refsFile)
 	c.Assert(err, IsNil)
 
-	localRefs := make(map[plumbing.ReferenceName]plumbing.Hash)
+	localRefs := make(map[plumbing.ReferenceName]common.ObjectHash)
 	for _, line := range strings.Split(string(bts), "\n") {
 		if line == "" {
 			continue
 		}
 		parts := strings.Split(line, "\t")
 		c.Assert(parts, HasLen, 2)
-		hash := plumbing.NewHash(parts[0])
+		hash, ok := sha1.FromHex(parts[0])
+		c.Assert(ok, Equals, true)
+
 		name := plumbing.ReferenceName(parts[1])
 		localRefs[name] = hash
 	}
@@ -179,6 +183,7 @@ func (s *ServerInfoSuite) TestUpdateServerInfoBasicChange(c *C) {
 	c.Assert(err, IsNil)
 
 	err = UpdateServerInfo(st, fs)
+	c.Assert(err, IsNil)
 
 	assertInfoRefs(c, st, fs)
 	assertObjectPacks(c, st, fs)

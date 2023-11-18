@@ -1,13 +1,13 @@
 package packp
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // Encode writes the UlReq encoding of u to the stream.
@@ -70,7 +70,7 @@ func (e *ulReqEncoder) encodeFirstWant() stateFn {
 func (e *ulReqEncoder) encodeAdditionalWants() stateFn {
 	last := e.data.Wants[0]
 	for _, w := range e.data.Wants[1:] {
-		if bytes.Equal(last[:], w[:]) {
+		if last.Compare(w.Sum()) == 0 {
 			continue
 		}
 
@@ -88,9 +88,9 @@ func (e *ulReqEncoder) encodeAdditionalWants() stateFn {
 func (e *ulReqEncoder) encodeShallows() stateFn {
 	plumbing.HashesSort(e.data.Shallows)
 
-	var last plumbing.Hash
+	var last common.ObjectHash
 	for _, s := range e.data.Shallows {
-		if bytes.Equal(last[:], s[:]) {
+		if last.Compare(s.Sum()) == 0 {
 			continue
 		}
 

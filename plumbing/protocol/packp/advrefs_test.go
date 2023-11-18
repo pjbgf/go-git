@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"io"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -18,7 +22,7 @@ var _ = Suite(&AdvRefSuite{})
 func (s *AdvRefSuite) TestAddReferenceSymbolic(c *C) {
 	ref := plumbing.NewSymbolicReference("foo", "bar")
 
-	a := NewAdvRefs()
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
 	err := a.AddReference(ref)
 	c.Assert(err, IsNil)
 
@@ -28,9 +32,9 @@ func (s *AdvRefSuite) TestAddReferenceSymbolic(c *C) {
 }
 
 func (s *AdvRefSuite) TestAddReferenceHash(c *C) {
-	ref := plumbing.NewHashReference("foo", plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	ref := plumbing.NewHashReference("foo", X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
 
-	a := NewAdvRefs()
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
 	err := a.AddReference(ref)
 	c.Assert(err, IsNil)
 
@@ -39,12 +43,12 @@ func (s *AdvRefSuite) TestAddReferenceHash(c *C) {
 }
 
 func (s *AdvRefSuite) TestAllReferences(c *C) {
-	hash := plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")
+	h := X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
 
-	a := NewAdvRefs()
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
 	err := a.AddReference(plumbing.NewSymbolicReference("foo", "bar"))
 	c.Assert(err, IsNil)
-	err = a.AddReference(plumbing.NewHashReference("bar", hash))
+	err = a.AddReference(plumbing.NewHashReference("bar", h))
 	c.Assert(err, IsNil)
 
 	refs, err := a.AllReferences()
@@ -58,7 +62,7 @@ func (s *AdvRefSuite) TestAllReferences(c *C) {
 		count++
 		switch ref.Name() {
 		case "bar":
-			c.Assert(ref.Hash(), Equals, hash)
+			c.Assert(ref.Hash(), Equals, h)
 		case "foo":
 			c.Assert(ref.Target().String(), Equals, "bar")
 		}
@@ -69,7 +73,7 @@ func (s *AdvRefSuite) TestAllReferences(c *C) {
 }
 
 func (s *AdvRefSuite) TestAllReferencesBadSymref(c *C) {
-	a := NewAdvRefs()
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
 	err := a.Capabilities.Set(capability.SymRef, "foo")
 	c.Assert(err, IsNil)
 
@@ -78,15 +82,15 @@ func (s *AdvRefSuite) TestAllReferencesBadSymref(c *C) {
 }
 
 func (s *AdvRefSuite) TestIsEmpty(c *C) {
-	a := NewAdvRefs()
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(a.IsEmpty(), Equals, true)
 }
 
 func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToMaster(c *C) {
-	a := NewAdvRefs()
-	headHash := plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")
-	a.Head = &headHash
-	ref := plumbing.NewHashReference(plumbing.Master, plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
+	headHash := X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	a.Head = headHash
+	ref := plumbing.NewHashReference(plumbing.Master, X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
 
 	err := a.AddReference(ref)
 	c.Assert(err, IsNil)
@@ -100,11 +104,11 @@ func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToMaster(c *C) {
 }
 
 func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToOtherThanMaster(c *C) {
-	a := NewAdvRefs()
-	headHash := plumbing.NewHash("0000000000000000000000000000000000000000")
-	a.Head = &headHash
-	ref1 := plumbing.NewHashReference(plumbing.Master, plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
-	ref2 := plumbing.NewHashReference("other/ref", plumbing.NewHash("0000000000000000000000000000000000000000"))
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
+	headHash := X(sha1.FromHex("0000000000000000000000000000000000000000"))
+	a.Head = headHash
+	ref1 := plumbing.NewHashReference(plumbing.Master, X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
+	ref2 := plumbing.NewHashReference("other/ref", X(sha1.FromHex("0000000000000000000000000000000000000000")))
 
 	err := a.AddReference(ref1)
 	c.Assert(err, IsNil)
@@ -120,10 +124,10 @@ func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToOtherThanMaster(c *C) {
 }
 
 func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToNoRef(c *C) {
-	a := NewAdvRefs()
-	headHash := plumbing.NewHash("0000000000000000000000000000000000000000")
-	a.Head = &headHash
-	ref := plumbing.NewHashReference(plumbing.Master, plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
+	headHash := X(sha1.FromHex("0000000000000000000000000000000000000000"))
+	a.Head = headHash
+	ref := plumbing.NewHashReference(plumbing.Master, X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
 
 	err := a.AddReference(ref)
 	c.Assert(err, IsNil)
@@ -133,12 +137,12 @@ func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToNoRef(c *C) {
 }
 
 func (s *AdvRefSuite) TestNoSymRefCapabilityHeadToNoMasterAlphabeticallyOrdered(c *C) {
-	a := NewAdvRefs()
-	headHash := plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")
-	a.Head = &headHash
-	ref1 := plumbing.NewHashReference(plumbing.Master, plumbing.NewHash("0000000000000000000000000000000000000000"))
-	ref2 := plumbing.NewHashReference("aaaaaaaaaaaaaaa", plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
-	ref3 := plumbing.NewHashReference("bbbbbbbbbbbbbbb", plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	a := NewAdvRefs(hash.HashFactory(config.SHA1))
+	headHash := X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"))
+	a.Head = headHash
+	ref1 := plumbing.NewHashReference(plumbing.Master, X(sha1.FromHex("0000000000000000000000000000000000000000")))
+	ref2 := plumbing.NewHashReference("aaaaaaaaaaaaaaa", X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
+	ref3 := plumbing.NewHashReference("bbbbbbbbbbbbbbb", X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")))
 
 	err := a.AddReference(ref1)
 	c.Assert(err, IsNil)
@@ -182,7 +186,7 @@ func (s *AdvRefsDecodeEncodeSuite) test(c *C, in []string, exp []string, isEmpty
 
 	var obtained []byte
 	{
-		ar := NewAdvRefs()
+		ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 		c.Assert(ar.Decode(input), IsNil)
 		c.Assert(ar.IsEmpty(), Equals, isEmpty)
 

@@ -1,17 +1,16 @@
 package plumbing
 
 import (
-	"crypto"
 	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/hash/sha256"
 
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
@@ -28,7 +27,7 @@ type ObjectHasher interface {
 	// Compute calculates the hash of a Git object. The process involves
 	// first writing the object header, which contains the object type
 	// and content size, followed by the content itself.
-	Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error)
+	Compute(ot ObjectType, d []byte) (common.ObjectHash, error)
 }
 
 // FromObjectFormat returns the correct ObjectHasher for the given
@@ -65,7 +64,7 @@ func FromHash(h hash.Hash) (ObjectHasher, error) {
 
 func newHasherSHA1() *objectHasherSHA1 {
 	return &objectHasherSHA1{
-		hasher: hash.New(crypto.SHA1),
+		hasher: hash.NewHasher(config.SHA1),
 	}
 }
 
@@ -74,7 +73,7 @@ type objectHasherSHA1 struct {
 	m      sync.Mutex
 }
 
-func (h *objectHasherSHA1) Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error) {
+func (h *objectHasherSHA1) Compute(ot ObjectType, d []byte) (common.ObjectHash, error) {
 	h.m.Lock()
 	h.hasher.Reset()
 
@@ -97,7 +96,7 @@ func (h *objectHasherSHA1) Size() int {
 
 func newHasherSHA256() *objectHasherSHA256 {
 	return &objectHasherSHA256{
-		hasher: hash.New(crypto.SHA256),
+		hasher: hash.NewHasher(config.SHA256),
 	}
 }
 
@@ -106,7 +105,7 @@ type objectHasherSHA256 struct {
 	m      sync.Mutex
 }
 
-func (h *objectHasherSHA256) Compute(ot plumbing.ObjectType, d []byte) (common.ObjectHash, error) {
+func (h *objectHasherSHA256) Compute(ot ObjectType, d []byte) (common.ObjectHash, error) {
 	h.m.Lock()
 	h.hasher.Reset()
 
@@ -127,7 +126,7 @@ func (h *objectHasherSHA256) Size() int {
 	return h.hasher.Size()
 }
 
-func writeHeader(h hash.Hash, ot plumbing.ObjectType, sz int64) {
+func writeHeader(h hash.Hash, ot ObjectType, sz int64) {
 	// TODO: Optimise hasher.Write calls.
 	// Writing into hash in amounts smaller than oh.BlockSize() is
 	// sub-optimal.

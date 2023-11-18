@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
@@ -19,8 +20,8 @@ import (
 func Objects(
 	s storer.EncodedObjectStorer,
 	objs,
-	ignore []plumbing.Hash,
-) ([]plumbing.Hash, error) {
+	ignore []common.ObjectHash,
+) ([]common.ObjectHash, error) {
 	return ObjectsWithStorageForIgnores(s, s, objs, ignore)
 }
 
@@ -32,8 +33,8 @@ func Objects(
 func ObjectsWithStorageForIgnores(
 	s, ignoreStore storer.EncodedObjectStorer,
 	objs,
-	ignore []plumbing.Hash,
-) ([]plumbing.Hash, error) {
+	ignore []common.ObjectHash,
+) ([]common.ObjectHash, error) {
 	ignore, err := objects(ignoreStore, ignore, nil, true)
 	if err != nil {
 		return nil, err
@@ -45,14 +46,14 @@ func ObjectsWithStorageForIgnores(
 func objects(
 	s storer.EncodedObjectStorer,
 	objects,
-	ignore []plumbing.Hash,
+	ignore []common.ObjectHash,
 	allowMissingObjects bool,
-) ([]plumbing.Hash, error) {
+) ([]common.ObjectHash, error) {
 	seen := hashListToSet(ignore)
-	result := make(map[plumbing.Hash]bool)
-	visited := make(map[plumbing.Hash]bool)
+	result := make(map[common.ObjectHash]bool)
+	visited := make(map[common.ObjectHash]bool)
 
-	walkerFunc := func(h plumbing.Hash) {
+	walkerFunc := func(h common.ObjectHash) {
 		if !seen[h] {
 			result[h] = true
 			seen[h] = true
@@ -75,11 +76,11 @@ func objects(
 // processObject obtains the object using the hash an process it depending of its type
 func processObject(
 	s storer.EncodedObjectStorer,
-	h plumbing.Hash,
-	seen map[plumbing.Hash]bool,
-	visited map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
-	walkerFunc func(h plumbing.Hash),
+	h common.ObjectHash,
+	seen map[common.ObjectHash]bool,
+	visited map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
+	walkerFunc func(h common.ObjectHash),
 ) error {
 	if seen[h] {
 		return nil
@@ -119,13 +120,13 @@ func processObject(
 // and blobs objects.
 func reachableObjects(
 	commit *object.Commit,
-	seen map[plumbing.Hash]bool,
-	visited map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
-	cb func(h plumbing.Hash),
+	seen map[common.ObjectHash]bool,
+	visited map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
+	cb func(h common.ObjectHash),
 ) error {
 	i := object.NewCommitPreorderIter(commit, seen, ignore)
-	pending := make(map[plumbing.Hash]bool)
+	pending := make(map[common.ObjectHash]bool)
 	addPendingParents(pending, visited, commit)
 	for {
 		commit, err := i.Next()
@@ -166,7 +167,7 @@ func reachableObjects(
 	return nil
 }
 
-func addPendingParents(pending, visited map[plumbing.Hash]bool, commit *object.Commit) {
+func addPendingParents(pending, visited map[common.ObjectHash]bool, commit *object.Commit) {
 	for _, p := range commit.ParentHashes {
 		if !visited[p] {
 			pending[p] = true
@@ -176,9 +177,9 @@ func addPendingParents(pending, visited map[plumbing.Hash]bool, commit *object.C
 
 // iterateCommitTrees iterate all reachable trees from the given commit
 func iterateCommitTrees(
-	seen map[plumbing.Hash]bool,
+	seen map[common.ObjectHash]bool,
 	tree *object.Tree,
-	cb func(h plumbing.Hash),
+	cb func(h common.ObjectHash),
 ) error {
 	if seen[tree.Hash] {
 		return nil
@@ -211,8 +212,8 @@ func iterateCommitTrees(
 	return nil
 }
 
-func hashSetToList(hashes map[plumbing.Hash]bool) []plumbing.Hash {
-	var result []plumbing.Hash
+func hashSetToList(hashes map[common.ObjectHash]bool) []common.ObjectHash {
+	var result []common.ObjectHash
 	for key := range hashes {
 		result = append(result, key)
 	}
@@ -220,8 +221,8 @@ func hashSetToList(hashes map[plumbing.Hash]bool) []plumbing.Hash {
 	return result
 }
 
-func hashListToSet(hashes []plumbing.Hash) map[plumbing.Hash]bool {
-	result := make(map[plumbing.Hash]bool)
+func hashListToSet(hashes []common.ObjectHash) map[common.ObjectHash]bool {
+	result := make(map[common.ObjectHash]bool)
 	for _, h := range hashes {
 		result[h] = true
 	}

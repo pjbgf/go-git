@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	commitgraph "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
@@ -17,7 +18,7 @@ import (
 // graphCommitNode implements the CommitNode interface.
 type graphCommitNode struct {
 	// Hash for the Commit object
-	hash plumbing.Hash
+	hash common.ObjectHash
 	// Index of the node in the commit graph file
 	index uint32
 
@@ -40,7 +41,7 @@ func NewGraphCommitNodeIndex(commitGraph commitgraph.Index, s storer.EncodedObje
 	return &graphCommitNodeIndex{commitGraph, s}
 }
 
-func (gci *graphCommitNodeIndex) Get(hash plumbing.Hash) (CommitNode, error) {
+func (gci *graphCommitNodeIndex) Get(hash common.ObjectHash) (CommitNode, error) {
 	if gci.commitGraph != nil {
 		// Check the commit graph first
 		parentIndex, err := gci.commitGraph.GetIndexByHash(hash)
@@ -71,7 +72,7 @@ func (gci *graphCommitNodeIndex) Get(hash plumbing.Hash) (CommitNode, error) {
 	}, nil
 }
 
-func (c *graphCommitNode) ID() plumbing.Hash {
+func (c *graphCommitNode) ID() common.ObjectHash {
 	return c.hash
 }
 
@@ -109,7 +110,7 @@ func (c *graphCommitNode) ParentNode(i int) (CommitNode, error) {
 	}, nil
 }
 
-func (c *graphCommitNode) ParentHashes() []plumbing.Hash {
+func (c *graphCommitNode) ParentHashes() []common.ObjectHash {
 	return c.commitData.ParentHashes
 }
 

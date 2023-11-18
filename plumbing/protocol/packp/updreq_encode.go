@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 )
 
@@ -43,7 +43,7 @@ func (req *ReferenceUpdateRequest) Encode(w io.Writer) error {
 }
 
 func (req *ReferenceUpdateRequest) encodeShallow(e *pktline.Encoder,
-	h *plumbing.Hash) error {
+	h common.ObjectHash) error {
 
 	if h == nil {
 		return nil

@@ -9,6 +9,8 @@ import (
 	"math"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
 )
@@ -296,26 +298,26 @@ func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
 }
 
 func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
-	typ plumbing.ObjectType, writeHeader objectHeaderWriter) (uint, plumbing.Hash, error) {
+	typ plumbing.ObjectType, writeHeader objectHeaderWriter) (uint, common.ObjectHash, error) {
 	deltaBuf := bufio.NewReaderSize(delta, 1024)
 	srcSz, err := decodeLEB128ByteReader(deltaBuf)
 	if err != nil {
 		if err == io.EOF {
-			return 0, plumbing.ZeroHash, ErrInvalidDelta
+			return 0, sha1.ZeroHash(), ErrInvalidDelta
 		}
-		return 0, plumbing.ZeroHash, err
+		return 0, sha1.ZeroHash(), err
 	}
 
 	if r, ok := base.(*bytes.Reader); ok && srcSz != uint(r.Size()) {
-		return 0, plumbing.ZeroHash, ErrInvalidDelta
+		return 0, sha1.ZeroHash(), ErrInvalidDelta
 	}
 
 	targetSz, err := decodeLEB128ByteReader(deltaBuf)
 	if err != nil {
 		if err == io.EOF {
-			return 0, plumbing.ZeroHash, ErrInvalidDelta
+			return 0, sha1.ZeroHash(), ErrInvalidDelta
 		}
-		return 0, plumbing.ZeroHash, err
+		return 0, sha1.ZeroHash(), err
 	}
 
 	// If header still needs to be written, caller will provide
@@ -324,7 +326,7 @@ func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
 	if writeHeader != nil {
 		err = writeHeader(typ, int64(targetSz))
 		if err != nil {
-			return 0, plumbing.ZeroHash, fmt.Errorf("could not lazy write header: %w", err)
+			return 0, sha1.ZeroHash(), fmt.Errorf("could not lazy write header: %w", err)
 		}
 	}
 
@@ -345,48 +347,48 @@ func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
 		buf := *bufp
 		cmd, err := deltaBuf.ReadByte()
 		if err == io.EOF {
-			return 0, plumbing.ZeroHash, ErrInvalidDelta
+			return 0, sha1.ZeroHash(), ErrInvalidDelta
 		}
 		if err != nil {
-			return 0, plumbing.ZeroHash, err
+			return 0, sha1.ZeroHash(), err
 		}
 
 		if isCopyFromSrc(cmd) {
 			offset, err := decodeOffsetByteReader(cmd, deltaBuf)
 			if err != nil {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 			sz, err := decodeSizeByteReader(cmd, deltaBuf)
 			if err != nil {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 
 			if invalidSize(sz, targetSz) ||
 				invalidOffsetSize(offset, sz, srcSz) {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 
 			if _, err := sr.Seek(int64(offset), io.SeekStart); err != nil {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 			baselr.N = int64(sz)
 			if _, err := io.CopyBuffer(mw, baselr, buf); err != nil {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 			remainingTargetSz -= sz
 		} else if isCopyFromDelta(cmd) {
 			sz := uint(cmd) // cmd is the size itself
 			if invalidSize(sz, targetSz) {
-				return 0, plumbing.ZeroHash, ErrInvalidDelta
+				return 0, sha1.ZeroHash(), ErrInvalidDelta
 			}
 			deltalr.N = int64(sz)
 			if _, err := io.CopyBuffer(mw, deltalr, buf); err != nil {
-				return 0, plumbing.ZeroHash, err
+				return 0, sha1.ZeroHash(), err
 			}
 
 			remainingTargetSz -= sz
 		} else {
-			return 0, plumbing.ZeroHash, err
+			return 0, sha1.ZeroHash(), err
 		}
 		if remainingTargetSz <= 0 {
 			break

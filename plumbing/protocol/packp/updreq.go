@@ -5,6 +5,8 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/sideband"
 )
@@ -20,7 +22,7 @@ type ReferenceUpdateRequest struct {
 	Capabilities *capability.List
 	Commands     []*Command
 	Options      []*Option
-	Shallow      *plumbing.Hash
+	Shallow      common.ObjectHash
 	// Packfile contains an optional packfile reader.
 	Packfile io.ReadCloser
 
@@ -48,6 +50,7 @@ func NewReferenceUpdateRequest() *ReferenceUpdateRequest {
 //   - ofs-delta
 //   - ref-delta
 //   - delete-refs
+//
 // It leaves up to the user to add the following capabilities later:
 //   - atomic
 //   - ofs-delta
@@ -94,20 +97,20 @@ const (
 
 type Command struct {
 	Name plumbing.ReferenceName
-	Old  plumbing.Hash
-	New  plumbing.Hash
+	Old  common.ObjectHash
+	New  common.ObjectHash
 }
 
 func (c *Command) Action() Action {
-	if c.Old == plumbing.ZeroHash && c.New == plumbing.ZeroHash {
+	if c.Old == sha1.ZeroHash() && c.New == sha1.ZeroHash() {
 		return Invalid
 	}
 
-	if c.Old == plumbing.ZeroHash {
+	if c.Old == sha1.ZeroHash() {
 		return Create
 	}
 
-	if c.New == plumbing.ZeroHash {
+	if c.New == sha1.ZeroHash() {
 		return Delete
 	}
 

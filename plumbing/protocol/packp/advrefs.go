@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/memory"
@@ -31,25 +32,28 @@ type AdvRefs struct {
 	Prefix [][]byte
 	// Head stores the resolved HEAD reference if present.
 	// This can be present with git-upload-pack, not with git-receive-pack.
-	Head *plumbing.Hash
+	Head common.ObjectHash
 	// Capabilities are the capabilities.
 	Capabilities *capability.List
 	// References are the hash references.
-	References map[string]plumbing.Hash
+	References map[string]common.ObjectHash
 	// Peeled are the peeled hash references.
-	Peeled map[string]plumbing.Hash
+	Peeled map[string]common.ObjectHash
 	// Shallows are the shallow object ids.
-	Shallows []plumbing.Hash
+	Shallows []common.ObjectHash
+
+	factory common.HashFactory
 }
 
 // NewAdvRefs returns a pointer to a new AdvRefs value, ready to be used.
-func NewAdvRefs() *AdvRefs {
+func NewAdvRefs(f common.HashFactory) *AdvRefs {
 	return &AdvRefs{
 		Prefix:       [][]byte{},
 		Capabilities: capability.NewList(),
-		References:   make(map[string]plumbing.Hash),
-		Peeled:       make(map[string]plumbing.Hash),
-		Shallows:     []plumbing.Hash{},
+		References:   make(map[string]common.ObjectHash),
+		Peeled:       make(map[string]common.ObjectHash),
+		Shallows:     []common.ObjectHash{},
+		factory:      f,
 	}
 }
 
@@ -168,7 +172,7 @@ func (a *AdvRefs) resolveHead(s storer.ReferenceStorer) error {
 func (a *AdvRefs) createHeadIfCorrectReference(
 	reference *plumbing.Reference,
 	s storer.ReferenceStorer) (bool, error) {
-	if reference.Hash() == *a.Head {
+	if reference.Hash() == a.Head {
 		headRef := plumbing.NewSymbolicReference(plumbing.HEAD, reference.Name())
 		if err := s.SetReference(headRef); err != nil {
 			return false, err

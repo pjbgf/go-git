@@ -3,9 +3,8 @@ package commitgraph
 import (
 	"math"
 
-	"github.com/go-git/go-git/v5/plumbing"
-
 	"github.com/emirpasic/gods/trees/binaryheap"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // commitNodeStackable represents a common interface between heaps and stacks
@@ -140,9 +139,9 @@ func generationAndDateOrderComparator(left, right interface{}) int {
 }
 
 // composeIgnores composes the ignore list with the provided seenExternal list
-func composeIgnores(ignore []plumbing.Hash, seenExternal map[plumbing.Hash]bool) map[plumbing.Hash]struct{} {
+func composeIgnores(ignore []common.ObjectHash, seenExternal map[common.ObjectHash]bool) map[common.ObjectHash]struct{} {
 	if len(ignore) == 0 {
-		seen := make(map[plumbing.Hash]struct{})
+		seen := make(map[common.ObjectHash]struct{})
 		for h, ext := range seenExternal {
 			if ext {
 				seen[h] = struct{}{}
@@ -151,7 +150,7 @@ func composeIgnores(ignore []plumbing.Hash, seenExternal map[plumbing.Hash]bool)
 		return seen
 	}
 
-	seen := make(map[plumbing.Hash]struct{})
+	seen := make(map[common.ObjectHash]struct{})
 	for _, h := range ignore {
 		seen[h] = struct{}{}
 	}

@@ -6,8 +6,11 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/format/commitgraph"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
@@ -29,7 +32,7 @@ func testDecodeHelper(c *C, fs billy.Filesystem, path string) {
 	c.Assert(err, IsNil)
 
 	// Root commit
-	nodeIndex, err := index.GetIndexByHash(plumbing.NewHash("347c91919944a68e9413581a1bc15519550a3afe"))
+	nodeIndex, err := index.GetIndexByHash(X(sha1.FromHex("347c91919944a68e9413581a1bc15519550a3afe")))
 	c.Assert(err, IsNil)
 	commitData, err := index.GetCommitDataByIndex(nodeIndex)
 	c.Assert(err, IsNil)
@@ -37,7 +40,7 @@ func testDecodeHelper(c *C, fs billy.Filesystem, path string) {
 	c.Assert(len(commitData.ParentHashes), Equals, 0)
 
 	// Regular commit
-	nodeIndex, err = index.GetIndexByHash(plumbing.NewHash("e713b52d7e13807e87a002e812041f248db3f643"))
+	nodeIndex, err = index.GetIndexByHash(X(sha1.FromHex("e713b52d7e13807e87a002e812041f248db3f643")))
 	c.Assert(err, IsNil)
 	commitData, err = index.GetCommitDataByIndex(nodeIndex)
 	c.Assert(err, IsNil)
@@ -46,7 +49,7 @@ func testDecodeHelper(c *C, fs billy.Filesystem, path string) {
 	c.Assert(commitData.ParentHashes[0].String(), Equals, "347c91919944a68e9413581a1bc15519550a3afe")
 
 	// Merge commit
-	nodeIndex, err = index.GetIndexByHash(plumbing.NewHash("b29328491a0682c259bcce28741eac71f3499f7d"))
+	nodeIndex, err = index.GetIndexByHash(X(sha1.FromHex("b29328491a0682c259bcce28741eac71f3499f7d")))
 	c.Assert(err, IsNil)
 	commitData, err = index.GetCommitDataByIndex(nodeIndex)
 	c.Assert(err, IsNil)
@@ -56,7 +59,7 @@ func testDecodeHelper(c *C, fs billy.Filesystem, path string) {
 	c.Assert(commitData.ParentHashes[1].String(), Equals, "03d2c021ff68954cf3ef0a36825e194a4b98f981")
 
 	// Octopus merge commit
-	nodeIndex, err = index.GetIndexByHash(plumbing.NewHash("6f6c5d2be7852c782be1dd13e36496dd7ad39560"))
+	nodeIndex, err = index.GetIndexByHash(X(sha1.FromHex("6f6c5d2be7852c782be1dd13e36496dd7ad39560")))
 	c.Assert(err, IsNil)
 	commitData, err = index.GetCommitDataByIndex(nodeIndex)
 	c.Assert(err, IsNil)
@@ -95,7 +98,7 @@ func (s *CommitgraphSuite) TestReencode(c *C) {
 		tmpName := writer.Name()
 		defer os.Remove(tmpName)
 
-		encoder := commitgraph.NewEncoder(writer)
+		encoder := commitgraph.NewEncoder(writer, hash.NewHasher(config.SHA1))
 		err = encoder.Encode(index)
 		c.Assert(err, IsNil)
 		writer.Close()
@@ -125,7 +128,7 @@ func (s *CommitgraphSuite) TestReencodeInMemory(c *C) {
 		tmpName := writer.Name()
 		defer os.Remove(tmpName)
 
-		encoder := commitgraph.NewEncoder(writer)
+		encoder := commitgraph.NewEncoder(writer, hash.NewHasher(config.SHA1))
 		err = encoder.Encode(memoryIndex)
 		c.Assert(err, IsNil)
 		writer.Close()

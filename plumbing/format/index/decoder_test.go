@@ -3,8 +3,11 @@ package index
 import (
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
@@ -24,7 +27,7 @@ func (s *IndexSuite) TestDecode(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -38,7 +41,7 @@ func (s *IndexSuite) TestDecodeEntries(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -69,7 +72,7 @@ func (s *IndexSuite) TestDecodeCacheTree(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -86,11 +89,11 @@ func (s *IndexSuite) TestDecodeCacheTree(c *C) {
 }
 
 var expectedEntries = []TreeEntry{
-	{Path: "", Entries: 9, Trees: 4, Hash: plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c")},
-	{Path: "go", Entries: 1, Trees: 0, Hash: plumbing.NewHash("a39771a7651f97faf5c72e08224d857fc35133db")},
-	{Path: "php", Entries: 1, Trees: 0, Hash: plumbing.NewHash("586af567d0bb5e771e49bdd9434f5e0fb76d25fa")},
-	{Path: "json", Entries: 2, Trees: 0, Hash: plumbing.NewHash("5a877e6a906a2743ad6e45d99c1793642aaf8eda")},
-	{Path: "vendor", Entries: 1, Trees: 0, Hash: plumbing.NewHash("cf4aa3b38974fb7d81f367c0830f7d78d65ab86b")},
+	{Path: "", Entries: 9, Trees: 4, Hash: X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))},
+	{Path: "go", Entries: 1, Trees: 0, Hash: X(sha1.FromHex("a39771a7651f97faf5c72e08224d857fc35133db"))},
+	{Path: "php", Entries: 1, Trees: 0, Hash: X(sha1.FromHex("586af567d0bb5e771e49bdd9434f5e0fb76d25fa"))},
+	{Path: "json", Entries: 2, Trees: 0, Hash: X(sha1.FromHex("5a877e6a906a2743ad6e45d99c1793642aaf8eda"))},
+	{Path: "vendor", Entries: 1, Trees: 0, Hash: X(sha1.FromHex("cf4aa3b38974fb7d81f367c0830f7d78d65ab86b"))},
 }
 
 func (s *IndexSuite) TestDecodeMergeConflict(c *C) {
@@ -99,7 +102,7 @@ func (s *IndexSuite) TestDecodeMergeConflict(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -137,7 +140,7 @@ func (s *IndexSuite) TestDecodeExtendedV3(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -155,7 +158,7 @@ func (s *IndexSuite) TestDecodeResolveUndo(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -166,13 +169,13 @@ func (s *IndexSuite) TestDecodeResolveUndo(c *C) {
 	c.Assert(ru.Entries, HasLen, 2)
 	c.Assert(ru.Entries[0].Path, Equals, "go/example.go")
 	c.Assert(ru.Entries[0].Stages, HasLen, 3)
-	c.Assert(ru.Entries[0].Stages[AncestorMode], Not(Equals), plumbing.ZeroHash)
-	c.Assert(ru.Entries[0].Stages[OurMode], Not(Equals), plumbing.ZeroHash)
-	c.Assert(ru.Entries[0].Stages[TheirMode], Not(Equals), plumbing.ZeroHash)
+	c.Assert(ru.Entries[0].Stages[AncestorMode], Not(Equals), sha1.ZeroHash())
+	c.Assert(ru.Entries[0].Stages[OurMode], Not(Equals), sha1.ZeroHash())
+	c.Assert(ru.Entries[0].Stages[TheirMode], Not(Equals), sha1.ZeroHash())
 	c.Assert(ru.Entries[1].Path, Equals, "haskal/haskal.hs")
 	c.Assert(ru.Entries[1].Stages, HasLen, 2)
-	c.Assert(ru.Entries[1].Stages[OurMode], Not(Equals), plumbing.ZeroHash)
-	c.Assert(ru.Entries[1].Stages[TheirMode], Not(Equals), plumbing.ZeroHash)
+	c.Assert(ru.Entries[1].Stages[OurMode], Not(Equals), sha1.ZeroHash())
+	c.Assert(ru.Entries[1].Stages[TheirMode], Not(Equals), sha1.ZeroHash())
 }
 
 func (s *IndexSuite) TestDecodeV4(c *C) {
@@ -181,7 +184,7 @@ func (s *IndexSuite) TestDecodeV4(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 
@@ -209,7 +212,7 @@ func (s *IndexSuite) TestDecodeEndOfIndexEntry(c *C) {
 	defer func() { c.Assert(f.Close(), IsNil) }()
 
 	idx := &Index{}
-	d := NewDecoder(f)
+	d := NewDecoder(f, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	c.Assert(err, IsNil)
 

@@ -6,9 +6,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
-	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -60,8 +61,8 @@ func (s *UlReqDecodeSuite) TestWantOK(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	c.Assert(ur.Wants, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
+	c.Assert(ur.Wants, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
 	})
 }
 
@@ -86,8 +87,8 @@ func (s *UlReqDecodeSuite) TestWantWithCapabilities(c *C) {
 		pktline.FlushString,
 	}
 	ur := s.testDecodeOK(c, payloads)
-	c.Assert(ur.Wants, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111")})
+	c.Assert(ur.Wants, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111"))})
 
 	c.Assert(ur.Capabilities.Supports(capability.OFSDelta), Equals, true)
 	c.Assert(ur.Capabilities.Supports(capability.MultiACK), Equals, true)
@@ -103,11 +104,11 @@ func (s *UlReqDecodeSuite) TestManyWantsNoCapabilities(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expected := []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
+	expected := []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
 	}
 
 	sort.Sort(byHash(ur.Wants))
@@ -115,14 +116,12 @@ func (s *UlReqDecodeSuite) TestManyWantsNoCapabilities(c *C) {
 	c.Assert(ur.Wants, DeepEquals, expected)
 }
 
-type byHash []plumbing.Hash
+type byHash []common.ObjectHash
 
 func (a byHash) Len() int      { return len(a) }
 func (a byHash) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a byHash) Less(i, j int) bool {
-	ii := [hash.Size]byte(a[i])
-	jj := [hash.Size]byte(a[j])
-	return bytes.Compare(ii[:], jj[:]) < 0
+	return a[i].Compare(a[j].Sum()) < 0
 }
 
 func (s *UlReqDecodeSuite) TestManyWantsBadWant(c *C) {
@@ -159,11 +158,11 @@ func (s *UlReqDecodeSuite) TestManyWantsWithCapabilities(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expected := []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
+	expected := []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
 	}
 
 	sort.Sort(byHash(ur.Wants))
@@ -182,12 +181,12 @@ func (s *UlReqDecodeSuite) TestSingleShallowSingleWant(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expectedWants := []plumbing.Hash{
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
+	expectedWants := []common.ObjectHash{
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
 	}
 
-	expectedShallows := []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+	expectedShallows := []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 	}
 
 	c.Assert(ur.Wants, DeepEquals, expectedWants)
@@ -208,16 +207,16 @@ func (s *UlReqDecodeSuite) TestSingleShallowManyWants(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expectedWants := []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
+	expectedWants := []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
 	}
 	sort.Sort(byHash(expectedWants))
 
-	expectedShallows := []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+	expectedShallows := []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 	}
 
 	sort.Sort(byHash(ur.Wants))
@@ -239,15 +238,15 @@ func (s *UlReqDecodeSuite) TestManyShallowSingleWant(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expectedWants := []plumbing.Hash{
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
+	expectedWants := []common.ObjectHash{
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
 	}
 
-	expectedShallows := []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("dddddddddddddddddddddddddddddddddddddddd"),
+	expectedShallows := []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("dddddddddddddddddddddddddddddddddddddddd")),
 	}
 	sort.Sort(byHash(expectedShallows))
 
@@ -273,19 +272,19 @@ func (s *UlReqDecodeSuite) TestManyShallowManyWants(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expectedWants := []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
+	expectedWants := []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
 	}
 	sort.Sort(byHash(expectedWants))
 
-	expectedShallows := []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("dddddddddddddddddddddddddddddddddddddddd"),
+	expectedShallows := []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("dddddddddddddddddddddddddddddddddddddddd")),
 	}
 	sort.Sort(byHash(expectedShallows))
 
@@ -493,11 +492,11 @@ func (s *UlReqDecodeSuite) TestAll(c *C) {
 	}
 	ur := s.testDecodeOK(c, payloads)
 
-	expectedWants := []plumbing.Hash{
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
+	expectedWants := []common.ObjectHash{
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
 	}
 	sort.Sort(byHash(expectedWants))
 	sort.Sort(byHash(ur.Wants))
@@ -505,11 +504,11 @@ func (s *UlReqDecodeSuite) TestAll(c *C) {
 	c.Assert(ur.Capabilities.Supports(capability.OFSDelta), Equals, true)
 	c.Assert(ur.Capabilities.Supports(capability.MultiACK), Equals, true)
 
-	expectedShallows := []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("dddddddddddddddddddddddddddddddddddddddd"),
+	expectedShallows := []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("dddddddddddddddddddddddddddddddddddddddd")),
 	}
 	sort.Sort(byHash(expectedShallows))
 	sort.Sort(byHash(ur.Shallows))

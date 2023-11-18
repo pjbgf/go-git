@@ -1,8 +1,8 @@
 package diff
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // Operation defines the operation of a diff item.
@@ -42,7 +42,7 @@ type FilePatch interface {
 // File contains all the file metadata necessary to print some patch formats.
 type File interface {
 	// Hash returns the File Hash.
-	Hash() plumbing.Hash
+	Hash() common.ObjectHash
 	// Mode returns the FileMode.
 	Mode() filemode.FileMode
 	// Path returns the complete Path to the file, including the filename.

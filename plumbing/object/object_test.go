@@ -9,6 +9,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
@@ -29,19 +31,19 @@ func (s *BaseObjectsSuite) SetUpSuite(c *C) {
 	s.Storer = storer
 }
 
-func (s *BaseObjectsSuite) tag(c *C, h plumbing.Hash) *Tag {
+func (s *BaseObjectsSuite) tag(c *C, h common.ObjectHash) *Tag {
 	t, err := GetTag(s.Storer, h)
 	c.Assert(err, IsNil)
 	return t
 }
 
-func (s *BaseObjectsSuite) tree(c *C, h plumbing.Hash) *Tree {
+func (s *BaseObjectsSuite) tree(c *C, h common.ObjectHash) *Tree {
 	t, err := GetTree(s.Storer, h)
 	c.Assert(err, IsNil)
 	return t
 }
 
-func (s *BaseObjectsSuite) commit(c *C, h plumbing.Hash) *Commit {
+func (s *BaseObjectsSuite) commit(c *C, h common.ObjectHash) *Commit {
 	commit, err := GetCommit(s.Storer, h)
 	c.Assert(err, IsNil)
 	return commit
@@ -54,7 +56,7 @@ type ObjectsSuite struct {
 var _ = Suite(&ObjectsSuite{})
 
 func (s *ObjectsSuite) TestNewCommit(c *C) {
-	hash := plumbing.NewHash("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")
+	hash, _ := sha1.FromHex("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")
 	commit := s.commit(c, hash)
 
 	c.Assert(commit.Hash, Equals, commit.ID())
@@ -81,7 +83,7 @@ func (s *ObjectsSuite) TestNewCommit(c *C) {
 }
 
 func (s *ObjectsSuite) TestParseTree(c *C) {
-	hash := plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c")
+	hash, _ := sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")
 	tree, err := GetTree(s.Storer, hash)
 	c.Assert(err, IsNil)
 

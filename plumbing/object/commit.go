@@ -11,6 +11,8 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -31,7 +33,7 @@ const (
 )
 
 // Hash represents the hash of an object
-type Hash plumbing.Hash
+type Hash common.ObjectHash
 
 // MessageEncoding represents the encoding of a commit
 type MessageEncoding string
@@ -43,7 +45,7 @@ type MessageEncoding string
 // http://shafiulazam.com/gitbook/1_the_git_object_model.html
 type Commit struct {
 	// Hash of the commit object.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	// Author is the original author of the commit.
 	Author Signature
 	// Committer is the one performing the commit, might be different from
@@ -57,9 +59,9 @@ type Commit struct {
 	// Message is the commit message, contains arbitrary text.
 	Message string
 	// TreeHash is the hash of the root tree of the commit.
-	TreeHash plumbing.Hash
+	TreeHash common.ObjectHash
 	// ParentHashes are the hashes of the parent commits of the commit.
-	ParentHashes []plumbing.Hash
+	ParentHashes []common.ObjectHash
 	// Encoding is the encoding of the commit.
 	Encoding MessageEncoding
 
@@ -67,7 +69,7 @@ type Commit struct {
 }
 
 // GetCommit gets a commit from an object storer and decodes it.
-func GetCommit(s storer.EncodedObjectStorer, h plumbing.Hash) (*Commit, error) {
+func GetCommit(s storer.EncodedObjectStorer, h common.ObjectHash) (*Commit, error) {
 	o, err := s.EncodedObject(plumbing.CommitObject, h)
 	if err != nil {
 		return nil, err
@@ -171,7 +173,7 @@ func (c *Commit) Files() (*FileIter, error) {
 // the current value of Commit.Hash.
 //
 // ID is present to fulfill the Object interface.
-func (c *Commit) ID() plumbing.Hash {
+func (c *Commit) ID() common.ObjectHash {
 	return c.Hash
 }
 
@@ -246,9 +248,9 @@ func (c *Commit) Decode(o plumbing.EncodedObject) (err error) {
 
 			switch string(split[0]) {
 			case "tree":
-				c.TreeHash = plumbing.NewHash(string(data))
+				c.TreeHash = sha1.FromBytes(data)
 			case "parent":
-				c.ParentHashes = append(c.ParentHashes, plumbing.NewHash(string(data)))
+				c.ParentHashes = append(c.ParentHashes, sha1.FromBytes(data))
 			case "author":
 				c.Author.Decode(data)
 			case "committer":
@@ -439,7 +441,7 @@ func (c *Commit) Less(rhs *Commit) bool {
 	return c.Committer.When.Before(rhs.Committer.When) ||
 		(c.Committer.When.Equal(rhs.Committer.When) &&
 			(c.Author.When.Before(rhs.Author.When) ||
-				(c.Author.When.Equal(rhs.Author.When) && bytes.Compare(c.Hash[:], rhs.Hash[:]) < 0)))
+				(c.Author.When.Equal(rhs.Author.When) && c.Hash.Compare(rhs.Hash.Sum()) < 0)))
 }
 
 func indent(t string) string {

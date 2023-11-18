@@ -3,7 +3,10 @@ package packp
 import (
 	"bytes"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -26,9 +29,9 @@ func (s *ShallowUpdateSuite) TestDecodeWithLF(c *C) {
 
 	c.Assert(su.Unshallows, HasLen, 0)
 	c.Assert(su.Shallows, HasLen, 2)
-	c.Assert(su.Shallows, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+	c.Assert(su.Shallows, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 	})
 }
 
@@ -46,9 +49,9 @@ func (s *ShallowUpdateSuite) TestDecode(c *C) {
 
 	c.Assert(su.Unshallows, HasLen, 0)
 	c.Assert(su.Shallows, HasLen, 2)
-	c.Assert(su.Shallows, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+	c.Assert(su.Shallows, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 	})
 }
 
@@ -66,9 +69,9 @@ func (s *ShallowUpdateSuite) TestDecodeUnshallow(c *C) {
 
 	c.Assert(su.Shallows, HasLen, 0)
 	c.Assert(su.Unshallows, HasLen, 2)
-	c.Assert(su.Unshallows, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+	c.Assert(su.Unshallows, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 	})
 }
 
@@ -91,13 +94,13 @@ func (s *ShallowUpdateSuite) TestEncodeEmpty(c *C) {
 
 func (s *ShallowUpdateSuite) TestEncode(c *C) {
 	su := &ShallowUpdate{
-		Shallows: []plumbing.Hash{
-			plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-			plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		Shallows: []common.ObjectHash{
+			X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+			X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		},
-		Unshallows: []plumbing.Hash{
-			plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-			plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		Unshallows: []common.ObjectHash{
+			X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+			X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		},
 	}
 	buf := bytes.NewBuffer(nil)
@@ -115,9 +118,9 @@ func (s *ShallowUpdateSuite) TestEncode(c *C) {
 
 func (s *ShallowUpdateSuite) TestEncodeShallow(c *C) {
 	su := &ShallowUpdate{
-		Shallows: []plumbing.Hash{
-			plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-			plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		Shallows: []common.ObjectHash{
+			X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+			X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		},
 	}
 	buf := bytes.NewBuffer(nil)
@@ -133,9 +136,9 @@ func (s *ShallowUpdateSuite) TestEncodeShallow(c *C) {
 
 func (s *ShallowUpdateSuite) TestEncodeUnshallow(c *C) {
 	su := &ShallowUpdate{
-		Unshallows: []plumbing.Hash{
-			plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-			plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		Unshallows: []common.ObjectHash{
+			X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+			X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		},
 	}
 	buf := bytes.NewBuffer(nil)

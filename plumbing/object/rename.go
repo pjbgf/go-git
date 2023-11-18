@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 )
@@ -337,7 +337,7 @@ func changeName(c *Change) string {
 	return c.From.Name
 }
 
-func changeHash(c *Change) plumbing.Hash {
+func changeHash(c *Change) common.ObjectHash {
 	if c.To != empty {
 		return c.To.TreeEntry.Hash
 	}
@@ -357,8 +357,8 @@ func sameMode(a, b *Change) bool {
 	return changeMode(a) == changeMode(b)
 }
 
-func groupChangesByHash(changes []*Change) map[plumbing.Hash][]*Change {
-	var result = make(map[plumbing.Hash][]*Change)
+func groupChangesByHash(changes []*Change) map[common.ObjectHash][]*Change {
+	var result = make(map[common.ObjectHash][]*Change)
 	for _, c := range changes {
 		hash := changeHash(c)
 		result[hash] = append(result[hash], c)

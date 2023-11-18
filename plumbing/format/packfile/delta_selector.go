@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -34,7 +35,7 @@ func newDeltaSelector(s storer.EncodedObjectStorer) *deltaSelector {
 // window used to compare objects for delta compression; 0 turns off
 // delta compression entirely.
 func (dw *deltaSelector) ObjectsToPack(
-	hashes []plumbing.Hash,
+	hashes []common.ObjectHash,
 	packWindow uint,
 ) ([]*ObjectToPack, error) {
 	otp, err := dw.objectsToPack(hashes, packWindow)
@@ -85,7 +86,7 @@ func (dw *deltaSelector) ObjectsToPack(
 }
 
 func (dw *deltaSelector) objectsToPack(
-	hashes []plumbing.Hash,
+	hashes []common.ObjectHash,
 	packWindow uint,
 ) ([]*ObjectToPack, error) {
 	var objectsToPack []*ObjectToPack
@@ -120,7 +121,7 @@ func (dw *deltaSelector) objectsToPack(
 	return objectsToPack, nil
 }
 
-func (dw *deltaSelector) encodedDeltaObject(h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (dw *deltaSelector) encodedDeltaObject(h common.ObjectHash) (plumbing.EncodedObject, error) {
 	edos, ok := dw.storer.(storer.DeltaObjectStorer)
 	if !ok {
 		return dw.encodedObject(h)
@@ -129,12 +130,12 @@ func (dw *deltaSelector) encodedDeltaObject(h plumbing.Hash) (plumbing.EncodedOb
 	return edos.DeltaObject(plumbing.AnyObject, h)
 }
 
-func (dw *deltaSelector) encodedObject(h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (dw *deltaSelector) encodedObject(h common.ObjectHash) (plumbing.EncodedObject, error) {
 	return dw.storer.EncodedObject(plumbing.AnyObject, h)
 }
 
 func (dw *deltaSelector) fixAndBreakChains(objectsToPack []*ObjectToPack) error {
-	m := make(map[plumbing.Hash]*ObjectToPack, len(objectsToPack))
+	m := make(map[common.ObjectHash]*ObjectToPack, len(objectsToPack))
 	for _, otp := range objectsToPack {
 		m[otp.Hash()] = otp
 	}
@@ -148,7 +149,7 @@ func (dw *deltaSelector) fixAndBreakChains(objectsToPack []*ObjectToPack) error 
 	return nil
 }
 
-func (dw *deltaSelector) fixAndBreakChainsOne(objectsToPack map[plumbing.Hash]*ObjectToPack, otp *ObjectToPack) error {
+func (dw *deltaSelector) fixAndBreakChainsOne(objectsToPack map[common.ObjectHash]*ObjectToPack, otp *ObjectToPack) error {
 	if !otp.Object.Type().IsDelta() {
 		return nil
 	}
@@ -221,7 +222,7 @@ func (dw *deltaSelector) walk(
 	objectsToPack []*ObjectToPack,
 	packWindow uint,
 ) error {
-	indexMap := make(map[plumbing.Hash]*deltaIndex)
+	indexMap := make(map[common.ObjectHash]*deltaIndex)
 	for i := 0; i < len(objectsToPack); i++ {
 		// Clean up the index map and reconstructed delta objects for anything
 		// outside our pack window, to save memory.
@@ -268,7 +269,7 @@ func (dw *deltaSelector) walk(
 	return nil
 }
 
-func (dw *deltaSelector) tryToDeltify(indexMap map[plumbing.Hash]*deltaIndex, base, target *ObjectToPack) error {
+func (dw *deltaSelector) tryToDeltify(indexMap map[common.ObjectHash]*deltaIndex, base, target *ObjectToPack) error {
 	// Original object might not be present if we're reusing a delta, so we
 	// ensure it is restored.
 	if err := dw.restoreOriginal(target); err != nil {

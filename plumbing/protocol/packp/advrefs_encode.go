@@ -6,8 +6,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 )
 
@@ -22,12 +23,12 @@ func (a *AdvRefs) Encode(w io.Writer) error {
 }
 
 type advRefsEncoder struct {
-	data         *AdvRefs         // data to encode
-	pe           *pktline.Encoder // where to write the encoded data
-	firstRefName string           // reference name to encode in the first pkt-line (HEAD if present)
-	firstRefHash plumbing.Hash    // hash referenced to encode in the first pkt-line (HEAD if present)
-	sortedRefs   []string         // hash references to encode ordered by increasing order
-	err          error            // sticky error
+	data         *AdvRefs          // data to encode
+	pe           *pktline.Encoder  // where to write the encoded data
+	firstRefName string            // reference name to encode in the first pkt-line (HEAD if present)
+	firstRefHash common.ObjectHash // hash referenced to encode in the first pkt-line (HEAD if present)
+	sortedRefs   []string          // hash references to encode ordered by increasing order
+	err          error             // sticky error
 
 }
 
@@ -64,7 +65,7 @@ func (e *advRefsEncoder) sortRefs() {
 func (e *advRefsEncoder) setFirstRef() {
 	if e.data.Head != nil {
 		e.firstRefName = head
-		e.firstRefHash = *e.data.Head
+		e.firstRefHash = e.data.Head
 		return
 	}
 
@@ -104,7 +105,7 @@ func encodeFirstLine(e *advRefsEncoder) encoderStateFn {
 	capabilities := formatCaps(e.data.Capabilities)
 
 	if e.firstRefName == "" {
-		firstLine = fmt.Sprintf(formatFirstLine, plumbing.ZeroHash.String(), "capabilities^{}", capabilities)
+		firstLine = fmt.Sprintf(formatFirstLine, sha1.ZeroHash().String(), "capabilities^{}", capabilities)
 	} else {
 		firstLine = fmt.Sprintf(formatFirstLine, e.firstRefHash.String(), e.firstRefName, capabilities)
 
@@ -160,7 +161,7 @@ func encodeShallow(e *advRefsEncoder) encoderStateFn {
 	return encodeFlush
 }
 
-func sortShallows(c []plumbing.Hash) []string {
+func sortShallows(c []common.ObjectHash) []string {
 	ret := []string{}
 	for _, h := range c {
 		ret = append(ret, h.String())

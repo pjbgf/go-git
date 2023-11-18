@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -17,8 +18,7 @@ type Encoder struct {
 }
 
 // NewEncoder returns a new stream encoder that writes to w.
-func NewEncoder(w io.Writer) *Encoder {
-	h := hash.New(hash.CryptoType)
+func NewEncoder(w io.Writer, h hash.Hash) *Encoder {
 	mw := io.MultiWriter(w, h)
 	return &Encoder{mw, h}
 }
@@ -32,7 +32,7 @@ func (e *Encoder) Encode(idx Index) error {
 	hashToIndex, fanout, extraEdgesCount, generationV2OverflowCount := e.prepare(idx, hashes)
 
 	chunkSignatures := [][]byte{OIDFanoutChunk.Signature(), OIDLookupChunk.Signature(), CommitDataChunk.Signature()}
-	chunkSizes := []uint64{szUint32 * lenFanout, uint64(len(hashes)) * hash.Size, uint64(len(hashes)) * (hash.Size + szCommitData)}
+	chunkSizes := []uint64{szUint32 * lenFanout, uint64(len(hashes) * e.hash.Size()), uint64(len(hashes) * (e.hash.Size() + szCommitData))}
 	if extraEdgesCount > 0 {
 		chunkSignatures = append(chunkSignatures, ExtraEdgeListChunk.Signature())
 		chunkSizes = append(chunkSizes, uint64(extraEdgesCount)*szUint32)
@@ -79,14 +79,14 @@ func (e *Encoder) Encode(idx Index) error {
 	return e.encodeChecksum()
 }
 
-func (e *Encoder) prepare(idx Index, hashes []plumbing.Hash) (hashToIndex map[plumbing.Hash]uint32, fanout []uint32, extraEdgesCount uint32, generationV2OverflowCount uint32) {
+func (e *Encoder) prepare(idx Index, hashes []common.ObjectHash) (hashToIndex map[common.ObjectHash]uint32, fanout []uint32, extraEdgesCount uint32, generationV2OverflowCount uint32) {
 	// Sort the hashes and build our index
 	plumbing.HashesSort(hashes)
-	hashToIndex = make(map[plumbing.Hash]uint32)
+	hashToIndex = make(map[common.ObjectHash]uint32)
 	fanout = make([]uint32, lenFanout)
 	for i, hash := range hashes {
 		hashToIndex[hash] = uint32(i)
-		fanout[hash[0]]++
+		fanout[hash.Sum()[0]]++
 	}
 
 	// Convert the fanout to cumulative values
@@ -148,23 +148,23 @@ func (e *Encoder) encodeFanout(fanout []uint32) (err error) {
 	return
 }
 
-func (e *Encoder) encodeOidLookup(hashes []plumbing.Hash) (err error) {
+func (e *Encoder) encodeOidLookup(hashes []common.ObjectHash) (err error) {
 	for _, hash := range hashes {
-		if _, err = e.Write(hash[:]); err != nil {
+		if _, err = e.Write(hash.Sum()); err != nil {
 			return err
 		}
 	}
 	return
 }
 
-func (e *Encoder) encodeCommitData(hashes []plumbing.Hash, hashToIndex map[plumbing.Hash]uint32, idx Index) (extraEdges []uint32, generationV2Data []uint64, err error) {
+func (e *Encoder) encodeCommitData(hashes []common.ObjectHash, hashToIndex map[common.ObjectHash]uint32, idx Index) (extraEdges []uint32, generationV2Data []uint64, err error) {
 	if idx.HasGenerationV2() {
 		generationV2Data = make([]uint64, 0, len(hashes))
 	}
 	for _, hash := range hashes {
 		origIndex, _ := idx.GetIndexByHash(hash)
 		commitData, _ := idx.GetCommitDataByIndex(origIndex)
-		if _, err = e.Write(commitData.TreeHash[:]); err != nil {
+		if _, err = e.Write(commitData.TreeHash.Sum()); err != nil {
 			return
 		}
 
@@ -245,6 +245,6 @@ func (e *Encoder) encodeGenerationV2Overflow(overflows []uint64) (err error) {
 }
 
 func (e *Encoder) encodeChecksum() error {
-	_, err := e.Write(e.hash.Sum(nil)[:hash.Size])
+	_, err := e.Write(e.hash.Sum(nil)[:e.hash.Size()])
 	return err
 }

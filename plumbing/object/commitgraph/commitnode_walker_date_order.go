@@ -1,9 +1,8 @@
 package commitgraph
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
-
 	"github.com/emirpasic/gods/trees/binaryheap"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // NewCommitNodeIterDateOrder returns a CommitNodeIter that walks the commit history,
@@ -12,10 +11,10 @@ import (
 //
 // This matches `git log --date-order`
 func NewCommitNodeIterDateOrder(c CommitNode,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitNodeIter {
-	seen := make(map[plumbing.Hash]struct{})
+	seen := make(map[common.ObjectHash]struct{})
 	for _, h := range ignore {
 		seen[h] = struct{}{}
 	}
@@ -24,7 +23,7 @@ func NewCommitNodeIterDateOrder(c CommitNode,
 			seen[h] = struct{}{}
 		}
 	}
-	inCounts := make(map[plumbing.Hash]int)
+	inCounts := make(map[common.ObjectHash]int)
 
 	exploreHeap := &commitNodeHeap{binaryheap.NewWith(generationAndDateOrderComparator)}
 	exploreHeap.Push(c)

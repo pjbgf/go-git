@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -33,9 +35,9 @@ type Observer interface {
 	// OnInflatedObjectHeader is called for each object header read.
 	OnInflatedObjectHeader(t plumbing.ObjectType, objSize int64, pos int64) error
 	// OnInflatedObjectContent is called for each decoded object.
-	OnInflatedObjectContent(h plumbing.Hash, pos int64, crc uint32, content []byte) error
+	OnInflatedObjectContent(h common.ObjectHash, pos int64, crc uint32, content []byte) error
 	// OnFooter is called when decoding is done.
-	OnFooter(h plumbing.Hash) error
+	OnFooter(h common.ObjectHash) error
 }
 
 // Parser decodes a packfile and calls any observer associated to it. Is used
@@ -45,9 +47,9 @@ type Parser struct {
 	scanner    *Scanner
 	count      uint32
 	oi         []*objectInfo
-	oiByHash   map[plumbing.Hash]*objectInfo
+	oiByHash   map[common.ObjectHash]*objectInfo
 	oiByOffset map[int64]*objectInfo
-	checksum   plumbing.Hash
+	checksum   common.ObjectHash
 
 	cache *cache.BufferLRU
 	// delta content by offset, only used if source is not seekable
@@ -114,7 +116,7 @@ func (p *Parser) onInflatedObjectHeader(
 }
 
 func (p *Parser) onInflatedObjectContent(
-	h plumbing.Hash,
+	h common.ObjectHash,
 	pos int64,
 	crc uint32,
 	content []byte,
@@ -124,34 +126,34 @@ func (p *Parser) onInflatedObjectContent(
 	})
 }
 
-func (p *Parser) onFooter(h plumbing.Hash) error {
+func (p *Parser) onFooter(h common.ObjectHash) error {
 	return p.forEachObserver(func(o Observer) error {
 		return o.OnFooter(h)
 	})
 }
 
 // Parse start decoding phase of the packfile.
-func (p *Parser) Parse() (plumbing.Hash, error) {
+func (p *Parser) Parse() (common.ObjectHash, error) {
 	if err := p.init(); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	if err := p.indexObjects(); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	var err error
 	p.checksum, err = p.scanner.Checksum()
 	if err != nil && err != io.EOF {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	if err := p.resolveDeltas(); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	if err := p.onFooter(p.checksum); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return p.checksum, nil
@@ -168,7 +170,7 @@ func (p *Parser) init() error {
 	}
 
 	p.count = c
-	p.oiByHash = make(map[plumbing.Hash]*objectInfo, p.count)
+	p.oiByHash = make(map[common.ObjectHash]*objectInfo, p.count)
 	p.oiByOffset = make(map[int64]*objectInfo, p.count)
 	p.oi = make([]*objectInfo, p.count)
 
@@ -540,7 +542,7 @@ func applyPatchBase(ota *objectInfo, base io.ReaderAt, delta io.Reader, target i
 	}
 
 	typ := ota.Type
-	if ota.SHA1 == plumbing.ZeroHash {
+	if ota.SHA1 == sha1.ZeroHash() {
 		typ = ota.Parent.Type
 	}
 
@@ -549,7 +551,7 @@ func applyPatchBase(ota *objectInfo, base io.ReaderAt, delta io.Reader, target i
 		return err
 	}
 
-	if ota.SHA1 == plumbing.ZeroHash {
+	if ota.SHA1 == sha1.ZeroHash() {
 		ota.Type = typ
 		ota.Length = int64(sz)
 		ota.SHA1 = h
@@ -558,10 +560,10 @@ func applyPatchBase(ota *objectInfo, base io.ReaderAt, delta io.Reader, target i
 	return nil
 }
 
-func getSHA1(t plumbing.ObjectType, data []byte) (plumbing.Hash, error) {
+func getSHA1(t plumbing.ObjectType, data []byte) (common.ObjectHash, error) {
 	hasher := plumbing.NewHasher(t, int64(len(data)))
 	if _, err := hasher.Write(data); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return hasher.Sum(), nil
@@ -578,7 +580,7 @@ type objectInfo struct {
 
 	Parent   *objectInfo
 	Children []*objectInfo
-	SHA1     plumbing.Hash
+	SHA1     common.ObjectHash
 }
 
 func newBaseObject(offset, length int64, t plumbing.ObjectType) *objectInfo {

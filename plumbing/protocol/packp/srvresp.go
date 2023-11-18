@@ -7,15 +7,16 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 const ackLineLen = 44
 
 // ServerResponse object acknowledgement from upload-pack service
 type ServerResponse struct {
-	ACKs []plumbing.Hash
+	ACKs []common.ObjectHash
 }
 
 // Decode decodes the response into the struct, isMultiACK should be true, if
@@ -120,7 +121,7 @@ func (r *ServerResponse) decodeACKLine(line []byte) error {
 	}
 
 	sp := bytes.Index(line, []byte(" "))
-	h := plumbing.NewHash(string(line[sp+1 : sp+41]))
+	h := sha1.FromBytes(line[sp+1 : sp+41])
 	r.ACKs = append(r.ACKs, h)
 	return nil
 }

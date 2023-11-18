@@ -10,8 +10,11 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -48,7 +51,7 @@ func (s *WorktreeSuite) TestCommitEmptyOptions(c *C) {
 }
 
 func (s *WorktreeSuite) TestCommitInitial(c *C) {
-	expected := plumbing.NewHash("98c4ac7c29c913f7461eae06e024dc18e80d23a4")
+	expected := X(sha1.FromHex("98c4ac7c29c913f7461eae06e024dc18e80d23a4"))
 
 	fs := memfs.New()
 	storage := memory.NewStorage()
@@ -72,7 +75,7 @@ func (s *WorktreeSuite) TestCommitInitial(c *C) {
 }
 
 func (s *WorktreeSuite) TestNothingToCommit(c *C) {
-	expected := plumbing.NewHash("838ea833ce893e8555907e5ef224aa076f5e274a")
+	expected := X(sha1.FromHex("838ea833ce893e8555907e5ef224aa076f5e274a"))
 
 	r, err := Init(memory.NewStorage(), memfs.New())
 	c.Assert(err, IsNil)
@@ -81,7 +84,7 @@ func (s *WorktreeSuite) TestNothingToCommit(c *C) {
 	c.Assert(err, IsNil)
 
 	hash, err := w.Commit("failed empty commit\n", &CommitOptions{Author: defaultSignature()})
-	c.Assert(hash, Equals, plumbing.ZeroHash)
+	c.Assert(hash, Equals, sha1.ZeroHash())
 	c.Assert(err, Equals, ErrEmptyCommit)
 
 	hash, err = w.Commit("enable empty commits\n", &CommitOptions{Author: defaultSignature(), AllowEmptyCommits: true})
@@ -90,7 +93,7 @@ func (s *WorktreeSuite) TestNothingToCommit(c *C) {
 }
 
 func (s *WorktreeSuite) TestCommitParent(c *C) {
-	expected := plumbing.NewHash("ef3ca05477530b37f48564be33ddd48063fc7a22")
+	expected := X(sha1.FromHex("ef3ca05477530b37f48564be33ddd48063fc7a22"))
 
 	fs := memfs.New()
 	w := &Worktree{
@@ -131,7 +134,6 @@ func (s *WorktreeSuite) TestCommitAmend(c *C) {
 	_, err = w.Commit("foo\n", &CommitOptions{Author: defaultSignature()})
 	c.Assert(err, IsNil)
 
-
 	amendedHash, err := w.Commit("bar\n", &CommitOptions{Amend: true})
 	c.Assert(err, IsNil)
 
@@ -145,7 +147,7 @@ func (s *WorktreeSuite) TestCommitAmend(c *C) {
 }
 
 func (s *WorktreeSuite) TestCommitAll(c *C) {
-	expected := plumbing.NewHash("aede6f8c9c1c7ec9ca8d287c64b8ed151276fa28")
+	expected := X(sha1.FromHex("aede6f8c9c1c7ec9ca8d287c64b8ed151276fa28"))
 
 	fs := memfs.New()
 	w := &Worktree{
@@ -171,7 +173,7 @@ func (s *WorktreeSuite) TestCommitAll(c *C) {
 }
 
 func (s *WorktreeSuite) TestRemoveAndCommitAll(c *C) {
-	expected := plumbing.NewHash("907cd576c6ced2ecd3dab34a72bf9cf65944b9a9")
+	expected := X(sha1.FromHex("907cd576c6ced2ecd3dab34a72bf9cf65944b9a9"))
 
 	fs := memfs.New()
 	w := &Worktree{
@@ -328,14 +330,14 @@ func (s *WorktreeSuite) TestJustStoreObjectsNotAlreadyStored(c *C) {
 	util.WriteFile(fs, "LICENSE", []byte("license"), 0644)
 	hLicense, err := w.Add("LICENSE")
 	c.Assert(err, IsNil)
-	c.Assert(hLicense, Equals, plumbing.NewHash("0484eba0d41636ba71fa612c78559cd6c3006cde"))
+	c.Assert(hLicense, Equals, X(sha1.FromHex("0484eba0d41636ba71fa612c78559cd6c3006cde")))
 
 	hash, err := w.Commit("commit 1\n", &CommitOptions{
 		All:    true,
 		Author: defaultSignature(),
 	})
 	c.Assert(err, IsNil)
-	c.Assert(hash, Equals, plumbing.NewHash("7a7faee4630d2664a6869677cc8ab614f3fd4a18"))
+	c.Assert(hash, Equals, X(sha1.FromHex("7a7faee4630d2664a6869677cc8ab614f3fd4a18")))
 
 	infoLicense, err := fsDotgit.Stat(filepath.Join("objects", "04", "84eba0d41636ba71fa612c78559cd6c3006cde"))
 	c.Assert(err, IsNil) // checking objects file exists
@@ -345,14 +347,14 @@ func (s *WorktreeSuite) TestJustStoreObjectsNotAlreadyStored(c *C) {
 	util.WriteFile(fs, "foo", []byte("foo"), 0644)
 	hFoo, err := w.Add("foo")
 	c.Assert(err, IsNil)
-	c.Assert(hFoo, Equals, plumbing.NewHash("19102815663d23f8b75a47e7a01965dcdc96468c"))
+	c.Assert(hFoo, Equals, X(sha1.FromHex("19102815663d23f8b75a47e7a01965dcdc96468c")))
 
 	hash, err = w.Commit("commit 2\n", &CommitOptions{
 		All:    true,
 		Author: defaultSignature(),
 	})
 	c.Assert(err, IsNil)
-	c.Assert(hash, Equals, plumbing.NewHash("97c0c5177e6ac57d10e8ea0017f2d39b91e2b364"))
+	c.Assert(hash, Equals, X(sha1.FromHex("97c0c5177e6ac57d10e8ea0017f2d39b91e2b364")))
 
 	// Step 3: Check
 	// There is no need to overwrite the object of LICENSE, because its content
@@ -371,7 +373,7 @@ func (s *WorktreeSuite) TestJustStoreObjectsNotAlreadyStored(c *C) {
 
 func assertStorageStatus(
 	c *C, r *Repository,
-	treesCount, blobCount, commitCount int, head plumbing.Hash,
+	treesCount, blobCount, commitCount int, head common.ObjectHash,
 ) {
 	trees, err := r.Storer.IterEncodedObjects(plumbing.TreeObject)
 	c.Assert(err, IsNil)

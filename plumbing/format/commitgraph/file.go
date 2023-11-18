@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -154,24 +155,24 @@ func (fi *fileIndex) readFanout() error {
 	return nil
 }
 
-func (fi *fileIndex) GetIndexByHash(h plumbing.Hash) (int, error) {
-	var oid plumbing.Hash
+func (fi *fileIndex) GetIndexByHash(h common.ObjectHash) (int, error) {
+	var oid common.ObjectHash
 
 	// Find the hash in the oid lookup table
 	var low int
-	if h[0] == 0 {
+	if h.Sum()[0] == 0 {
 		low = 0
 	} else {
-		low = fi.fanout[h[0]-1]
+		low = fi.fanout[h.Sum()[0]-1]
 	}
-	high := fi.fanout[h[0]]
+	high := fi.fanout[h.Sum()[0]]
 	for low < high {
 		mid := (low + high) >> 1
 		offset := fi.oidLookupOffset + int64(mid)*hash.Size
-		if _, err := fi.reader.ReadAt(oid[:], offset); err != nil {
+		if _, err := fi.reader.ReadAt(oid.Sum(), offset); err != nil {
 			return 0, err
 		}
-		cmp := bytes.Compare(h[:], oid[:])
+		cmp := h.Compare(oid.Sum())
 		if cmp < 0 {
 			high = mid
 		} else if cmp == 0 {
@@ -248,8 +249,8 @@ func (fi *fileIndex) GetCommitDataByIndex(idx int) (*CommitData, error) {
 	}, nil
 }
 
-func (fi *fileIndex) getHashesFromIndexes(indexes []int) ([]plumbing.Hash, error) {
-	hashes := make([]plumbing.Hash, len(indexes))
+func (fi *fileIndex) getHashesFromIndexes(indexes []int) ([]common.ObjectHash, error) {
+	hashes := make([]common.ObjectHash, len(indexes))
 
 	for i, idx := range indexes {
 		if idx >= fi.fanout[0xff] {
@@ -257,7 +258,7 @@ func (fi *fileIndex) getHashesFromIndexes(indexes []int) ([]plumbing.Hash, error
 		}
 
 		offset := fi.oidLookupOffset + int64(idx)*hash.Size
-		if _, err := fi.reader.ReadAt(hashes[i][:], offset); err != nil {
+		if _, err := fi.reader.ReadAt(hashes[i].Sum(), offset); err != nil {
 			return nil, err
 		}
 	}
@@ -266,11 +267,11 @@ func (fi *fileIndex) getHashesFromIndexes(indexes []int) ([]plumbing.Hash, error
 }
 
 // Hashes returns all the hashes that are available in the index
-func (fi *fileIndex) Hashes() []plumbing.Hash {
-	hashes := make([]plumbing.Hash, fi.fanout[0xff])
+func (fi *fileIndex) Hashes() []common.ObjectHash {
+	hashes := make([]common.ObjectHash, fi.fanout[0xff])
 	for i := 0; i < fi.fanout[0xff]; i++ {
 		offset := fi.oidLookupOffset + int64(i)*hash.Size
-		if n, err := fi.reader.ReadAt(hashes[i][:], offset); err != nil || n < hash.Size {
+		if n, err := fi.reader.ReadAt(hashes[i].Sum(), offset); err != nil || n < hash.Size {
 			return nil
 		}
 	}

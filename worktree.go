@@ -16,6 +16,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
@@ -212,14 +214,14 @@ func (w *Worktree) createBranch(opts *CheckoutOptions) error {
 	)
 }
 
-func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing.Hash, error) {
+func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (common.ObjectHash, error) {
 	if !opts.Hash.IsZero() {
 		return opts.Hash, nil
 	}
 
 	b, err := w.r.Reference(opts.Branch, true)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	if !b.Name().IsTag() {
@@ -228,13 +230,13 @@ func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing
 
 	o, err := w.r.Object(plumbing.AnyObject, b.Hash())
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	switch o := o.(type) {
 	case *object.Tag:
 		if o.TargetType != plumbing.CommitObject {
-			return plumbing.ZeroHash, fmt.Errorf("unsupported tag object target %q", o.TargetType)
+			return sha1.ZeroHash(), fmt.Errorf("unsupported tag object target %q", o.TargetType)
 		}
 
 		return o.Target, nil
@@ -242,15 +244,15 @@ func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing
 		return o.Hash, nil
 	}
 
-	return plumbing.ZeroHash, fmt.Errorf("unsupported tag target %q", o.Type())
+	return sha1.ZeroHash(), fmt.Errorf("unsupported tag target %q", o.Type())
 }
 
-func (w *Worktree) setHEADToCommit(commit plumbing.Hash) error {
+func (w *Worktree) setHEADToCommit(commit common.ObjectHash) error {
 	head := plumbing.NewHashReference(plumbing.HEAD, commit)
 	return w.r.Storer.SetReference(head)
 }
 
-func (w *Worktree) setHEADToBranch(branch plumbing.ReferenceName, commit plumbing.Hash) error {
+func (w *Worktree) setHEADToBranch(branch plumbing.ReferenceName, commit common.ObjectHash) error {
 	target, err := w.r.Storer.Reference(branch)
 	if err != nil {
 		return err
@@ -442,7 +444,7 @@ func (w *Worktree) containsUnstagedChanges() (bool, error) {
 	return false, nil
 }
 
-func (w *Worktree) setHEADCommit(commit plumbing.Hash) error {
+func (w *Worktree) setHEADCommit(commit common.ObjectHash) error {
 	head, err := w.r.Reference(plumbing.HEAD, false)
 	if err != nil {
 		return err
@@ -604,7 +606,7 @@ func (w *Worktree) addIndexFromTreeEntry(name string, f *object.TreeEntry, idx *
 	return nil
 }
 
-func (w *Worktree) addIndexFromFile(name string, h plumbing.Hash, idx *indexBuilder) error {
+func (w *Worktree) addIndexFromFile(name string, h common.ObjectHash, idx *indexBuilder) error {
 	idx.Remove(name)
 	fi, err := w.Filesystem.Lstat(name)
 	if err != nil {
@@ -633,7 +635,7 @@ func (w *Worktree) addIndexFromFile(name string, h plumbing.Hash, idx *indexBuil
 	return nil
 }
 
-func (r *Repository) getTreeFromCommitHash(commit plumbing.Hash) (*object.Tree, error) {
+func (r *Repository) getTreeFromCommitHash(commit common.ObjectHash) (*object.Tree, error) {
 	c, err := r.CommitObject(commit)
 	if err != nil {
 		return nil, err
@@ -809,7 +811,7 @@ func (r *Repository) Grep(opts *GrepOptions) ([]GrepResult, error) {
 	}
 
 	// Obtain commit hash from options (CommitHash or ReferenceName).
-	var commitHash plumbing.Hash
+	var commitHash common.ObjectHash
 	// treeName contains the value of TreeName in GrepResult.
 	var treeName string
 

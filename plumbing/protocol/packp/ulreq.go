@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 )
 
@@ -14,8 +14,8 @@ import (
 // This is a low level type, use UploadPackRequest instead.
 type UploadRequest struct {
 	Capabilities *capability.List
-	Wants        []plumbing.Hash
-	Shallows     []plumbing.Hash
+	Wants        []common.ObjectHash
+	Shallows     []common.ObjectHash
 	Depth        Depth
 }
 
@@ -61,8 +61,8 @@ func (d DepthReference) IsZero() bool {
 func NewUploadRequest() *UploadRequest {
 	return &UploadRequest{
 		Capabilities: capability.NewList(),
-		Wants:        []plumbing.Hash{},
-		Shallows:     []plumbing.Hash{},
+		Wants:        []common.ObjectHash{},
+		Shallows:     []common.ObjectHash{},
 		Depth:        DepthCommits(0),
 	}
 }

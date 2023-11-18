@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"os"
 
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/storage/filesystem/dotgit"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 )
@@ -27,7 +29,7 @@ func (s *IndexStorage) SetIndex(idx *index.Index) (err error) {
 		}
 	}()
 
-	e := index.NewEncoder(bw)
+	e := index.NewEncoder(bw, hash.NewHasher(config.SHA1))
 	err = e.Encode(idx)
 	return err
 }
@@ -48,7 +50,7 @@ func (s *IndexStorage) Index() (i *index.Index, err error) {
 
 	defer ioutil.CheckClose(f, &err)
 
-	d := index.NewDecoder(bufio.NewReader(f))
+	d := index.NewDecoder(bufio.NewReader(f), hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	err = d.Decode(idx)
 	return idx, err
 }

@@ -2,14 +2,14 @@ package packp
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"strconv"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // Decode reads the next upload-request form its input and
@@ -96,16 +96,16 @@ func (d *ulReqDecoder) decodeFirstWant() stateFn {
 	return d.decodeCaps
 }
 
-func (d *ulReqDecoder) readHash() (plumbing.Hash, bool) {
+func (d *ulReqDecoder) readHash() (common.ObjectHash, bool) {
 	if len(d.line) < hashSize {
 		d.err = fmt.Errorf("malformed hash: %v", d.line)
-		return plumbing.ZeroHash, false
+		return sha1.Factory.ZeroHash(), false
 	}
 
-	var hash plumbing.Hash
-	if _, err := hex.Decode(hash[:], d.line[:hashSize]); err != nil {
-		d.error("invalid hash text: %s", err)
-		return plumbing.ZeroHash, false
+	hash, ok := sha1.Factory.FromHex(string(d.line[:hashSize]))
+	if !ok {
+		d.error("invalid hash text: %s", d.line[:hashSize])
+		return sha1.Factory.ZeroHash(), false
 	}
 	d.line = d.line[hashSize:]
 

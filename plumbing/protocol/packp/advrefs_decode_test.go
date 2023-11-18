@@ -5,8 +5,12 @@ import (
 	"io"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -18,7 +22,7 @@ var _ = Suite(&AdvRefsDecodeSuite{})
 
 func (s *AdvRefsDecodeSuite) TestEmpty(c *C) {
 	var buf bytes.Buffer
-	ar := NewAdvRefs()
+	ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(ar.Decode(&buf), Equals, ErrEmptyInput)
 }
 
@@ -26,7 +30,7 @@ func (s *AdvRefsDecodeSuite) TestEmptyFlush(c *C) {
 	var buf bytes.Buffer
 	e := pktline.NewEncoder(&buf)
 	e.Flush()
-	ar := NewAdvRefs()
+	ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(ar.Decode(&buf), Equals, ErrEmptyAdvRefs)
 }
 
@@ -36,7 +40,7 @@ func (s *AdvRefsDecodeSuite) TestEmptyPrefixFlush(c *C) {
 	e.EncodeString("# service=git-upload-pack")
 	e.Flush()
 	e.Flush()
-	ar := NewAdvRefs()
+	ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(ar.Decode(&buf), Equals, ErrEmptyAdvRefs)
 }
 
@@ -50,7 +54,7 @@ func (s *AdvRefsDecodeSuite) TestShortForHash(c *C) {
 }
 
 func (s *AdvRefsDecodeSuite) testDecoderErrorMatches(c *C, input io.Reader, pattern string) {
-	ar := NewAdvRefs()
+	ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(ar.Decode(input), ErrorMatches, pattern)
 }
 
@@ -78,7 +82,7 @@ func (s *AdvRefsDecodeSuite) testDecodeOK(c *C, payloads []string) *AdvRefs {
 	err := e.EncodeString(payloads...)
 	c.Assert(err, IsNil)
 
-	ar := NewAdvRefs()
+	ar := NewAdvRefs(hash.HashFactory(config.SHA1))
 	c.Assert(ar.Decode(&buf), IsNil)
 
 	return ar
@@ -108,8 +112,8 @@ func (s *AdvRefsDecodeSuite) TestHead(c *C) {
 		pktline.FlushString,
 	}
 	ar := s.testDecodeOK(c, payloads)
-	c.Assert(*ar.Head, Equals,
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	c.Assert(ar.Head, Equals,
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }
 
 func (s *AdvRefsDecodeSuite) TestFirstIsNotHead(c *C) {
@@ -120,7 +124,7 @@ func (s *AdvRefsDecodeSuite) TestFirstIsNotHead(c *C) {
 	ar := s.testDecodeOK(c, payloads)
 	c.Assert(ar.Head, IsNil)
 	c.Assert(ar.References["refs/heads/master"], Equals,
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 }
 
 func (s *AdvRefsDecodeSuite) TestShortRef(c *C) {
@@ -266,35 +270,35 @@ func (s *AdvRefsDecodeSuite) TestWithPrefixAndFlush(c *C) {
 func (s *AdvRefsDecodeSuite) TestOtherRefs(c *C) {
 	for _, test := range [...]struct {
 		input      []string
-		references map[string]plumbing.Hash
-		peeled     map[string]plumbing.Hash
+		references map[string]common.ObjectHash
+		peeled     map[string]common.ObjectHash
 	}{{
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
 			pktline.FlushString,
 		},
-		references: make(map[string]plumbing.Hash),
-		peeled:     make(map[string]plumbing.Hash),
+		references: make(map[string]common.ObjectHash),
+		peeled:     make(map[string]common.ObjectHash),
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
 			"1111111111111111111111111111111111111111 ref/foo",
 			pktline.FlushString,
 		},
-		references: map[string]plumbing.Hash{
-			"ref/foo": plumbing.NewHash("1111111111111111111111111111111111111111"),
+		references: map[string]common.ObjectHash{
+			"ref/foo": X(sha1.FromHex("1111111111111111111111111111111111111111")),
 		},
-		peeled: make(map[string]plumbing.Hash),
+		peeled: make(map[string]common.ObjectHash),
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
 			"1111111111111111111111111111111111111111 ref/foo\n",
 			pktline.FlushString,
 		},
-		references: map[string]plumbing.Hash{
-			"ref/foo": plumbing.NewHash("1111111111111111111111111111111111111111"),
+		references: map[string]common.ObjectHash{
+			"ref/foo": X(sha1.FromHex("1111111111111111111111111111111111111111")),
 		},
-		peeled: make(map[string]plumbing.Hash),
+		peeled: make(map[string]common.ObjectHash),
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
@@ -302,20 +306,20 @@ func (s *AdvRefsDecodeSuite) TestOtherRefs(c *C) {
 			"2222222222222222222222222222222222222222 ref/bar",
 			pktline.FlushString,
 		},
-		references: map[string]plumbing.Hash{
-			"ref/foo": plumbing.NewHash("1111111111111111111111111111111111111111"),
-			"ref/bar": plumbing.NewHash("2222222222222222222222222222222222222222"),
+		references: map[string]common.ObjectHash{
+			"ref/foo": X(sha1.FromHex("1111111111111111111111111111111111111111")),
+			"ref/bar": X(sha1.FromHex("2222222222222222222222222222222222222222")),
 		},
-		peeled: make(map[string]plumbing.Hash),
+		peeled: make(map[string]common.ObjectHash),
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
 			"1111111111111111111111111111111111111111 ref/foo^{}\n",
 			pktline.FlushString,
 		},
-		references: make(map[string]plumbing.Hash),
-		peeled: map[string]plumbing.Hash{
-			"ref/foo": plumbing.NewHash("1111111111111111111111111111111111111111"),
+		references: make(map[string]common.ObjectHash),
+		peeled: map[string]common.ObjectHash{
+			"ref/foo": X(sha1.FromHex("1111111111111111111111111111111111111111")),
 		},
 	}, {
 		input: []string{
@@ -324,11 +328,11 @@ func (s *AdvRefsDecodeSuite) TestOtherRefs(c *C) {
 			"2222222222222222222222222222222222222222 ref/bar^{}",
 			pktline.FlushString,
 		},
-		references: map[string]plumbing.Hash{
-			"ref/foo": plumbing.NewHash("1111111111111111111111111111111111111111"),
+		references: map[string]common.ObjectHash{
+			"ref/foo": X(sha1.FromHex("1111111111111111111111111111111111111111")),
 		},
-		peeled: map[string]plumbing.Hash{
-			"ref/bar": plumbing.NewHash("2222222222222222222222222222222222222222"),
+		peeled: map[string]common.ObjectHash{
+			"ref/bar": X(sha1.FromHex("2222222222222222222222222222222222222222")),
 		},
 	}, {
 		input: []string{
@@ -344,18 +348,18 @@ func (s *AdvRefsDecodeSuite) TestOtherRefs(c *C) {
 			"c39ae07f393806ccf406ef966e9a15afc43cc36a refs/tags/v2.6.11-tree^{}\n",
 			pktline.FlushString,
 		},
-		references: map[string]plumbing.Hash{
-			"refs/heads/master":      plumbing.NewHash("a6930aaee06755d1bdcfd943fbf614e4d92bb0c7"),
-			"refs/pull/10/head":      plumbing.NewHash("51b8b4fb32271d39fbdd760397406177b2b0fd36"),
-			"refs/pull/100/head":     plumbing.NewHash("02b5a6031ba7a8cbfde5d65ff9e13ecdbc4a92ca"),
-			"refs/pull/100/merge":    plumbing.NewHash("c284c212704c43659bf5913656b8b28e32da1621"),
-			"refs/pull/101/merge":    plumbing.NewHash("3d6537dce68c8b7874333a1720958bd8db3ae8ca"),
-			"refs/tags/v2.6.11":      plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"),
-			"refs/tags/v2.6.11-tree": plumbing.NewHash("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c"),
+		references: map[string]common.ObjectHash{
+			"refs/heads/master":      X(sha1.FromHex("a6930aaee06755d1bdcfd943fbf614e4d92bb0c7")),
+			"refs/pull/10/head":      X(sha1.FromHex("51b8b4fb32271d39fbdd760397406177b2b0fd36")),
+			"refs/pull/100/head":     X(sha1.FromHex("02b5a6031ba7a8cbfde5d65ff9e13ecdbc4a92ca")),
+			"refs/pull/100/merge":    X(sha1.FromHex("c284c212704c43659bf5913656b8b28e32da1621")),
+			"refs/pull/101/merge":    X(sha1.FromHex("3d6537dce68c8b7874333a1720958bd8db3ae8ca")),
+			"refs/tags/v2.6.11":      X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")),
+			"refs/tags/v2.6.11-tree": X(sha1.FromHex("5dc01c595e6c6ec9ccda4f6f69c131c0dd945f8c")),
 		},
-		peeled: map[string]plumbing.Hash{
-			"refs/tags/v2.6.11":      plumbing.NewHash("c39ae07f393806ccf406ef966e9a15afc43cc36a"),
-			"refs/tags/v2.6.11-tree": plumbing.NewHash("c39ae07f393806ccf406ef966e9a15afc43cc36a"),
+		peeled: map[string]common.ObjectHash{
+			"refs/tags/v2.6.11":      X(sha1.FromHex("c39ae07f393806ccf406ef966e9a15afc43cc36a")),
+			"refs/tags/v2.6.11-tree": X(sha1.FromHex("c39ae07f393806ccf406ef966e9a15afc43cc36a")),
 		},
 	}} {
 		ar := s.testDecodeOK(c, test.input)
@@ -388,7 +392,7 @@ func (s *AdvRefsDecodeSuite) TestMalformedOtherRefsMultipleSpaces(c *C) {
 func (s *AdvRefsDecodeSuite) TestShallow(c *C) {
 	for _, test := range [...]struct {
 		input    []string
-		shallows []plumbing.Hash
+		shallows []common.ObjectHash
 	}{{
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
@@ -397,7 +401,7 @@ func (s *AdvRefsDecodeSuite) TestShallow(c *C) {
 			"c39ae07f393806ccf406ef966e9a15afc43cc36a refs/tags/v2.6.11-tree^{}\n",
 			pktline.FlushString,
 		},
-		shallows: []plumbing.Hash{},
+		shallows: []common.ObjectHash{},
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
@@ -407,7 +411,7 @@ func (s *AdvRefsDecodeSuite) TestShallow(c *C) {
 			"shallow 1111111111111111111111111111111111111111\n",
 			pktline.FlushString,
 		},
-		shallows: []plumbing.Hash{plumbing.NewHash("1111111111111111111111111111111111111111")},
+		shallows: []common.ObjectHash{X(sha1.FromHex("1111111111111111111111111111111111111111"))},
 	}, {
 		input: []string{
 			"6ecf0ef2c2dffb796033e5a02219af86ec6584e5 HEAD\x00ofs-delta symref=HEAD:/refs/heads/master\n",
@@ -418,9 +422,9 @@ func (s *AdvRefsDecodeSuite) TestShallow(c *C) {
 			"shallow 2222222222222222222222222222222222222222\n",
 			pktline.FlushString,
 		},
-		shallows: []plumbing.Hash{
-			plumbing.NewHash("1111111111111111111111111111111111111111"),
-			plumbing.NewHash("2222222222222222222222222222222222222222"),
+		shallows: []common.ObjectHash{
+			X(sha1.FromHex("1111111111111111111111111111111111111111")),
+			X(sha1.FromHex("2222222222222222222222222222222222222222")),
 		},
 	}} {
 		ar := s.testDecodeOK(c, test.input)

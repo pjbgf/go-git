@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"fmt"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem/dotgit"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 )
@@ -18,7 +19,7 @@ type ShallowStorage struct {
 // SetShallow save the shallows in the shallow file in the .git folder as one
 // commit per line represented by 40-byte hexadecimal object terminated by a
 // newline.
-func (s *ShallowStorage) SetShallow(commits []plumbing.Hash) error {
+func (s *ShallowStorage) SetShallow(commits []common.ObjectHash) error {
 	f, err := s.dir.ShallowWriter()
 	if err != nil {
 		return err
@@ -35,7 +36,7 @@ func (s *ShallowStorage) SetShallow(commits []plumbing.Hash) error {
 }
 
 // Shallow returns the shallow commits reading from shallo file from .git
-func (s *ShallowStorage) Shallow() ([]plumbing.Hash, error) {
+func (s *ShallowStorage) Shallow() ([]common.ObjectHash, error) {
 	f, err := s.dir.Shallow()
 	if f == nil || err != nil {
 		return nil, err
@@ -43,11 +44,12 @@ func (s *ShallowStorage) Shallow() ([]plumbing.Hash, error) {
 
 	defer ioutil.CheckClose(f, &err)
 
-	var hash []plumbing.Hash
+	var hash []common.ObjectHash
 
 	scn := bufio.NewScanner(f)
 	for scn.Scan() {
-		hash = append(hash, plumbing.NewHash(scn.Text()))
+		h, _ := sha1.FromHex(scn.Text())
+		hash = append(hash, h)
 	}
 
 	return hash, scn.Err()

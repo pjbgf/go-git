@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 )
@@ -11,7 +12,7 @@ import (
 // Blob is used to store arbitrary data - it is generally a file.
 type Blob struct {
 	// Hash of the blob.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	// Size of the (uncompressed) blob.
 	Size int64
 
@@ -19,7 +20,7 @@ type Blob struct {
 }
 
 // GetBlob gets a blob from an object storer and decodes it.
-func GetBlob(s storer.EncodedObjectStorer, h plumbing.Hash) (*Blob, error) {
+func GetBlob(s storer.EncodedObjectStorer, h common.ObjectHash) (*Blob, error) {
 	o, err := s.EncodedObject(plumbing.BlobObject, h)
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func DecodeBlob(o plumbing.EncodedObject) (*Blob, error) {
 // the current value of Blob.Hash.
 //
 // ID is present to fulfill the Object interface.
-func (b *Blob) ID() plumbing.Hash {
+func (b *Blob) ID() common.ObjectHash {
 	return b.Hash
 }
 

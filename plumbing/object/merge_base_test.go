@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -71,29 +73,29 @@ func (s *mergeBaseSuite) SetUpSuite(c *C) {
 	s.Storer = filesystem.NewStorage(s.Fixture.DotGit(), cache.NewObjectLRUDefault())
 }
 
-var revisionIndex = map[string]plumbing.Hash{
-	"master":  plumbing.NewHash("dce0e0c20d701c3d260146e443d6b3b079505191"),
-	"feature": plumbing.NewHash("d1b0093698e398d596ef94d646c4db37e8d1e970"),
-	"dev":     plumbing.NewHash("25ca6c810c08482d61113fbcaaada38bb59093a8"),
-	"M":       plumbing.NewHash("bb355b64e18386dbc3af63dfd09c015c44cbd9b6"),
-	"N":       plumbing.NewHash("d64b894762ab5f09e2b155221b90c18bd0637236"),
-	"A":       plumbing.NewHash("29740cfaf0c2ee4bb532dba9e80040ca738f367c"),
-	"B":       plumbing.NewHash("2c84807970299ba98951c65fe81ebbaac01030f0"),
-	"AB":      plumbing.NewHash("31a7e081a28f149ee98ffd13ba1a6d841a5f46fd"),
-	"P":       plumbing.NewHash("ff84393134864cf9d3a9853a81bde81778bd5805"),
-	"C":       plumbing.NewHash("8b72fabdc4222c3ff965bc310ded788c601c50ed"),
-	"D":       plumbing.NewHash("14777cf3e209334592fbfd0b878f6868394db836"),
-	"CD1":     plumbing.NewHash("4709e13a3cbb300c2b8a917effda776e1b8955c7"),
-	"CD2":     plumbing.NewHash("38468e274e91e50ffb637b88a1954ab6193fe974"),
-	"S":       plumbing.NewHash("628f1a42b70380ed05734bf01b468b46206ef1ea"),
-	"G":       plumbing.NewHash("d1b0093698e398d596ef94d646c4db37e8d1e970"),
-	"Q":       plumbing.NewHash("dce0e0c20d701c3d260146e443d6b3b079505191"),
-	"GQ1":     plumbing.NewHash("ccaaa99c21dad7e9f392c36ae8cb72dc63bed458"),
-	"GQ2":     plumbing.NewHash("806824d4778e94fe7c3244e92a9cd07090c9ab54"),
-	"A^":      plumbing.NewHash("31a7e081a28f149ee98ffd13ba1a6d841a5f46fd"),
-	"A^^":     plumbing.NewHash("bb355b64e18386dbc3af63dfd09c015c44cbd9b6"),
-	"A^^^":    plumbing.NewHash("8d08dd1388b82dd354cb43918d83da86c76b0978"),
-	"N^":      plumbing.NewHash("b6e1fc8dad4f1068fb42774ec5fc65c065b2c312"),
+var revisionIndex = map[string]common.ObjectHash{
+	"master":  X(sha1.FromHex("dce0e0c20d701c3d260146e443d6b3b079505191")),
+	"feature": X(sha1.FromHex("d1b0093698e398d596ef94d646c4db37e8d1e970")),
+	"dev":     X(sha1.FromHex("25ca6c810c08482d61113fbcaaada38bb59093a8")),
+	"M":       X(sha1.FromHex("bb355b64e18386dbc3af63dfd09c015c44cbd9b6")),
+	"N":       X(sha1.FromHex("d64b894762ab5f09e2b155221b90c18bd0637236")),
+	"A":       X(sha1.FromHex("29740cfaf0c2ee4bb532dba9e80040ca738f367c")),
+	"B":       X(sha1.FromHex("2c84807970299ba98951c65fe81ebbaac01030f0")),
+	"AB":      X(sha1.FromHex("31a7e081a28f149ee98ffd13ba1a6d841a5f46fd")),
+	"P":       X(sha1.FromHex("ff84393134864cf9d3a9853a81bde81778bd5805")),
+	"C":       X(sha1.FromHex("8b72fabdc4222c3ff965bc310ded788c601c50ed")),
+	"D":       X(sha1.FromHex("14777cf3e209334592fbfd0b878f6868394db836")),
+	"CD1":     X(sha1.FromHex("4709e13a3cbb300c2b8a917effda776e1b8955c7")),
+	"CD2":     X(sha1.FromHex("38468e274e91e50ffb637b88a1954ab6193fe974")),
+	"S":       X(sha1.FromHex("628f1a42b70380ed05734bf01b468b46206ef1ea")),
+	"G":       X(sha1.FromHex("d1b0093698e398d596ef94d646c4db37e8d1e970")),
+	"Q":       X(sha1.FromHex("dce0e0c20d701c3d260146e443d6b3b079505191")),
+	"GQ1":     X(sha1.FromHex("ccaaa99c21dad7e9f392c36ae8cb72dc63bed458")),
+	"GQ2":     X(sha1.FromHex("806824d4778e94fe7c3244e92a9cd07090c9ab54")),
+	"A^":      X(sha1.FromHex("31a7e081a28f149ee98ffd13ba1a6d841a5f46fd")),
+	"A^^":     X(sha1.FromHex("bb355b64e18386dbc3af63dfd09c015c44cbd9b6")),
+	"A^^^":    X(sha1.FromHex("8d08dd1388b82dd354cb43918d83da86c76b0978")),
+	"N^":      X(sha1.FromHex("b6e1fc8dad4f1068fb42774ec5fc65c065b2c312")),
 }
 
 func (s *mergeBaseSuite) commitsFromRevs(c *C, revs []string) ([]*Commit, error) {

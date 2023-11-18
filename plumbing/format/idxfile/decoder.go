@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -16,39 +17,69 @@ var (
 	ErrUnsupportedVersion = errors.New("unsupported version")
 	// ErrMalformedIdxFile is returned by Decode when the idx file is corrupted.
 	ErrMalformedIdxFile = errors.New("malformed IDX file")
+	// ErrMemoryIndexInUse is returned when an exclusive lock cannot be acquired
+	// for a MemoryIndex. This is likely to happen when the same MemoryIndex is
+	// being used concurrently for more than one Decode or Encode operation.
+	ErrMemoryIndexLocked = errors.New("memory index is locked")
 )
 
 const (
-	fanout         = 256
-	objectIDLength = hash.Size
+	fanout            = 256
+	magicNumberLength = 4
 )
 
 // Decoder reads and decodes idx files from an input stream.
 type Decoder struct {
 	*bufio.Reader
+	version Version
+	factory common.HashFactory
 }
 
 // NewDecoder builds a new idx stream decoder, that reads from r.
-func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{bufio.NewReader(r)}
+func NewDecoder(r io.Reader, f common.HashFactory) (*Decoder, error) {
+	if r == nil {
+		return nil, fmt.Errorf("cannot create decoder: nil reader")
+	}
+
+	if r == nil {
+		return nil, fmt.Errorf("cannot create decoder: nil HashFactory")
+	}
+
+	return &Decoder{
+		bufio.NewReader(r),
+		VersionNotSet,
+		f,
+	}, nil
+}
+
+var decodeFlow = []func(*MemoryIndex, io.Reader) error{
+	readVersion,
+	readFanout,
+	readObjectNames,
+	readCRC32,
+	readOffsets,
+	readChecksums,
 }
 
 // Decode reads from the stream and decode the content into the MemoryIndex struct.
+// It is safe to use a previously used MemoryIndex, as it will be reset before the
+// decoding process.
 func (d *Decoder) Decode(idx *MemoryIndex) error {
-	if err := validateHeader(d); err != nil {
+	if idx == nil {
+		return fmt.Errorf("failed to decode: target index is nil")
+	}
+
+	if !idx.m.TryLock() {
+		return fmt.Errorf("failed to decode: %w", ErrMemoryIndexLocked)
+	}
+	defer idx.m.Unlock()
+	idx.reset(d.factory)
+
+	if err := validateHeader(idx, d); err != nil {
 		return err
 	}
 
-	flow := []func(*MemoryIndex, io.Reader) error{
-		readVersion,
-		readFanout,
-		readObjectNames,
-		readCRC32,
-		readOffsets,
-		readChecksums,
-	}
-
-	for _, f := range flow {
+	for _, f := range decodeFlow {
 		if err := f(idx, d); err != nil {
 			return err
 		}
@@ -57,13 +88,12 @@ func (d *Decoder) Decode(idx *MemoryIndex) error {
 	return nil
 }
 
-func validateHeader(r io.Reader) error {
-	var h = make([]byte, 4)
-	if _, err := io.ReadFull(r, h); err != nil {
+func validateHeader(idx *MemoryIndex, r io.Reader) error {
+	if _, err := io.ReadFull(r, idx.header[:]); err != nil {
 		return err
 	}
 
-	if !bytes.Equal(h, idxHeader) {
+	if !bytes.Equal(idx.header[:], idxHeader) {
 		return ErrMalformedIdxFile
 	}
 
@@ -76,11 +106,15 @@ func readVersion(idx *MemoryIndex, r io.Reader) error {
 		return err
 	}
 
-	if v > VersionSupported {
+	switch v {
+	case uint32(Version2):
+		idx.Version = 2
+	case uint32(Version3):
+		idx.Version = 3
+	default:
 		return ErrUnsupportedVersion
 	}
 
-	idx.Version = v
 	return nil
 }
 
@@ -100,11 +134,9 @@ func readFanout(idx *MemoryIndex, r io.Reader) error {
 
 func readObjectNames(idx *MemoryIndex, r io.Reader) error {
 	for k := 0; k < fanout; k++ {
-		var buckets uint32
-		if k == 0 {
-			buckets = idx.Fanout[k]
-		} else {
-			buckets = idx.Fanout[k] - idx.Fanout[k-1]
+		buckets := idx.Fanout[k]
+		if k != 0 {
+			buckets -= idx.Fanout[k-1]
 		}
 
 		if buckets == 0 {
@@ -113,7 +145,7 @@ func readObjectNames(idx *MemoryIndex, r io.Reader) error {
 
 		idx.FanoutMapping[k] = len(idx.Names)
 
-		nameLen := int(buckets * objectIDLength)
+		nameLen := int(buckets) * idx.factory.Size()
 		bin := make([]byte, nameLen)
 		if _, err := io.ReadFull(r, bin); err != nil {
 			return err
@@ -123,7 +155,6 @@ func readObjectNames(idx *MemoryIndex, r io.Reader) error {
 		idx.Offset32 = append(idx.Offset32, make([]byte, buckets*4))
 		idx.CRC32 = append(idx.CRC32, make([]byte, buckets*4))
 	}
-
 	return nil
 }
 
@@ -166,8 +197,16 @@ func readOffsets(idx *MemoryIndex, r io.Reader) error {
 }
 
 func readChecksums(idx *MemoryIndex, r io.Reader) error {
+	if len(idx.PackfileChecksum) == 0 {
+		idx.PackfileChecksum = make([]byte, idx.factory.Size())
+	}
+
 	if _, err := io.ReadFull(r, idx.PackfileChecksum[:]); err != nil {
 		return err
+	}
+
+	if len(idx.IdxChecksum) == 0 {
+		idx.IdxChecksum = make([]byte, idx.factory.Size())
 	}
 
 	if _, err := io.ReadFull(r, idx.IdxChecksum[:]); err != nil {

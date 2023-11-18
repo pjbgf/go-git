@@ -16,6 +16,8 @@ import (
 	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/utils/ioutil"
@@ -64,7 +66,7 @@ func advertisedReferences(ctx context.Context, s *session, serviceName string) (
 		return nil, err
 	}
 
-	ar := packp.NewAdvRefs()
+	ar := packp.NewAdvRefs(hash.HashFactory(config.SHA1))
 	if err = ar.Decode(res.Body); err != nil {
 		if err == packp.ErrEmptyAdvRefs {
 			err = transport.ErrEmptyRemoteRepository

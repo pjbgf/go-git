@@ -15,8 +15,13 @@ import (
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5/config"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	format "github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -689,7 +694,7 @@ func (s *RemoteSuite) TestPushFollowTags(c *C) {
 	localRepo := newRepository(sto, fs)
 	tipTag, err := localRepo.CreateTag(
 		"tip",
-		plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
+		X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
 		&CreateTagOptions{
 			Message: "an annotated tag",
 		},
@@ -698,7 +703,7 @@ func (s *RemoteSuite) TestPushFollowTags(c *C) {
 
 	initialTag, err := localRepo.CreateTag(
 		"initial-commit",
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 		&CreateTagOptions{
 			Message: "a tag for the initial commit",
 		},
@@ -707,7 +712,7 @@ func (s *RemoteSuite) TestPushFollowTags(c *C) {
 
 	_, err = localRepo.CreateTag(
 		"master-tag",
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
 		&CreateTagOptions{
 			Message: "a tag with a commit not reachable from branch",
 		},
@@ -905,7 +910,7 @@ func (s *RemoteSuite) TestPushForceWithLease_success(c *C) {
 			desc: "ref name and sha",
 			forceWithLease: ForceWithLease{
 				RefName: plumbing.ReferenceName("refs/heads/branch"),
-				Hash:    plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
+				Hash:    X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
 			},
 		},
 	}
@@ -919,7 +924,7 @@ func (s *RemoteSuite) TestPushForceWithLease_success(c *C) {
 		dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 
 		newCommit := plumbing.NewHashReference(
-			"refs/heads/branch", plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+			"refs/heads/branch", X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 		)
 		c.Assert(sto.SetReference(newCommit), IsNil)
 
@@ -967,7 +972,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 			desc: "ref name and sha",
 			forceWithLease: ForceWithLease{
 				RefName: plumbing.ReferenceName("refs/heads/branch"),
-				Hash:    plumbing.NewHash("152175bf7e5580299fa1f0ba41ef6474cc043b70"),
+				Hash:    X(sha1.FromHex("152175bf7e5580299fa1f0ba41ef6474cc043b70")),
 			},
 		},
 	}
@@ -979,7 +984,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 		c.Assert(sto.SetReference(
 			plumbing.NewHashReference(
-				"refs/heads/branch", plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+				"refs/heads/branch", X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 			),
 		), IsNil)
 
@@ -987,7 +992,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 		dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 		c.Assert(dstSto.SetReference(
 			plumbing.NewHashReference(
-				"refs/heads/branch", plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"),
+				"refs/heads/branch", X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")),
 			),
 		), IsNil)
 
@@ -1010,7 +1015,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 
 		newRef, err := dstSto.Reference("refs/heads/branch")
 		c.Assert(err, IsNil)
-		c.Assert(newRef, Not(DeepEquals), plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"))
+		c.Assert(newRef, Not(DeepEquals), X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")))
 	}
 }
 
@@ -1317,18 +1322,18 @@ func (s *RemoteSuite) TestListTimeout(c *C) {
 }
 
 func (s *RemoteSuite) TestUpdateShallows(c *C) {
-	hashes := []plumbing.Hash{
-		plumbing.NewHash("0000000000000000000000000000000000000001"),
-		plumbing.NewHash("0000000000000000000000000000000000000002"),
-		plumbing.NewHash("0000000000000000000000000000000000000003"),
-		plumbing.NewHash("0000000000000000000000000000000000000004"),
-		plumbing.NewHash("0000000000000000000000000000000000000005"),
-		plumbing.NewHash("0000000000000000000000000000000000000006"),
+	hashes := []common.ObjectHash{
+		X(sha1.FromHex("0000000000000000000000000000000000000001")),
+		X(sha1.FromHex("0000000000000000000000000000000000000002")),
+		X(sha1.FromHex("0000000000000000000000000000000000000003")),
+		X(sha1.FromHex("0000000000000000000000000000000000000004")),
+		X(sha1.FromHex("0000000000000000000000000000000000000005")),
+		X(sha1.FromHex("0000000000000000000000000000000000000006")),
 	}
 
 	tests := []struct {
-		hashes []plumbing.Hash
-		result []plumbing.Hash
+		hashes []common.ObjectHash
+		result []common.ObjectHash
 	}{
 		// add to empty shallows
 		{hashes[0:2], hashes[0:2]},
@@ -1382,7 +1387,7 @@ func (s *RemoteSuite) TestUseRefDeltas(c *C) {
 		URLs: []string{url},
 	})
 
-	ar := packp.NewAdvRefs()
+	ar := packp.NewAdvRefs(hash.HashFactory(format.SHA1))
 
 	ar.Capabilities.Add(capability.OFSDelta)
 	c.Assert(r.useRefDeltas(ar), Equals, false)
@@ -1631,7 +1636,7 @@ func TestFetchFastForwardForCustomRef(t *testing.T) {
 	}
 }
 
-func writeEmptyTree(t *testing.T, repo *Repository) plumbing.Hash {
+func writeEmptyTree(t *testing.T, repo *Repository) common.ObjectHash {
 	t.Helper()
 
 	obj := repo.Storer.NewEncodedObject()
@@ -1650,13 +1655,13 @@ func writeEmptyTree(t *testing.T, repo *Repository) plumbing.Hash {
 	return treeID
 }
 
-func writeCommitToRef(t *testing.T, repo *Repository, refName string, treeID plumbing.Hash, when time.Time) plumbing.Hash {
+func writeCommitToRef(t *testing.T, repo *Repository, refName string, treeID common.ObjectHash, when time.Time) common.ObjectHash {
 	t.Helper()
 
 	ref, err := repo.Reference(plumbing.ReferenceName(refName), true)
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
-			if err := repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(refName), plumbing.ZeroHash)); err != nil {
+			if err := repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(refName), sha1.ZeroHash())); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1676,7 +1681,7 @@ func writeCommitToRef(t *testing.T, repo *Repository, refName string, treeID plu
 		},
 	}
 	if !ref.Hash().IsZero() {
-		commit.ParentHashes = []plumbing.Hash{ref.Hash()}
+		commit.ParentHashes = []common.ObjectHash{ref.Hash()}
 	}
 
 	obj := repo.Storer.NewEncodedObject()

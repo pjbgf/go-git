@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	. "gopkg.in/check.v1"
 )
@@ -83,7 +83,7 @@ func (s *OptionsSuite) TestCreateTagOptionsLoadGlobal(c *C) {
 		Message: "foo",
 	}
 
-	err := o.Validate(s.Repository, plumbing.ZeroHash)
+	err := o.Validate(s.Repository, sha1.ZeroHash())
 	c.Assert(err, IsNil)
 
 	c.Assert(o.Tagger.Name, Equals, "foo")

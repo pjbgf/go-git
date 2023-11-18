@@ -4,31 +4,33 @@ import (
 	"math"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // MemoryIndex provides a way to build the commit-graph in memory
 // for later encoding to file.
 type MemoryIndex struct {
 	commitData      []commitData
-	indexMap        map[plumbing.Hash]uint32
+	indexMap        map[common.ObjectHash]uint32
 	hasGenerationV2 bool
 }
 
 type commitData struct {
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	*CommitData
 }
 
 // NewMemoryIndex creates in-memory commit graph representation
 func NewMemoryIndex() *MemoryIndex {
 	return &MemoryIndex{
-		indexMap:        make(map[plumbing.Hash]uint32),
+		indexMap:        make(map[common.ObjectHash]uint32),
 		hasGenerationV2: true,
 	}
 }
 
 // GetIndexByHash gets the index in the commit graph from commit hash, if available
-func (mi *MemoryIndex) GetIndexByHash(h plumbing.Hash) (uint32, error) {
+func (mi *MemoryIndex) GetIndexByHash(h common.ObjectHash) (uint32, error) {
 	i, ok := mi.indexMap[h]
 	if ok {
 		return i, nil
@@ -38,9 +40,9 @@ func (mi *MemoryIndex) GetIndexByHash(h plumbing.Hash) (uint32, error) {
 }
 
 // GetHashByIndex gets the hash given an index in the commit graph
-func (mi *MemoryIndex) GetHashByIndex(i uint32) (plumbing.Hash, error) {
+func (mi *MemoryIndex) GetHashByIndex(i uint32) (common.ObjectHash, error) {
 	if i >= uint32(len(mi.commitData)) {
-		return plumbing.ZeroHash, plumbing.ErrObjectNotFound
+		return sha1.ZeroHash(), plumbing.ErrObjectNotFound
 	}
 
 	return mi.commitData[i].Hash, nil
@@ -71,8 +73,8 @@ func (mi *MemoryIndex) GetCommitDataByIndex(i uint32) (*CommitData, error) {
 }
 
 // Hashes returns all the hashes that are available in the index
-func (mi *MemoryIndex) Hashes() []plumbing.Hash {
-	hashes := make([]plumbing.Hash, 0, len(mi.indexMap))
+func (mi *MemoryIndex) Hashes() []common.ObjectHash {
+	hashes := make([]common.ObjectHash, 0, len(mi.indexMap))
 	for k := range mi.indexMap {
 		hashes = append(hashes, k)
 	}
@@ -80,7 +82,7 @@ func (mi *MemoryIndex) Hashes() []plumbing.Hash {
 }
 
 // Add adds new node to the memory index
-func (mi *MemoryIndex) Add(hash plumbing.Hash, data *CommitData) {
+func (mi *MemoryIndex) Add(hash common.ObjectHash, data *CommitData) {
 	// The parent indexes are calculated lazily in GetNodeByIndex
 	// which allows adding nodes out of order as long as all parents
 	// are eventually resolved

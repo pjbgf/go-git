@@ -8,6 +8,8 @@ import (
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -24,7 +26,7 @@ import (
 // https://git-scm.com/book/en/v2/Git-Internals-Git-References#Tags
 type Tag struct {
 	// Hash of the tag.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	// Name of the tag.
 	Name string
 	// Tagger is the one who created the tag.
@@ -36,13 +38,13 @@ type Tag struct {
 	// TargetType is the object type of the target.
 	TargetType plumbing.ObjectType
 	// Target is the hash of the target object.
-	Target plumbing.Hash
+	Target common.ObjectHash
 
 	s storer.EncodedObjectStorer
 }
 
 // GetTag gets a tag from an object storer and decodes it.
-func GetTag(s storer.EncodedObjectStorer, h plumbing.Hash) (*Tag, error) {
+func GetTag(s storer.EncodedObjectStorer, h common.ObjectHash) (*Tag, error) {
 	o, err := s.EncodedObject(plumbing.TagObject, h)
 	if err != nil {
 		return nil, err
@@ -66,7 +68,7 @@ func DecodeTag(s storer.EncodedObjectStorer, o plumbing.EncodedObject) (*Tag, er
 // The returned value will always match the current value of Tag.Hash.
 //
 // ID is present to fulfill the Object interface.
-func (t *Tag) ID() plumbing.Hash {
+func (t *Tag) ID() common.ObjectHash {
 	return t.Hash
 }
 
@@ -109,7 +111,7 @@ func (t *Tag) Decode(o plumbing.EncodedObject) (err error) {
 		split := bytes.SplitN(line, []byte{' '}, 2)
 		switch string(split[0]) {
 		case "object":
-			t.Target = plumbing.NewHash(string(split[1]))
+			t.Target = sha1.FromBytes(split[1])
 		case "type":
 			t.TargetType, err = plumbing.ParseObjectType(string(split[1]))
 			if err != nil {

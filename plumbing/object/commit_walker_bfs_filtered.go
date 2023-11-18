@@ -3,7 +3,7 @@ package object
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -42,7 +42,7 @@ func NewFilterCommitIter(
 	return &filterCommitIter{
 		isValid: validFilter,
 		isLimit: limitFilter,
-		visited: map[plumbing.Hash]struct{}{},
+		visited: map[common.ObjectHash]struct{}{},
 		queue:   []*Commit{from},
 	}
 }
@@ -54,7 +54,7 @@ type CommitFilter func(*Commit) bool
 type filterCommitIter struct {
 	isValid CommitFilter
 	isLimit CommitFilter
-	visited map[plumbing.Hash]struct{}
+	visited map[common.ObjectHash]struct{}
 	queue   []*Commit
 	lastErr error
 }
@@ -116,7 +116,7 @@ func (w *filterCommitIter) Error() error {
 
 // Close closes the CommitIter
 func (w *filterCommitIter) Close() {
-	w.visited = map[plumbing.Hash]struct{}{}
+	w.visited = map[common.ObjectHash]struct{}{}
 	w.queue = []*Commit{}
 	w.isLimit = nil
 	w.isValid = nil
@@ -156,7 +156,7 @@ func (w *filterCommitIter) popNewFromQueue() (*Commit, error) {
 // or returns an error if the passed hashes could not be used to get valid commits
 func (w *filterCommitIter) addToQueue(
 	store storer.EncodedObjectStorer,
-	hashes ...plumbing.Hash,
+	hashes ...common.ObjectHash,
 ) error {
 	for _, hash := range hashes {
 		if _, ok := w.visited[hash]; ok {

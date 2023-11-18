@@ -3,7 +3,7 @@ package server_test
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
@@ -43,8 +43,11 @@ func (s *ReceivePackSuite) TestReceivePackWithNilPackfile(c *C) {
 
 	fixture := fixtures.Basic().ByTag("packfile").One()
 	req := packp.NewReferenceUpdateRequest()
+	hash, ok := sha1.FromHex(fixture.Head)
+	c.Assert(ok, Equals, true)
+
 	req.Commands = []*packp.Command{
-		{Name: "refs/heads/newbranch", Old: plumbing.NewHash(fixture.Head), New: plumbing.ZeroHash},
+		{Name: "refs/heads/newbranch", Old: hash, New: sha1.ZeroHash()},
 	}
 	// default is already nil, but be explicit since this is what the test is for
 	req.Packfile = nil

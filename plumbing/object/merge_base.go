@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -61,12 +61,12 @@ func (c *Commit) IsAncestor(other *Commit) (bool, error) {
 // ancestorsIndex returns a map with the ancestors of the starting commit if the
 // excluded one is not one of them. It returns errIsReachable if the excluded commit
 // is ancestor of the starting, or another error if the history is not traversable.
-func ancestorsIndex(excluded, starting *Commit) (map[plumbing.Hash]struct{}, error) {
+func ancestorsIndex(excluded, starting *Commit) (map[common.ObjectHash]struct{}, error) {
 	if excluded.Hash.String() == starting.Hash.String() {
 		return nil, errIsReachable
 	}
 
-	startingHistory := map[plumbing.Hash]struct{}{}
+	startingHistory := map[common.ObjectHash]struct{}{}
 	startingIter := NewCommitIterBSF(starting, nil, nil)
 	err := startingIter.ForEach(func(commit *Commit) error {
 		if commit.Hash == excluded.Hash {
@@ -91,7 +91,7 @@ func Independents(commits []*Commit) ([]*Commit, error) {
 	candidates := sortByCommitDateDesc(commits...)
 	candidates = removeDuplicated(candidates)
 
-	seen := map[plumbing.Hash]struct{}{}
+	seen := map[common.ObjectHash]struct{}{}
 	var isLimit CommitFilter = func(commit *Commit) bool {
 		_, ok := seen[commit.Hash]
 		return ok
@@ -184,7 +184,7 @@ func remove(commits []*Commit, toDelete *Commit) []*Commit {
 
 // removeDuplicated removes duplicated commits from the passed slice of commits
 func removeDuplicated(commits []*Commit) []*Commit {
-	seen := make(map[plumbing.Hash]struct{}, len(commits))
+	seen := make(map[common.ObjectHash]struct{}, len(commits))
 	res := make([]*Commit, len(commits))
 	j := 0
 	for _, commit := range commits {
@@ -202,7 +202,7 @@ func removeDuplicated(commits []*Commit) []*Commit {
 
 // isInIndexCommitFilter returns a commitFilter that returns true
 // if the commit is in the passed index.
-func isInIndexCommitFilter(index map[plumbing.Hash]struct{}) CommitFilter {
+func isInIndexCommitFilter(index map[common.ObjectHash]struct{}) CommitFilter {
 	return func(c *Commit) bool {
 		_, ok := index[c.Hash]
 		return ok

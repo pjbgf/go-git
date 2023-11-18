@@ -7,6 +7,8 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -18,7 +20,7 @@ var _ = Suite(&SuiteReader{})
 func (s *SuiteReader) TestReadObjfile(c *C) {
 	for k, fixture := range objfileFixtures {
 		com := fmt.Sprintf("test %d: ", k)
-		hash := plumbing.NewHash(fixture.hash)
+		hash, _ := sha1.FromHex(fixture.hash)
 		content, _ := base64.StdEncoding.DecodeString(fixture.content)
 		data, _ := base64.StdEncoding.DecodeString(fixture.data)
 
@@ -26,7 +28,7 @@ func (s *SuiteReader) TestReadObjfile(c *C) {
 	}
 }
 
-func testReader(c *C, source io.Reader, hash plumbing.Hash, t plumbing.ObjectType, content []byte, com string) {
+func testReader(c *C, source io.Reader, hash common.ObjectHash, t plumbing.ObjectType, content []byte, com string) {
 	r, err := NewReader(source)
 	c.Assert(err, IsNil)
 

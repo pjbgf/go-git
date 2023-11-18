@@ -1,7 +1,7 @@
 package transactional
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -21,12 +21,12 @@ func NewShallowStorage(base, temporal storer.ShallowStorer) *ShallowStorage {
 }
 
 // SetShallow honors the storer.ShallowStorer interface.
-func (s *ShallowStorage) SetShallow(commits []plumbing.Hash) error {
+func (s *ShallowStorage) SetShallow(commits []common.ObjectHash) error {
 	return s.temporal.SetShallow(commits)
 }
 
 // Shallow honors the storer.ShallowStorer interface.
-func (s *ShallowStorage) Shallow() ([]plumbing.Hash, error) {
+func (s *ShallowStorage) Shallow() ([]common.ObjectHash, error) {
 	shallow, err := s.temporal.Shallow()
 	if err != nil {
 		return nil, err

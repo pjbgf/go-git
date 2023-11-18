@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -13,7 +15,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 type ObjectSuite struct {
 	Objects []plumbing.EncodedObject
-	Hash    []plumbing.Hash
+	Hash    []common.ObjectHash
 }
 
 var _ = Suite(&ObjectSuite{})
@@ -129,11 +131,11 @@ func (o *MockObjectStorage) NewEncodedObject() plumbing.EncodedObject {
 	return nil
 }
 
-func (o *MockObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.Hash, error) {
-	return plumbing.ZeroHash, nil
+func (o *MockObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (common.ObjectHash, error) {
+	return sha1.ZeroHash(), nil
 }
 
-func (o *MockObjectStorage) HasEncodedObject(h plumbing.Hash) error {
+func (o *MockObjectStorage) HasEncodedObject(h common.ObjectHash) error {
 	for _, o := range o.db {
 		if o.Hash() == h {
 			return nil
@@ -142,7 +144,7 @@ func (o *MockObjectStorage) HasEncodedObject(h plumbing.Hash) error {
 	return plumbing.ErrObjectNotFound
 }
 
-func (o *MockObjectStorage) EncodedObjectSize(h plumbing.Hash) (
+func (o *MockObjectStorage) EncodedObjectSize(h common.ObjectHash) (
 	size int64, err error) {
 	for _, o := range o.db {
 		if o.Hash() == h {
@@ -152,7 +154,7 @@ func (o *MockObjectStorage) EncodedObjectSize(h plumbing.Hash) (
 	return 0, plumbing.ErrObjectNotFound
 }
 
-func (o *MockObjectStorage) EncodedObject(t plumbing.ObjectType, h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (o *MockObjectStorage) EncodedObject(t plumbing.ObjectType, h common.ObjectHash) (plumbing.EncodedObject, error) {
 	for _, o := range o.db {
 		if o.Hash() == h {
 			return o, nil

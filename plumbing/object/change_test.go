@@ -5,10 +5,13 @@ import (
 	"sort"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/format/diff"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
@@ -29,7 +32,7 @@ func (s *ChangeSuite) SetUpSuite(c *C) {
 	s.Storer = sto
 }
 
-func (s *ChangeSuite) tree(c *C, h plumbing.Hash) *Tree {
+func (s *ChangeSuite) tree(c *C, h common.ObjectHash) *Tree {
 	t, err := GetTree(s.Storer, h)
 	c.Assert(err, IsNil)
 	return t
@@ -50,8 +53,8 @@ func (s *ChangeSuite) TestInsert(c *C) {
 	path := "examples/clone/main.go"
 	name := "main.go"
 	mode := filemode.Regular
-	blob := plumbing.NewHash("f95dc8f7923add1a8b9f72ecb1e8db1402de601a")
-	tree := plumbing.NewHash("6efca3ff41cab651332f9ebc0c96bb26be809615")
+	blob := X(sha1.FromHex("f95dc8f7923add1a8b9f72ecb1e8db1402de601a"))
+	tree := X(sha1.FromHex("6efca3ff41cab651332f9ebc0c96bb26be809615"))
 
 	change := &Change{
 		From: empty,
@@ -108,8 +111,8 @@ func (s *ChangeSuite) TestDelete(c *C) {
 	path := "utils/difftree/difftree.go"
 	name := "difftree.go"
 	mode := filemode.Regular
-	blob := plumbing.NewHash("e2cb9a5719daf634d45a063112b4044ee81da13e")
-	tree := plumbing.NewHash("f3d11566401ce4b0808aab9dd6fad3d5abf1481a")
+	blob := X(sha1.FromHex("e2cb9a5719daf634d45a063112b4044ee81da13e"))
+	tree := X(sha1.FromHex("f3d11566401ce4b0808aab9dd6fad3d5abf1481a"))
 
 	change := &Change{
 		From: ChangeEntry{
@@ -168,10 +171,10 @@ func (s *ChangeSuite) TestModify(c *C) {
 	path := "utils/difftree/difftree.go"
 	name := "difftree.go"
 	mode := filemode.Regular
-	fromBlob := plumbing.NewHash("05f583ace3a9a078d8150905a53a4d82567f125f")
-	fromTree := plumbing.NewHash("b1f01b730b855c82431918cb338ad47ed558999b")
-	toBlob := plumbing.NewHash("de927fad935d172929aacf20e71f3bf0b91dd6f9")
-	toTree := plumbing.NewHash("8b0af31d2544acb5c4f3816a602f11418cbd126e")
+	fromBlob := X(sha1.FromHex("05f583ace3a9a078d8150905a53a4d82567f125f"))
+	fromTree := X(sha1.FromHex("b1f01b730b855c82431918cb338ad47ed558999b"))
+	toBlob := X(sha1.FromHex("de927fad935d172929aacf20e71f3bf0b91dd6f9"))
+	toTree := X(sha1.FromHex("8b0af31d2544acb5c4f3816a602f11418cbd126e"))
 
 	change := &Change{
 		From: ChangeEntry{
@@ -308,10 +311,10 @@ func (s *ChangeSuite) TestErrorsFindingChildsAreDetected(c *C) {
 	path := "utils/difftree/difftree.go"
 	name := "difftree.go"
 	mode := filemode.Regular
-	fromBlob := plumbing.NewHash("aaaa") // does not exists
-	fromTree := plumbing.NewHash("b1f01b730b855c82431918cb338ad47ed558999b")
-	toBlob := plumbing.NewHash("bbbb") // does not exists
-	toTree := plumbing.NewHash("8b0af31d2544acb5c4f3816a602f11418cbd126e")
+	fromBlob := X(sha1.FromHex("aaaa")) // does not exists
+	fromTree := X(sha1.FromHex("b1f01b730b855c82431918cb338ad47ed558999b"))
+	toBlob := X(sha1.FromHex("bbbb")) // does not exists
+	toTree := X(sha1.FromHex("8b0af31d2544acb5c4f3816a602f11418cbd126e"))
 
 	change := &Change{
 		From: ChangeEntry{
@@ -403,8 +406,8 @@ func (s *ChangeSuite) TestCancel(c *C) {
 	path := "examples/clone/main.go"
 	name := "main.go"
 	mode := filemode.Regular
-	blob := plumbing.NewHash("f95dc8f7923add1a8b9f72ecb1e8db1402de601a")
-	tree := plumbing.NewHash("6efca3ff41cab651332f9ebc0c96bb26be809615")
+	blob := X(sha1.FromHex("f95dc8f7923add1a8b9f72ecb1e8db1402de601a"))
+	tree := X(sha1.FromHex("6efca3ff41cab651332f9ebc0c96bb26be809615"))
 
 	change := &Change{
 		From: empty,

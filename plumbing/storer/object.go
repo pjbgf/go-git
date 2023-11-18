@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 var (
@@ -22,7 +23,7 @@ type EncodedObjectStorer interface {
 	// SetEncodedObject saves an object into the storage, the object should
 	// be create with the NewEncodedObject, method, and file if the type is
 	// not supported.
-	SetEncodedObject(plumbing.EncodedObject) (plumbing.Hash, error)
+	SetEncodedObject(plumbing.EncodedObject) (common.ObjectHash, error)
 	// EncodedObject gets an object by hash with the given
 	// plumbing.ObjectType. Implementors should return
 	// (nil, plumbing.ErrObjectNotFound) if an object doesn't exist with
@@ -31,7 +32,7 @@ type EncodedObjectStorer interface {
 	// Valid plumbing.ObjectType values are CommitObject, BlobObject, TagObject,
 	// TreeObject and AnyObject. If plumbing.AnyObject is given, the object must
 	// be looked up regardless of its type.
-	EncodedObject(plumbing.ObjectType, plumbing.Hash) (plumbing.EncodedObject, error)
+	EncodedObject(plumbing.ObjectType, common.ObjectHash) (plumbing.EncodedObject, error)
 	// IterObjects returns a custom EncodedObjectStorer over all the object
 	// on the storage.
 	//
@@ -39,9 +40,9 @@ type EncodedObjectStorer interface {
 	IterEncodedObjects(plumbing.ObjectType) (EncodedObjectIter, error)
 	// HasEncodedObject returns ErrObjNotFound if the object doesn't
 	// exist.  If the object does exist, it returns nil.
-	HasEncodedObject(plumbing.Hash) error
+	HasEncodedObject(common.ObjectHash) error
 	// EncodedObjectSize returns the plaintext size of the encoded object.
-	EncodedObjectSize(plumbing.Hash) (int64, error)
+	EncodedObjectSize(common.ObjectHash) (int64, error)
 	AddAlternate(remote string) error
 }
 
@@ -50,7 +51,7 @@ type EncodedObjectStorer interface {
 type DeltaObjectStorer interface {
 	// DeltaObject is the same as EncodedObject but without resolving deltas.
 	// Deltas will be returned as plumbing.DeltaObject instances.
-	DeltaObject(plumbing.ObjectType, plumbing.Hash) (plumbing.EncodedObject, error)
+	DeltaObject(plumbing.ObjectType, common.ObjectHash) (plumbing.EncodedObject, error)
 }
 
 // Transactioner is a optional method for ObjectStorer, it enables transactional read and write
@@ -67,14 +68,14 @@ type LooseObjectStorer interface {
 	// in the repository without necessarily having to read those objects.
 	// Objects only inside pack files may be omitted.
 	// If ErrStop is sent the iteration is stop but no error is returned.
-	ForEachObjectHash(func(plumbing.Hash) error) error
+	ForEachObjectHash(func(common.ObjectHash) error) error
 	// LooseObjectTime looks up the (m)time associated with the
 	// loose object (that is not in a pack file). Some
 	// implementations (e.g. without loose objects)
 	// always return an error.
-	LooseObjectTime(plumbing.Hash) (time.Time, error)
+	LooseObjectTime(common.ObjectHash) (time.Time, error)
 	// DeleteLooseObject deletes a loose object if it exists.
-	DeleteLooseObject(plumbing.Hash) error
+	DeleteLooseObject(common.ObjectHash) error
 }
 
 // PackedObjectStorer is an optional interface for managing objects in
@@ -82,10 +83,10 @@ type LooseObjectStorer interface {
 type PackedObjectStorer interface {
 	// ObjectPacks returns hashes of object packs if the underlying
 	// implementation has pack files.
-	ObjectPacks() ([]plumbing.Hash, error)
+	ObjectPacks() ([]common.ObjectHash, error)
 	// DeleteOldObjectPackAndIndex deletes an object pack and the corresponding index file if they exist.
 	// Deletion is only performed if the pack is older than the supplied time (or the time is zero).
-	DeleteOldObjectPackAndIndex(plumbing.Hash, time.Time) error
+	DeleteOldObjectPackAndIndex(common.ObjectHash, time.Time) error
 }
 
 // PackfileWriter is an optional method for ObjectStorer, it enables directly writing
@@ -108,8 +109,8 @@ type EncodedObjectIter interface {
 // Transaction is an in-progress storage transaction. A transaction must end
 // with a call to Commit or Rollback.
 type Transaction interface {
-	SetEncodedObject(plumbing.EncodedObject) (plumbing.Hash, error)
-	EncodedObject(plumbing.ObjectType, plumbing.Hash) (plumbing.EncodedObject, error)
+	SetEncodedObject(plumbing.EncodedObject) (common.ObjectHash, error)
+	EncodedObject(plumbing.ObjectType, common.ObjectHash) (plumbing.EncodedObject, error)
 	Commit() error
 	Rollback() error
 }
@@ -123,7 +124,7 @@ type Transaction interface {
 // no longer needed.
 type EncodedObjectLookupIter struct {
 	storage EncodedObjectStorer
-	series  []plumbing.Hash
+	series  []common.ObjectHash
 	t       plumbing.ObjectType
 	pos     int
 }
@@ -131,7 +132,7 @@ type EncodedObjectLookupIter struct {
 // NewEncodedObjectLookupIter returns an object iterator given an object storage
 // and a slice of object hashes.
 func NewEncodedObjectLookupIter(
-	storage EncodedObjectStorer, t plumbing.ObjectType, series []plumbing.Hash) *EncodedObjectLookupIter {
+	storage EncodedObjectStorer, t plumbing.ObjectType, series []common.ObjectHash) *EncodedObjectLookupIter {
 	return &EncodedObjectLookupIter{
 		storage: storage,
 		series:  series,

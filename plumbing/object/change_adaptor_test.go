@@ -3,9 +3,11 @@ package object
 import (
 	"sort"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
@@ -27,7 +29,7 @@ func (s *ChangeAdaptorSuite) SetUpSuite(c *C) {
 	s.Storer = sto
 }
 
-func (s *ChangeAdaptorSuite) tree(c *C, h plumbing.Hash) *Tree {
+func (s *ChangeAdaptorSuite) tree(c *C, h common.ObjectHash) *Tree {
 	t, err := GetTree(s.Storer, h)
 	c.Assert(err, IsNil)
 	return t
@@ -49,7 +51,7 @@ func newNoder(t *Tree, e TreeEntry) noder.Noder {
 func newPath(nn ...noder.Noder) noder.Path { return noder.Path(nn) }
 
 func (s *ChangeAdaptorSuite) TestTreeNoderHashHasMode(c *C) {
-	hash := plumbing.NewHash("aaaa")
+	hash := X(sha1.FromHex("aaaa"))
 	mode := filemode.Regular
 
 	treeNoder := &treeNoder{
@@ -74,7 +76,7 @@ func (s *ChangeAdaptorSuite) TestNewChangeInsert(c *C) {
 	entry := TreeEntry{
 		Name: "name",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("aaaaa"),
+		Hash: X(sha1.FromHex("aaaaa")),
 	}
 	path := newPath(newNoder(tree, entry))
 
@@ -100,7 +102,7 @@ func (s *ChangeAdaptorSuite) TestNewChangeDelete(c *C) {
 	entry := TreeEntry{
 		Name: "name",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("aaaaa"),
+		Hash: X(sha1.FromHex("aaaaa")),
 	}
 	path := newPath(newNoder(tree, entry))
 
@@ -126,7 +128,7 @@ func (s *ChangeAdaptorSuite) TestNewChangeModify(c *C) {
 	entryA := TreeEntry{
 		Name: "name",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("aaaaa"),
+		Hash: X(sha1.FromHex("aaaaa")),
 	}
 	pathA := newPath(newNoder(treeA, entryA))
 	expectedFrom, err := newChangeEntry(pathA)
@@ -136,7 +138,7 @@ func (s *ChangeAdaptorSuite) TestNewChangeModify(c *C) {
 	entryB := TreeEntry{
 		Name: "name",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("bbbb"),
+		Hash: X(sha1.FromHex("bbbb")),
 	}
 	pathB := newPath(newNoder(treeB, entryB))
 	expectedTo, err := newChangeEntry(pathB)
@@ -208,13 +210,13 @@ func (s *ChangeAdaptorSuite) TestChangeStringTo(c *C) {
 }
 
 func (s *ChangeAdaptorSuite) TestChangeFilesInsert(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	tree := s.tree(c, X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")))
 
 	change := Change{}
 	change.To.Name = "json/long.json"
 	change.To.Tree = tree
 	change.To.TreeEntry.Mode = filemode.Regular
-	change.To.TreeEntry.Hash = plumbing.NewHash("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9")
+	change.To.TreeEntry.Hash = X(sha1.FromHex("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9"))
 
 	from, to, err := change.Files()
 	c.Assert(err, IsNil)
@@ -223,27 +225,27 @@ func (s *ChangeAdaptorSuite) TestChangeFilesInsert(c *C) {
 }
 
 func (s *ChangeAdaptorSuite) TestChangeFilesInsertNotFound(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	tree := s.tree(c, X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")))
 
 	change := Change{}
 	change.To.Name = "json/long.json"
 	change.To.Tree = tree
 	change.To.TreeEntry.Mode = filemode.Regular
 	// there is no object for this hash
-	change.To.TreeEntry.Hash = plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	change.To.TreeEntry.Hash = X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 
 	_, _, err := change.Files()
 	c.Assert(err, Not(IsNil))
 }
 
 func (s *ChangeAdaptorSuite) TestChangeFilesDelete(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	tree := s.tree(c, X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")))
 
 	change := Change{}
 	change.From.Name = "json/long.json"
 	change.From.Tree = tree
 	change.From.TreeEntry.Mode = filemode.Regular
-	change.From.TreeEntry.Hash = plumbing.NewHash("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9")
+	change.From.TreeEntry.Hash = X(sha1.FromHex("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9"))
 
 	from, to, err := change.Files()
 	c.Assert(err, IsNil)
@@ -252,31 +254,31 @@ func (s *ChangeAdaptorSuite) TestChangeFilesDelete(c *C) {
 }
 
 func (s *ChangeAdaptorSuite) TestChangeFilesDeleteNotFound(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	tree := s.tree(c, X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")))
 
 	change := Change{}
 	change.From.Name = "json/long.json"
 	change.From.Tree = tree
 	change.From.TreeEntry.Mode = filemode.Regular
 	// there is no object for this hash
-	change.From.TreeEntry.Hash = plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	change.From.TreeEntry.Hash = X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 
 	_, _, err := change.Files()
 	c.Assert(err, Not(IsNil))
 }
 
 func (s *ChangeAdaptorSuite) TestChangeFilesModify(c *C) {
-	tree := s.tree(c, plumbing.NewHash("a8d315b2b1c615d43042c3a62402b8a54288cf5c"))
+	tree := s.tree(c, X(sha1.FromHex("a8d315b2b1c615d43042c3a62402b8a54288cf5c")))
 
 	change := Change{}
 	change.To.Name = "json/long.json"
 	change.To.Tree = tree
 	change.To.TreeEntry.Mode = filemode.Regular
-	change.To.TreeEntry.Hash = plumbing.NewHash("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9")
+	change.To.TreeEntry.Hash = X(sha1.FromHex("49c6bb89b17060d7b4deacb7b338fcc6ea2352a9"))
 	change.From.Name = "json/long.json"
 	change.From.Tree = tree
 	change.From.TreeEntry.Mode = filemode.Regular
-	change.From.TreeEntry.Hash = plumbing.NewHash("9a48f23120e880dfbe41f7c9b7b708e9ee62a492")
+	change.From.TreeEntry.Hash = X(sha1.FromHex("9a48f23120e880dfbe41f7c9b7b708e9ee62a492"))
 
 	from, to, err := change.Files()
 	c.Assert(err, IsNil)
@@ -301,7 +303,7 @@ func (s *ChangeAdaptorSuite) TestChangeEntryFromSortPath(c *C) {
 	entry := TreeEntry{
 		Name: "name",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("aaaaa"),
+		Hash: X(sha1.FromHex("aaaaa")),
 	}
 	path := newPath(newNoder(tree, entry))
 
@@ -318,14 +320,14 @@ func (s *ChangeAdaptorSuite) TestChangeEntryFromLongPath(c *C) {
 	entryA := TreeEntry{
 		Name: "nameA",
 		Mode: filemode.FileMode(42),
-		Hash: plumbing.NewHash("aaaa"),
+		Hash: X(sha1.FromHex("aaaa")),
 	}
 
 	treeB := &Tree{}
 	entryB := TreeEntry{
 		Name: "nameB",
 		Mode: filemode.FileMode(24),
-		Hash: plumbing.NewHash("bbbb"),
+		Hash: X(sha1.FromHex("bbbb")),
 	}
 
 	path := newPath(

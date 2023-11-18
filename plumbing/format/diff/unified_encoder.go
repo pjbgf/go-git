@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // DefaultContextLines is the default number of context lines.
@@ -140,14 +140,14 @@ func (e *UnifiedEncoder) writeFilePatchHeader(sb *strings.Builder, filePatch Fil
 		lines = append(lines,
 			fmt.Sprintf("diff --git %s %s", e.srcPrefix+to.Path(), e.dstPrefix+to.Path()),
 			fmt.Sprintf("new file mode %o", to.Mode()),
-			fmt.Sprintf("index %s..%s", plumbing.ZeroHash, to.Hash()),
+			fmt.Sprintf("index %s..%s", sha1.ZeroHash(), to.Hash()),
 		)
 		lines = e.appendPathLines(lines, "/dev/null", e.dstPrefix+to.Path(), isBinary)
 	case to == nil:
 		lines = append(lines,
 			fmt.Sprintf("diff --git %s %s", e.srcPrefix+from.Path(), e.dstPrefix+from.Path()),
 			fmt.Sprintf("deleted file mode %o", from.Mode()),
-			fmt.Sprintf("index %s..%s", from.Hash(), plumbing.ZeroHash),
+			fmt.Sprintf("index %s..%s", from.Hash(), sha1.ZeroHash()),
 		)
 		lines = e.appendPathLines(lines, e.srcPrefix+from.Path(), "/dev/null", isBinary)
 	}

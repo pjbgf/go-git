@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -87,7 +87,7 @@ func (s *BinarySuite) TestReadUint16(c *C) {
 }
 
 func (s *BinarySuite) TestReadHash(c *C) {
-	expected := plumbing.NewHash("43aec75c611f22c73b27ece2841e6ccca592f285")
+	expected, _ := sha1.FromHex("43aec75c611f22c73b27ece2841e6ccca592f285")
 	buf := bytes.NewBuffer(nil)
 	err := binary.Write(buf, binary.BigEndian, expected)
 	c.Assert(err, IsNil)

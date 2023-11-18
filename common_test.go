@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -8,6 +9,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
@@ -113,7 +116,12 @@ func (s *BaseSuite) NewRepositoryFromPackfile(f *fixtures.Fixture) *Repository {
 		panic(err)
 	}
 
-	err := storer.SetReference(plumbing.NewHashReference(plumbing.HEAD, plumbing.NewHash(f.Head)))
+	hash, ok := sha1.FromHex(f.Head)
+	if !ok {
+		panic(fmt.Sprintf("invalid hash: %q", f.Head))
+	}
+
+	err := storer.SetReference(plumbing.NewHashReference(plumbing.HEAD, hash))
 	if err != nil {
 		panic(err)
 	}
@@ -235,7 +243,7 @@ func AssertReferencesMissing(c *C, r *Repository, expected []string) {
 	}
 }
 
-func CommitNewFile(c *C, repo *Repository, fileName string) plumbing.Hash {
+func CommitNewFile(c *C, repo *Repository, fileName string) common.ObjectHash {
 	wt, err := repo.Worktree()
 	c.Assert(err, IsNil)
 

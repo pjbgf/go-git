@@ -4,10 +4,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	commitgraph "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -31,7 +32,7 @@ func unpackRepository(f *fixtures.Fixture) *filesystem.Storage {
 }
 
 func testWalker(c *C, nodeIndex CommitNodeIndex) {
-	head, err := nodeIndex.Get(plumbing.NewHash("b9d69064b190e7aedccf84731ca1d917871f8a1c"))
+	head, err := nodeIndex.Get(X(sha1.FromHex("b9d69064b190e7aedccf84731ca1d917871f8a1c")))
 	c.Assert(err, IsNil)
 
 	iter := NewCommitNodeIterCTime(
@@ -65,7 +66,7 @@ func testWalker(c *C, nodeIndex CommitNodeIndex) {
 }
 
 func testParents(c *C, nodeIndex CommitNodeIndex) {
-	merge3, err := nodeIndex.Get(plumbing.NewHash("6f6c5d2be7852c782be1dd13e36496dd7ad39560"))
+	merge3, err := nodeIndex.Get(X(sha1.FromHex("6f6c5d2be7852c782be1dd13e36496dd7ad39560")))
 	c.Assert(err, IsNil)
 
 	var parents []CommitNode
@@ -87,7 +88,7 @@ func testParents(c *C, nodeIndex CommitNodeIndex) {
 }
 
 func testCommitAndTree(c *C, nodeIndex CommitNodeIndex) {
-	merge3node, err := nodeIndex.Get(plumbing.NewHash("6f6c5d2be7852c782be1dd13e36496dd7ad39560"))
+	merge3node, err := nodeIndex.Get(X(sha1.FromHex("6f6c5d2be7852c782be1dd13e36496dd7ad39560")))
 	c.Assert(err, IsNil)
 	merge3commit, err := merge3node.Commit()
 	c.Assert(err, IsNil)

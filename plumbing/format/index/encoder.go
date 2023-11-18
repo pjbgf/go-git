@@ -27,8 +27,7 @@ type Encoder struct {
 }
 
 // NewEncoder returns a new encoder that writes to w.
-func NewEncoder(w io.Writer) *Encoder {
-	h := hash.New(hash.CryptoType)
+func NewEncoder(w io.Writer, h hash.Hash) *Encoder {
 	mw := io.MultiWriter(w, h)
 	return &Encoder{mw, h}
 }
@@ -108,7 +107,7 @@ func (e *Encoder) encodeEntry(entry *Entry) error {
 		entry.UID,
 		entry.GID,
 		entry.Size,
-		entry.Hash[:],
+		entry.Hash.Sum(),
 	}
 
 	flagsFlow := []interface{}{flags}

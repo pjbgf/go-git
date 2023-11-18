@@ -2,6 +2,7 @@ package transactional
 
 import (
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
@@ -18,12 +19,12 @@ func NewObjectStorage(base, temporal storer.EncodedObjectStorer) *ObjectStorage 
 }
 
 // SetEncodedObject honors the storer.EncodedObjectStorer interface.
-func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (plumbing.Hash, error) {
+func (o *ObjectStorage) SetEncodedObject(obj plumbing.EncodedObject) (common.ObjectHash, error) {
 	return o.temporal.SetEncodedObject(obj)
 }
 
 // HasEncodedObject honors the storer.EncodedObjectStorer interface.
-func (o *ObjectStorage) HasEncodedObject(h plumbing.Hash) error {
+func (o *ObjectStorage) HasEncodedObject(h common.ObjectHash) error {
 	err := o.EncodedObjectStorer.HasEncodedObject(h)
 	if err == plumbing.ErrObjectNotFound {
 		return o.temporal.HasEncodedObject(h)
@@ -33,7 +34,7 @@ func (o *ObjectStorage) HasEncodedObject(h plumbing.Hash) error {
 }
 
 // EncodedObjectSize honors the storer.EncodedObjectStorer interface.
-func (o *ObjectStorage) EncodedObjectSize(h plumbing.Hash) (int64, error) {
+func (o *ObjectStorage) EncodedObjectSize(h common.ObjectHash) (int64, error) {
 	sz, err := o.EncodedObjectStorer.EncodedObjectSize(h)
 	if err == plumbing.ErrObjectNotFound {
 		return o.temporal.EncodedObjectSize(h)
@@ -43,7 +44,7 @@ func (o *ObjectStorage) EncodedObjectSize(h plumbing.Hash) (int64, error) {
 }
 
 // EncodedObject honors the storer.EncodedObjectStorer interface.
-func (o *ObjectStorage) EncodedObject(t plumbing.ObjectType, h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (o *ObjectStorage) EncodedObject(t plumbing.ObjectType, h common.ObjectHash) (plumbing.EncodedObject, error) {
 	obj, err := o.EncodedObjectStorer.EncodedObject(t, h)
 	if err == plumbing.ErrObjectNotFound {
 		return o.temporal.EncodedObject(t, h)

@@ -1,7 +1,9 @@
 package transactional
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	. "gopkg.in/check.v1"
@@ -17,13 +19,13 @@ func (s *ShallowSuite) TestShallow(c *C) {
 
 	rs := NewShallowStorage(base, temporal)
 
-	commitA := plumbing.NewHash("bc9968d75e48de59f0870ffb71f5e160bbbdcf52")
-	commitB := plumbing.NewHash("aa9968d75e48de59f0870ffb71f5e160bbbdcf52")
+	commitA := X(sha1.FromHex("bc9968d75e48de59f0870ffb71f5e160bbbdcf52"))
+	commitB := X(sha1.FromHex("aa9968d75e48de59f0870ffb71f5e160bbbdcf52"))
 
-	err := base.SetShallow([]plumbing.Hash{commitA})
+	err := base.SetShallow([]common.ObjectHash{commitA})
 	c.Assert(err, IsNil)
 
-	err = rs.SetShallow([]plumbing.Hash{commitB})
+	err = rs.SetShallow([]common.ObjectHash{commitB})
 	c.Assert(err, IsNil)
 
 	commits, err := rs.Shallow()
@@ -43,11 +45,11 @@ func (s *ShallowSuite) TestCommit(c *C) {
 
 	rs := NewShallowStorage(base, temporal)
 
-	commitA := plumbing.NewHash("bc9968d75e48de59f0870ffb71f5e160bbbdcf52")
-	commitB := plumbing.NewHash("aa9968d75e48de59f0870ffb71f5e160bbbdcf52")
+	commitA := X(sha1.FromHex("bc9968d75e48de59f0870ffb71f5e160bbbdcf52"))
+	commitB := X(sha1.FromHex("aa9968d75e48de59f0870ffb71f5e160bbbdcf52"))
 
-	c.Assert(base.SetShallow([]plumbing.Hash{commitA}), IsNil)
-	c.Assert(rs.SetShallow([]plumbing.Hash{commitB}), IsNil)
+	c.Assert(base.SetShallow([]common.ObjectHash{commitA}), IsNil)
+	c.Assert(rs.SetShallow([]common.ObjectHash{commitB}), IsNil)
 
 	c.Assert(rs.Commit(), IsNil)
 

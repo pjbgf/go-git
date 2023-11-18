@@ -64,7 +64,7 @@ func (n *node) Skip() bool {
 }
 
 // Hash the hash of a filesystem is a 24-byte slice, is the result of
-// concatenating the computed plumbing.Hash of the file as a Blob and its
+// concatenating the computed common.ObjectHash of the file as a Blob and its
 // plumbing.FileMode; that way the difftree algorithm will detect changes in the
 // contents of files and also in their mode.
 //
@@ -75,7 +75,7 @@ func (n *node) Hash() []byte {
 		return make([]byte, 24)
 	}
 
-	return append(n.entry.Hash[:], n.entry.Mode.Bytes()...)
+	return append(n.entry.Hash.Sum(), n.entry.Mode.Bytes()...)
 }
 
 func (n *node) Name() string {

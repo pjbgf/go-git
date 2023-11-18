@@ -3,9 +3,10 @@ package object
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
@@ -47,7 +48,7 @@ func (s *FileSuite) TestIter(c *C) {
 		f := fixtures.ByURL(t.repo).One()
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 
-		h := plumbing.NewHash(t.commit)
+		h := X(sha1.FromHex(t.commit))
 		commit, err := GetCommit(sto, h)
 		c.Assert(err, IsNil, Commentf("subtest %d: %v (%s)", i, err, t.commit))
 
@@ -108,7 +109,7 @@ func (s *FileSuite) TestContents(c *C) {
 		f := fixtures.ByURL(t.repo).One()
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 
-		h := plumbing.NewHash(t.commit)
+		h := X(sha1.FromHex(t.commit))
 		commit, err := GetCommit(sto, h)
 		c.Assert(err, IsNil, Commentf("subtest %d: %v (%s)", i, err, t.commit))
 
@@ -161,7 +162,7 @@ func (s *FileSuite) TestLines(c *C) {
 		f := fixtures.ByURL(t.repo).One()
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 
-		h := plumbing.NewHash(t.commit)
+		h := X(sha1.FromHex(t.commit))
 		commit, err := GetCommit(sto, h)
 		c.Assert(err, IsNil, Commentf("subtest %d: %v (%s)", i, err, t.commit))
 
@@ -195,7 +196,7 @@ func (s *FileSuite) TestIgnoreEmptyDirEntries(c *C) {
 		f := fixtures.ByURL(t.repo).One()
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 
-		h := plumbing.NewHash(t.commit)
+		h := X(sha1.FromHex(t.commit))
 		commit, err := GetCommit(sto, h)
 		c.Assert(err, IsNil, Commentf("subtest %d: %v (%s)", i, err, t.commit))
 
@@ -212,7 +213,7 @@ func (s *FileSuite) TestIgnoreEmptyDirEntries(c *C) {
 }
 
 func (s *FileSuite) TestFileIter(c *C) {
-	hash := plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea")
+	hash := X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea"))
 	commit, err := GetCommit(s.Storer, hash)
 	c.Assert(err, IsNil)
 
@@ -250,7 +251,7 @@ func (s *FileSuite) TestFileIterSubmodule(c *C) {
 	dotgit := fixtures.ByURL("https://github.com/git-fixtures/submodule.git").One().DotGit()
 	st := filesystem.NewStorage(dotgit, cache.NewObjectLRUDefault())
 
-	hash := plumbing.NewHash("b685400c1f9316f350965a5993d350bc746b0bf4")
+	hash := X(sha1.FromHex("b685400c1f9316f350965a5993d350bc746b0bf4"))
 	commit, err := GetCommit(st, hash)
 	c.Assert(err, IsNil)
 

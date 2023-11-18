@@ -15,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/sideband"
@@ -183,7 +185,7 @@ func (s *session) AdvertisedReferencesContext(ctx context.Context) (*packp.AdvRe
 		return s.advRefs, nil
 	}
 
-	ar := packp.NewAdvRefs()
+	ar := packp.NewAdvRefs(hash.HashFactory(config.SHA1))
 	if err := ar.Decode(s.StdoutContext(ctx)); err != nil {
 		if err := s.handleAdvRefDecodeError(err); err != nil {
 			return nil, err

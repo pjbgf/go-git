@@ -3,7 +3,8 @@ package packp
 import (
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -34,15 +35,15 @@ func (s *UlReqSuite) TestValidateWants(c *C) {
 	err := r.Validate()
 	c.Assert(err, NotNil)
 
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	err = r.Validate()
 	c.Assert(err, IsNil)
 }
 
 func (s *UlReqSuite) TestValidateShallows(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
-	r.Shallows = append(r.Shallows, plumbing.NewHash("2222222222222222222222222222222222222222"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
+	r.Shallows = append(r.Shallows, X(sha1.FromHex("2222222222222222222222222222222222222222")))
 	err := r.Validate()
 	c.Assert(err, NotNil)
 
@@ -53,7 +54,7 @@ func (s *UlReqSuite) TestValidateShallows(c *C) {
 
 func (s *UlReqSuite) TestValidateDepthCommits(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	r.Depth = DepthCommits(42)
 
 	err := r.Validate()
@@ -66,7 +67,7 @@ func (s *UlReqSuite) TestValidateDepthCommits(c *C) {
 
 func (s *UlReqSuite) TestValidateDepthReference(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	r.Depth = DepthReference("1111111111111111111111111111111111111111")
 
 	err := r.Validate()
@@ -79,7 +80,7 @@ func (s *UlReqSuite) TestValidateDepthReference(c *C) {
 
 func (s *UlReqSuite) TestValidateDepthSince(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	r.Depth = DepthSince(time.Now())
 
 	err := r.Validate()
@@ -92,7 +93,7 @@ func (s *UlReqSuite) TestValidateDepthSince(c *C) {
 
 func (s *UlReqSuite) TestValidateConflictSideband(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	r.Capabilities.Set(capability.Sideband)
 	r.Capabilities.Set(capability.Sideband64k)
 	err := r.Validate()
@@ -101,7 +102,7 @@ func (s *UlReqSuite) TestValidateConflictSideband(c *C) {
 
 func (s *UlReqSuite) TestValidateConflictMultiACK(c *C) {
 	r := NewUploadRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	r.Capabilities.Set(capability.MultiACK)
 	r.Capabilities.Set(capability.MultiACKDetailed)
 	err := r.Validate()

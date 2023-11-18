@@ -3,8 +3,8 @@ package object
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/merkletrie/noder"
 )
 
@@ -20,7 +20,7 @@ type treeNoder struct {
 	parent   *Tree  // the root node is its own parent
 	name     string // empty string for the root node
 	mode     filemode.FileMode
-	hash     plumbing.Hash
+	hash     common.ObjectHash
 	children []noder.Noder // memoized
 }
 
@@ -52,9 +52,9 @@ func (t *treeNoder) String() string {
 
 func (t *treeNoder) Hash() []byte {
 	if t.mode == filemode.Deprecated {
-		return append(t.hash[:], filemode.Regular.Bytes()...)
+		return append(t.hash.Sum(), filemode.Regular.Bytes()...)
 	}
-	return append(t.hash[:], t.mode.Bytes()...)
+	return append(t.hash.Sum(), t.mode.Bytes()...)
 }
 
 func (t *treeNoder) Name() string {

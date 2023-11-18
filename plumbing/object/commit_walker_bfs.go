@@ -3,13 +3,13 @@ package object
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
 type bfsCommitIterator struct {
-	seenExternal map[plumbing.Hash]bool
-	seen         map[plumbing.Hash]bool
+	seenExternal map[common.ObjectHash]bool
+	seen         map[common.ObjectHash]bool
 	queue        []*Commit
 }
 
@@ -22,10 +22,10 @@ type bfsCommitIterator struct {
 // commits from being iterated.
 func NewCommitIterBSF(
 	c *Commit,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitIter {
-	seen := make(map[plumbing.Hash]bool)
+	seen := make(map[common.ObjectHash]bool)
 	for _, h := range ignore {
 		seen[h] = true
 	}
@@ -37,7 +37,7 @@ func NewCommitIterBSF(
 	}
 }
 
-func (w *bfsCommitIterator) appendHash(store storer.EncodedObjectStorer, h plumbing.Hash) error {
+func (w *bfsCommitIterator) appendHash(store storer.EncodedObjectStorer, h common.ObjectHash) error {
 	if w.seen[h] || w.seenExternal[h] {
 		return nil
 	}

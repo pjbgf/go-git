@@ -7,6 +7,8 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -20,7 +22,9 @@ func (s *SuiteWriter) TestWriteObjfile(c *C) {
 		buffer := bytes.NewBuffer(nil)
 
 		com := fmt.Sprintf("test %d: ", k)
-		hash := plumbing.NewHash(fixture.hash)
+		hash, err := sha1.FromHex(fixture.hash)
+		c.Assert(err, IsNil)
+
 		content, _ := base64.StdEncoding.DecodeString(fixture.content)
 
 		// Write the data out to the buffer
@@ -31,7 +35,7 @@ func (s *SuiteWriter) TestWriteObjfile(c *C) {
 	}
 }
 
-func testWriter(c *C, dest io.Writer, hash plumbing.Hash, t plumbing.ObjectType, content []byte) {
+func testWriter(c *C, dest io.Writer, hash common.ObjectHash, t plumbing.ObjectType, content []byte) {
 	size := int64(len(content))
 	w := NewWriter(dest)
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/sync"
 )
 
@@ -105,7 +106,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 }
 
 // Hash returns the hash of the object data stream that has been read so far.
-func (r *Reader) Hash() plumbing.Hash {
+func (r *Reader) Hash() common.ObjectHash {
 	return r.hasher.Sum()
 }
 

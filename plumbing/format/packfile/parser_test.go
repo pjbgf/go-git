@@ -8,10 +8,12 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
 	fixtures "github.com/go-git/go-git-fixtures/v4"
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	. "gopkg.in/check.v1"
@@ -116,7 +118,9 @@ func (s *ParserSuite) TestThinPack(c *C) {
 	w.Close()
 
 	// Check that the test object that will come with our thin pack is *not* in the repo
-	_, err = r.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash(thinpack.Head))
+	hash, ok := sha1.FromHex(thinpack.Head)
+	c.Assert(ok, Equals, true)
+	_, err = r.Storer.EncodedObject(plumbing.CommitObject, hash)
 	c.Assert(err, Equals, plumbing.ErrObjectNotFound)
 
 	// Now unpack the thin pack:
@@ -126,10 +130,13 @@ func (s *ParserSuite) TestThinPack(c *C) {
 
 	h, err := parser.Parse()
 	c.Assert(err, IsNil)
-	c.Assert(h, Equals, plumbing.NewHash("1288734cbe0b95892e663221d94b95de1f5d7be8"))
+	hash, _ = sha1.FromHex("1288734cbe0b95892e663221d94b95de1f5d7be8")
+	c.Assert(h, Equals, hash)
 
 	// Check that our test object is now accessible
-	_, err = r.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash(thinpack.Head))
+	hash, ok = sha1.FromHex(thinpack.Head)
+	c.Assert(ok, Equals, true)
+	_, err = r.Storer.EncodedObject(plumbing.CommitObject, hash)
 	c.Assert(err, IsNil)
 
 }
@@ -192,7 +199,7 @@ func (t *testObserver) OnInflatedObjectHeader(otype plumbing.ObjectType, objSize
 	return nil
 }
 
-func (t *testObserver) OnInflatedObjectContent(h plumbing.Hash, pos int64, crc uint32, _ []byte) error {
+func (t *testObserver) OnInflatedObjectContent(h common.ObjectHash, pos int64, crc uint32, _ []byte) error {
 	o := t.get(pos)
 	o.hash = h.String()
 	o.crc = crc
@@ -202,7 +209,7 @@ func (t *testObserver) OnInflatedObjectContent(h plumbing.Hash, pos int64, crc u
 	return nil
 }
 
-func (t *testObserver) OnFooter(h plumbing.Hash) error {
+func (t *testObserver) OnFooter(h common.ObjectHash) error {
 	t.checksum = h.String()
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
@@ -13,7 +13,7 @@ import (
 // from CommitNodeIndex
 type CommitNode interface {
 	// ID returns the Commit object id referenced by the commit graph node.
-	ID() plumbing.Hash
+	ID() common.ObjectHash
 	// Tree returns the Tree referenced by the commit graph node.
 	Tree() (*object.Tree, error)
 	// CommitTime returns the Committer.When time of the Commit referenced by the commit graph node.
@@ -25,7 +25,7 @@ type CommitNode interface {
 	// ParentNode returns the ith parent of a commit.
 	ParentNode(i int) (CommitNode, error)
 	// ParentHashes returns hashes of the parent commits for a specified node
-	ParentHashes() []plumbing.Hash
+	ParentHashes() []common.ObjectHash
 	// Generation returns the generation of the commit for reachability analysis.
 	// Objects with newer generation are not reachable from objects of older generation.
 	Generation() uint64
@@ -40,7 +40,7 @@ type CommitNode interface {
 // CommitNodeIndex is generic interface encapsulating an index of CommitNode objects
 type CommitNodeIndex interface {
 	// Get returns a commit node from a commit hash
-	Get(hash plumbing.Hash) (CommitNode, error)
+	Get(hash common.ObjectHash) (CommitNode, error)
 }
 
 // CommitNodeIter is a generic closable interface for iterating over commit nodes.

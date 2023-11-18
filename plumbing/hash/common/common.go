@@ -2,15 +2,12 @@ package common
 
 import (
 	"hash"
-
-	format "github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
 // TODO: Move to internal?
 type SupportedHash struct {
-	format.ObjectFormat
-	HashFactory
-	NewHasher func() hash.Hash
+	ObjectFactory HashFactory
+	NewHasher     func() hash.Hash
 }
 
 type HashFactory interface {

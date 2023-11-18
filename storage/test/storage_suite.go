@@ -7,8 +7,11 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/config"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
 
@@ -219,7 +222,7 @@ func (s *BaseStorageSuite) TestObjectStorerTxSetObjectAndGetObject(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(h.String(), Equals, expected.Hash)
 
-		o, err := tx.EncodedObject(expected.Type, plumbing.NewHash(expected.Hash))
+		o, err := tx.EncodedObject(expected.Type, X(sha1.FromHex(expected.Hash)))
 		c.Assert(err, IsNil)
 		c.Assert(o.Hash().String(), DeepEquals, expected.Hash)
 	}
@@ -232,7 +235,7 @@ func (s *BaseStorageSuite) TestObjectStorerTxGetObjectNotFound(c *C) {
 	}
 
 	tx := storer.Begin()
-	o, err := tx.EncodedObject(plumbing.AnyObject, plumbing.ZeroHash)
+	o, err := tx.EncodedObject(plumbing.AnyObject, sha1.ZeroHash())
 	c.Assert(o, IsNil)
 	c.Assert(err, Equals, plumbing.ErrObjectNotFound)
 }
@@ -378,10 +381,10 @@ func (s *BaseStorageSuite) TestIterReferences(c *C) {
 }
 
 func (s *BaseStorageSuite) TestSetShallowAndShallow(c *C) {
-	expected := []plumbing.Hash{
-		plumbing.NewHash("b66c08ba28aa1f81eb06a1127aa3936ff77e5e2c"),
-		plumbing.NewHash("c3f4688a08fd86f1bf8e055724c84b7a40a09733"),
-		plumbing.NewHash("c78874f116be67ecf54df225a613162b84cc6ebf"),
+	expected := []common.ObjectHash{
+		X(sha1.FromHex("b66c08ba28aa1f81eb06a1127aa3936ff77e5e2c")),
+		X(sha1.FromHex("c3f4688a08fd86f1bf8e055724c84b7a40a09733")),
+		X(sha1.FromHex("c78874f116be67ecf54df225a613162b84cc6ebf")),
 	}
 
 	err := s.Storer.SetShallow(expected)
@@ -470,15 +473,16 @@ func (s *BaseStorageSuite) TestDeltaObjectStorer(c *C) {
 	err = pw.Close()
 	c.Assert(err, IsNil)
 
-	h := plumbing.NewHash("32858aad3c383ed1ff0a0f9bdf231d54a00c9e88")
+	h, _ := sha1.FromHex("32858aad3c383ed1ff0a0f9bdf231d54a00c9e88")
 	obj, err := dos.DeltaObject(plumbing.AnyObject, h)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Type(), Equals, plumbing.BlobObject)
 
-	h = plumbing.NewHash("aa9b383c260e1d05fbbf6b30a02914555e20c725")
+	h, _ = sha1.FromHex("aa9b383c260e1d05fbbf6b30a02914555e20c725")
 	obj, err = dos.DeltaObject(plumbing.AnyObject, h)
 	c.Assert(err, IsNil)
 	c.Assert(obj.Type(), Equals, plumbing.OFSDeltaObject)
+
 	_, ok = obj.(plumbing.DeltaObject)
 	c.Assert(ok, Equals, true)
 }

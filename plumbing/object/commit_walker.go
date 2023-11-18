@@ -5,13 +5,14 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
 )
 
 type commitPreIterator struct {
-	seenExternal map[plumbing.Hash]bool
-	seen         map[plumbing.Hash]bool
+	seenExternal map[common.ObjectHash]bool
+	seen         map[common.ObjectHash]bool
 	stack        []CommitIter
 	start        *Commit
 }
@@ -25,10 +26,10 @@ type commitPreIterator struct {
 // commits from being iterated.
 func NewCommitPreorderIter(
 	c *Commit,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitIter {
-	seen := make(map[plumbing.Hash]bool)
+	seen := make(map[common.ObjectHash]bool)
 	for _, h := range ignore {
 		seen[h] = true
 	}
@@ -79,8 +80,8 @@ func (w *commitPreIterator) Next() (*Commit, error) {
 	}
 }
 
-func filteredParentIter(c *Commit, seen map[plumbing.Hash]bool) CommitIter {
-	var hashes []plumbing.Hash
+func filteredParentIter(c *Commit, seen map[common.ObjectHash]bool) CommitIter {
+	var hashes []common.ObjectHash
 	for _, h := range c.ParentHashes {
 		if !seen[h] {
 			hashes = append(hashes, h)
@@ -118,7 +119,7 @@ func (w *commitPreIterator) Close() {}
 
 type commitPostIterator struct {
 	stack []*Commit
-	seen  map[plumbing.Hash]bool
+	seen  map[common.ObjectHash]bool
 }
 
 // NewCommitPostorderIter returns a CommitIter that walks the commit
@@ -126,8 +127,8 @@ type commitPostIterator struct {
 // walking a merge commit, the merged commit will be walked before the base
 // it was merged on. This can be useful if you wish to see the history in
 // chronological order. Ignore allows to skip some commits from being iterated.
-func NewCommitPostorderIter(c *Commit, ignore []plumbing.Hash) CommitIter {
-	seen := make(map[plumbing.Hash]bool)
+func NewCommitPostorderIter(c *Commit, ignore []common.ObjectHash) CommitIter {
+	seen := make(map[common.ObjectHash]bool)
 	for _, h := range ignore {
 		seen[h] = true
 	}
@@ -195,7 +196,7 @@ type commitAllIterator struct {
 // commitIterFunc is a commit iterator function, used to iterate through ref commits in chosen order
 func NewCommitAllIter(repoStorer storage.Storer, commitIterFunc func(*Commit) CommitIter) (CommitIter, error) {
 	commitsPath := list.New()
-	commitsLookup := make(map[plumbing.Hash]*list.Element)
+	commitsLookup := make(map[common.ObjectHash]*list.Element)
 	head, err := storer.ResolveReference(repoStorer, plumbing.HEAD)
 	if err == nil {
 		err = addReference(repoStorer, commitIterFunc, head, commitsPath, commitsLookup)
@@ -239,7 +240,7 @@ func addReference(
 	commitIterFunc func(*Commit) CommitIter,
 	ref *plumbing.Reference,
 	commitsPath *list.List,
-	commitsLookup map[plumbing.Hash]*list.Element) error {
+	commitsLookup map[common.ObjectHash]*list.Element) error {
 
 	_, exists := commitsLookup[ref.Hash()]
 	if exists {

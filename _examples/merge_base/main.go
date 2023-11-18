@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
@@ -82,7 +83,7 @@ func main() {
 	checkIfError(err, exitCodeCouldNotOpenRepository, "not in a git repository")
 
 	// Get the hashes of the passed revisions
-	var hashes []*plumbing.Hash
+	var hashes []*common.ObjectHash
 	for _, rev := range commitRevs {
 		hash, err := repo.ResolveRevision(plumbing.Revision(rev))
 		checkIfError(err, exitCodeCouldNotParseRevision, "could not parse revision '%s'", rev)

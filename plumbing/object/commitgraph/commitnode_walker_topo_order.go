@@ -3,7 +3,7 @@ package commitgraph
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 
 	"github.com/emirpasic/gods/trees/binaryheap"
@@ -12,9 +12,9 @@ import (
 type commitNodeIteratorTopological struct {
 	exploreStack commitNodeStackable
 	visitStack   commitNodeStackable
-	inCounts     map[plumbing.Hash]int
+	inCounts     map[common.ObjectHash]int
 
-	ignore map[plumbing.Hash]struct{}
+	ignore map[common.ObjectHash]struct{}
 }
 
 // NewCommitNodeIterTopoOrder returns a CommitNodeIter that walks the commit history,
@@ -23,11 +23,11 @@ type commitNodeIteratorTopological struct {
 //
 // This matches `git log --topo-order`
 func NewCommitNodeIterTopoOrder(c CommitNode,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitNodeIter {
 	seen := composeIgnores(ignore, seenExternal)
-	inCounts := make(map[plumbing.Hash]int)
+	inCounts := make(map[common.ObjectHash]int)
 
 	heap := &commitNodeHeap{binaryheap.NewWith(generationAndDateOrderComparator)}
 	heap.Push(c)

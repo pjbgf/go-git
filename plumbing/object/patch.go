@@ -9,9 +9,10 @@ import (
 	"math"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	fdiff "github.com/go-git/go-git/v5/plumbing/format/diff"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/diff"
 
 	dmp "github.com/sergi/go-diff/diffmatchpatch"
@@ -150,9 +151,9 @@ type changeEntryWrapper struct {
 	ce ChangeEntry
 }
 
-func (f *changeEntryWrapper) Hash() plumbing.Hash {
+func (f *changeEntryWrapper) Hash() common.ObjectHash {
 	if !f.ce.TreeEntry.Mode.IsFile() {
-		return plumbing.ZeroHash
+		return sha1.ZeroHash()
 	}
 
 	return f.ce.TreeEntry.Hash
@@ -283,8 +284,8 @@ func printStat(fileStats []FileStat) string {
 	for _, fs := range fileStats {
 		addn := float64(fs.Addition)
 		deln := float64(fs.Deletion)
-		addc := int(math.Floor(addn/scaleFactor))
-		delc := int(math.Floor(deln/scaleFactor))
+		addc := int(math.Floor(addn / scaleFactor))
+		delc := int(math.Floor(deln / scaleFactor))
 		if addc < 0 {
 			addc = 0
 		}

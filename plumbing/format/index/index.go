@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 var (
@@ -125,7 +125,7 @@ func (i *Index) String() string {
 // multiple Entry instances may appear for the same path name.
 type Entry struct {
 	// Hash is the SHA1 of the represented file
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 	// Name is the  Entry path name relative to top level directory
 	Name string
 	// CreatedAt time when the tracked path was created
@@ -181,7 +181,7 @@ type TreeEntry struct {
 	Trees int
 	// Hash object name for the object that would result from writing this span
 	// of index as a tree.
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 }
 
 // ResolveUndo is used when a conflict is resolved (e.g. with "git add path"),
@@ -195,7 +195,7 @@ type ResolveUndo struct {
 // ResolveUndoEntry contains the information about a conflict when is resolved
 type ResolveUndoEntry struct {
 	Path   string
-	Stages map[Stage]plumbing.Hash
+	Stages map[Stage]common.ObjectHash
 }
 
 // EndOfIndexEntry is the End of Index Entry (EOIE) is used to locate the end of
@@ -203,14 +203,14 @@ type ResolveUndoEntry struct {
 // can take advantage of this to quickly locate the index extensions without
 // having to parse through all of the index entries.
 //
-//  Because it must be able to be loaded before the variable length cache
-//  entries and other index extensions, this extension must be written last.
+//	Because it must be able to be loaded before the variable length cache
+//	entries and other index extensions, this extension must be written last.
 type EndOfIndexEntry struct {
 	// Offset to the end of the index entries
 	Offset uint32
 	// Hash is a SHA-1 over the extension types and their sizes (but not
 	//	their contents).
-	Hash plumbing.Hash
+	Hash common.ObjectHash
 }
 
 // SkipUnless applies patterns in the form of A, A/B, A/B/C

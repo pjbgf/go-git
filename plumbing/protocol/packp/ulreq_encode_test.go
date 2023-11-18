@@ -5,8 +5,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 
 	. "gopkg.in/check.v1"
@@ -48,7 +49,7 @@ func (s *UlReqEncodeSuite) TestZeroValue(c *C) {
 
 func (s *UlReqEncodeSuite) TestOneWant(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 
 	expected := []string{
 		"want 1111111111111111111111111111111111111111\n",
@@ -60,7 +61,7 @@ func (s *UlReqEncodeSuite) TestOneWant(c *C) {
 
 func (s *UlReqEncodeSuite) TestOneWantWithCapabilities(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Capabilities.Add(capability.MultiACK)
 	ur.Capabilities.Add(capability.OFSDelta)
 	ur.Capabilities.Add(capability.Sideband)
@@ -78,11 +79,11 @@ func (s *UlReqEncodeSuite) TestOneWantWithCapabilities(c *C) {
 func (s *UlReqEncodeSuite) TestWants(c *C) {
 	ur := NewUploadRequest()
 	ur.Wants = append(ur.Wants,
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("5555555555555555555555555555555555555555"),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("5555555555555555555555555555555555555555")),
 	)
 
 	expected := []string{
@@ -100,12 +101,12 @@ func (s *UlReqEncodeSuite) TestWants(c *C) {
 func (s *UlReqEncodeSuite) TestWantsDuplicates(c *C) {
 	ur := NewUploadRequest()
 	ur.Wants = append(ur.Wants,
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
 	)
 
 	expected := []string{
@@ -122,11 +123,11 @@ func (s *UlReqEncodeSuite) TestWantsDuplicates(c *C) {
 func (s *UlReqEncodeSuite) TestWantsWithCapabilities(c *C) {
 	ur := NewUploadRequest()
 	ur.Wants = append(ur.Wants,
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("5555555555555555555555555555555555555555"),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("5555555555555555555555555555555555555555")),
 	)
 
 	ur.Capabilities.Add(capability.MultiACK)
@@ -149,9 +150,9 @@ func (s *UlReqEncodeSuite) TestWantsWithCapabilities(c *C) {
 
 func (s *UlReqEncodeSuite) TestShallow(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Capabilities.Add(capability.MultiACK)
-	ur.Shallows = append(ur.Shallows, plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	ur.Shallows = append(ur.Shallows, X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
 
 	expected := []string{
 		"want 1111111111111111111111111111111111111111 multi_ack\n",
@@ -164,13 +165,13 @@ func (s *UlReqEncodeSuite) TestShallow(c *C) {
 
 func (s *UlReqEncodeSuite) TestManyShallows(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Capabilities.Add(capability.MultiACK)
 	ur.Shallows = append(ur.Shallows,
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-		plumbing.NewHash("dddddddddddddddddddddddddddddddddddddddd"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+		X(sha1.FromHex("dddddddddddddddddddddddddddddddddddddddd")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 	)
 
 	expected := []string{
@@ -187,13 +188,13 @@ func (s *UlReqEncodeSuite) TestManyShallows(c *C) {
 
 func (s *UlReqEncodeSuite) TestShallowsDuplicate(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Capabilities.Add(capability.MultiACK)
 	ur.Shallows = append(ur.Shallows,
-		plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"),
-		plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")),
+		X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 	)
 
 	expected := []string{
@@ -209,7 +210,7 @@ func (s *UlReqEncodeSuite) TestShallowsDuplicate(c *C) {
 
 func (s *UlReqEncodeSuite) TestDepthCommits(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Depth = DepthCommits(1234)
 
 	expected := []string{
@@ -223,7 +224,7 @@ func (s *UlReqEncodeSuite) TestDepthCommits(c *C) {
 
 func (s *UlReqEncodeSuite) TestDepthSinceUTC(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	since := time.Date(2015, time.January, 2, 3, 4, 5, 0, time.UTC)
 	ur.Depth = DepthSince(since)
 
@@ -242,7 +243,7 @@ func (s *UlReqEncodeSuite) TestDepthSinceNonUTC(c *C) {
 	}
 
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	berlin, err := time.LoadLocation("Europe/Berlin")
 	c.Assert(err, IsNil)
 	since := time.Date(2015, time.January, 2, 3, 4, 5, 0, berlin)
@@ -261,7 +262,7 @@ func (s *UlReqEncodeSuite) TestDepthSinceNonUTC(c *C) {
 
 func (s *UlReqEncodeSuite) TestDepthReference(c *C) {
 	ur := NewUploadRequest()
-	ur.Wants = append(ur.Wants, plumbing.NewHash("1111111111111111111111111111111111111111"))
+	ur.Wants = append(ur.Wants, X(sha1.FromHex("1111111111111111111111111111111111111111")))
 	ur.Depth = DepthReference("refs/heads/feature-foo")
 
 	expected := []string{
@@ -276,11 +277,11 @@ func (s *UlReqEncodeSuite) TestDepthReference(c *C) {
 func (s *UlReqEncodeSuite) TestAll(c *C) {
 	ur := NewUploadRequest()
 	ur.Wants = append(ur.Wants,
-		plumbing.NewHash("4444444444444444444444444444444444444444"),
-		plumbing.NewHash("1111111111111111111111111111111111111111"),
-		plumbing.NewHash("3333333333333333333333333333333333333333"),
-		plumbing.NewHash("2222222222222222222222222222222222222222"),
-		plumbing.NewHash("5555555555555555555555555555555555555555"),
+		X(sha1.FromHex("4444444444444444444444444444444444444444")),
+		X(sha1.FromHex("1111111111111111111111111111111111111111")),
+		X(sha1.FromHex("3333333333333333333333333333333333333333")),
+		X(sha1.FromHex("2222222222222222222222222222222222222222")),
+		X(sha1.FromHex("5555555555555555555555555555555555555555")),
 	)
 
 	ur.Capabilities.Add(capability.MultiACK)
@@ -289,10 +290,10 @@ func (s *UlReqEncodeSuite) TestAll(c *C) {
 	ur.Capabilities.Add(capability.SymRef, "HEAD:/refs/heads/master")
 	ur.Capabilities.Add(capability.ThinPack)
 
-	ur.Shallows = append(ur.Shallows, plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
-	ur.Shallows = append(ur.Shallows, plumbing.NewHash("dddddddddddddddddddddddddddddddddddddddd"))
-	ur.Shallows = append(ur.Shallows, plumbing.NewHash("cccccccccccccccccccccccccccccccccccccccc"))
-	ur.Shallows = append(ur.Shallows, plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	ur.Shallows = append(ur.Shallows, X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")))
+	ur.Shallows = append(ur.Shallows, X(sha1.FromHex("dddddddddddddddddddddddddddddddddddddddd")))
+	ur.Shallows = append(ur.Shallows, X(sha1.FromHex("cccccccccccccccccccccccccccccccccccccccc")))
+	ur.Shallows = append(ur.Shallows, X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
 
 	since := time.Date(2015, time.January, 2, 3, 4, 5, 0, time.UTC)
 	ur.Depth = DepthSince(since)

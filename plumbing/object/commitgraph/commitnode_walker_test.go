@@ -3,8 +3,8 @@ package commitgraph
 import (
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	commitgraph "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
@@ -20,7 +20,9 @@ func (s *CommitNodeSuite) TestCommitNodeIter(c *C) {
 
 	nodeIndex := NewGraphCommitNodeIndex(index, storer)
 
-	head, err := nodeIndex.Get(plumbing.NewHash("ec6f456c0e8c7058a29611429965aa05c190b54b"))
+	h, ok := sha1.FromHex("ec6f456c0e8c7058a29611429965aa05c190b54b")
+	c.Assert(ok, Equals, true)
+	head, err := nodeIndex.Get(h)
 	c.Assert(err, IsNil)
 
 	testTopoOrder(c, head)

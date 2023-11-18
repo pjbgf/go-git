@@ -5,11 +5,12 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/format/objfile"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 
 	"github.com/go-git/go-billy/v5"
 )
@@ -21,15 +22,17 @@ import (
 // is renamed/moved (depends on the Filesystem implementation) to the final
 // location, if the PackWriter is not used, nothing is written
 type PackWriter struct {
-	Notify func(plumbing.Hash, *idxfile.Writer)
+	Notify func(common.ObjectHash, *idxfile.Writer)
 
 	fs       billy.Filesystem
 	fr, fw   billy.File
 	synced   *syncedReader
-	checksum plumbing.Hash
+	checksum common.ObjectHash
 	parser   *packfile.Parser
 	writer   *idxfile.Writer
 	result   chan error
+
+	factory common.HashFactory
 }
 
 func newPackWrite(fs billy.Filesystem) (*PackWriter, error) {
@@ -153,7 +156,11 @@ func (w *PackWriter) encodeIdx(writer io.Writer) error {
 		return err
 	}
 
-	e := idxfile.NewEncoder(writer)
+	e, err := idxfile.NewEncoder(writer, hash.NewHasher(config.SHA1))
+	if err != nil {
+		return err
+	}
+
 	_, err = e.Encode(idx)
 	return err
 }

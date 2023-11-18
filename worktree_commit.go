@@ -10,6 +10,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/format/index"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
 
@@ -25,36 +27,36 @@ var (
 
 // Commit stores the current contents of the index in a new commit along with
 // a log message from the user describing the changes.
-func (w *Worktree) Commit(msg string, opts *CommitOptions) (plumbing.Hash, error) {
+func (w *Worktree) Commit(msg string, opts *CommitOptions) (common.ObjectHash, error) {
 	if err := opts.Validate(w.r); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	if opts.All {
 		if err := w.autoAddModifiedAndDeleted(); err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 	}
 
-	var treeHash plumbing.Hash
+	var treeHash common.ObjectHash
 
 	if opts.Amend {
 		head, err := w.r.Head()
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 
 		t, err := w.r.getTreeFromCommitHash(head.Hash())
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 
 		treeHash = t.Hash
-		opts.Parents = []plumbing.Hash{head.Hash()}
+		opts.Parents = []common.ObjectHash{head.Hash()}
 	} else {
 		idx, err := w.r.Storer.Index()
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 
 		h := &buildTreeHelper{
@@ -64,13 +66,13 @@ func (w *Worktree) Commit(msg string, opts *CommitOptions) (plumbing.Hash, error
 
 		treeHash, err = h.BuildTree(idx, opts)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 	}
 
 	commit, err := w.buildCommitObject(msg, opts, treeHash)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return commit, w.updateHEAD(commit)
@@ -101,7 +103,7 @@ func (w *Worktree) autoAddModifiedAndDeleted() error {
 	return w.r.Storer.SetIndex(idx)
 }
 
-func (w *Worktree) updateHEAD(commit plumbing.Hash) error {
+func (w *Worktree) updateHEAD(commit common.ObjectHash) error {
 	head, err := w.r.Storer.Reference(plumbing.HEAD)
 	if err != nil {
 		return err
@@ -116,7 +118,7 @@ func (w *Worktree) updateHEAD(commit plumbing.Hash) error {
 	return w.r.Storer.SetReference(ref)
 }
 
-func (w *Worktree) buildCommitObject(msg string, opts *CommitOptions, tree plumbing.Hash) (plumbing.Hash, error) {
+func (w *Worktree) buildCommitObject(msg string, opts *CommitOptions, tree common.ObjectHash) (common.ObjectHash, error) {
 	commit := &object.Commit{
 		Author:       *opts.Author,
 		Committer:    *opts.Committer,
@@ -128,14 +130,14 @@ func (w *Worktree) buildCommitObject(msg string, opts *CommitOptions, tree plumb
 	if opts.SignKey != nil {
 		sig, err := w.buildCommitSignature(commit, opts.SignKey)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 		commit.PGPSignature = sig
 	}
 
 	obj := w.r.Storer.NewEncodedObject()
 	if err := commit.Encode(obj); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 	return w.r.Storer.SetEncodedObject(obj)
 }
@@ -169,9 +171,9 @@ type buildTreeHelper struct {
 
 // BuildTree builds the tree objects and push its to the storer, the hash
 // of the root tree is returned.
-func (h *buildTreeHelper) BuildTree(idx *index.Index, opts *CommitOptions) (plumbing.Hash, error) {
+func (h *buildTreeHelper) BuildTree(idx *index.Index, opts *CommitOptions) (common.ObjectHash, error) {
 	if len(idx.Entries) == 0 && (opts == nil || !opts.AllowEmptyCommits) {
-		return plumbing.ZeroHash, ErrEmptyCommit
+		return sha1.ZeroHash(), ErrEmptyCommit
 	}
 
 	const rootNode = ""
@@ -180,7 +182,7 @@ func (h *buildTreeHelper) BuildTree(idx *index.Index, opts *CommitOptions) (plum
 
 	for _, e := range idx.Entries {
 		if err := h.commitIndexEntry(e); err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 	}
 
@@ -235,7 +237,7 @@ func (se sortableEntries) Len() int               { return len(se) }
 func (se sortableEntries) Less(i int, j int) bool { return se.sortName(se[i]) < se.sortName(se[j]) }
 func (se sortableEntries) Swap(i int, j int)      { se[i], se[j] = se[j], se[i] }
 
-func (h *buildTreeHelper) copyTreeToStorageRecursive(parent string, t *object.Tree) (plumbing.Hash, error) {
+func (h *buildTreeHelper) copyTreeToStorageRecursive(parent string, t *object.Tree) (common.ObjectHash, error) {
 	sort.Sort(sortableEntries(t.Entries))
 	for i, e := range t.Entries {
 		if e.Mode != filemode.Dir && !e.Hash.IsZero() {
@@ -247,7 +249,7 @@ func (h *buildTreeHelper) copyTreeToStorageRecursive(parent string, t *object.Tr
 		var err error
 		e.Hash, err = h.copyTreeToStorageRecursive(path, h.trees[path])
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 
 		t.Entries[i] = e
@@ -255,7 +257,7 @@ func (h *buildTreeHelper) copyTreeToStorageRecursive(parent string, t *object.Tr
 
 	o := h.s.NewEncodedObject()
 	if err := t.Encode(o); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	hash := o.Hash()

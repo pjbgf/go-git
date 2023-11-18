@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"io"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/go-git/go-billy/v5/memfs"
@@ -26,14 +30,14 @@ var _ = Suite(&EncoderSuite{})
 func (s *EncoderSuite) SetUpTest(c *C) {
 	s.buf = bytes.NewBuffer(nil)
 	s.store = memory.NewStorage()
-	s.enc = NewEncoder(s.buf, s.store, false)
+	s.enc = NewEncoder(s.buf, s.store, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 }
 
 func (s *EncoderSuite) TestCorrectPackHeader(c *C) {
-	h, err := s.enc.Encode([]plumbing.Hash{}, 10)
+	h, err := s.enc.Encode([]common.ObjectHash{}, 10)
 	c.Assert(err, IsNil)
 
-	hb := [hash.Size]byte(h)
+	hb := sha1.FromBytes(h.Sum())
 
 	// PACK + VERSION + OBJECTS + HASH
 	expectedResult := []byte{'P', 'A', 'C', 'K', 0, 0, 0, 2, 0, 0, 0, 0}
@@ -51,7 +55,7 @@ func (s *EncoderSuite) TestCorrectPackWithOneEmptyObject(c *C) {
 	_, err := s.store.SetEncodedObject(o)
 	c.Assert(err, IsNil)
 
-	h, err := s.enc.Encode([]plumbing.Hash{o.Hash()}, 10)
+	h, err := s.enc.Encode([]common.ObjectHash{o.Hash()}, 10)
 	c.Assert(err, IsNil)
 
 	// PACK + VERSION(2) + OBJECT NUMBER(1)
@@ -64,7 +68,7 @@ func (s *EncoderSuite) TestCorrectPackWithOneEmptyObject(c *C) {
 		[]byte{120, 156, 1, 0, 0, 255, 255, 0, 0, 0, 1}...)
 
 	// + HASH
-	hb := [hash.Size]byte(h)
+	hb := sha1.FromBytes(h.Sum())
 	expectedResult = append(expectedResult, hb[:]...)
 
 	result := s.buf.Bytes()
@@ -78,45 +82,45 @@ func (s *EncoderSuite) TestMaxObjectSize(c *C) {
 	o.SetType(plumbing.CommitObject)
 	_, err := s.store.SetEncodedObject(o)
 	c.Assert(err, IsNil)
-	hash, err := s.enc.Encode([]plumbing.Hash{o.Hash()}, 10)
+	hash, err := s.enc.Encode([]common.ObjectHash{o.Hash()}, 10)
 	c.Assert(err, IsNil)
 	c.Assert(hash.IsZero(), Not(Equals), true)
 }
 
 func (s *EncoderSuite) TestHashNotFound(c *C) {
-	h, err := s.enc.Encode([]plumbing.Hash{plumbing.NewHash("BAD")}, 10)
-	c.Assert(h, Equals, plumbing.ZeroHash)
+	h, err := s.enc.Encode([]common.ObjectHash{X(sha1.FromHex("BAD"))}, 10)
+	c.Assert(h, Equals, sha1.ZeroHash())
 	c.Assert(err, NotNil)
 	c.Assert(err, Equals, plumbing.ErrObjectNotFound)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithDeltaDecodeREF(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, true)
+	s.enc = NewEncoder(s.buf, s.store, true, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.simpleDeltaTest(c)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithDeltaDecodeOFS(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, false)
+	s.enc = NewEncoder(s.buf, s.store, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.simpleDeltaTest(c)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithDeltasDecodeREF(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, true)
+	s.enc = NewEncoder(s.buf, s.store, true, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.deltaOverDeltaTest(c)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithDeltasDecodeOFS(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, false)
+	s.enc = NewEncoder(s.buf, s.store, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.deltaOverDeltaTest(c)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithCycleREF(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, true)
+	s.enc = NewEncoder(s.buf, s.store, true, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.deltaOverDeltaCyclicTest(c)
 }
 
 func (s *EncoderSuite) TestDecodeEncodeWithCycleOFS(c *C) {
-	s.enc = NewEncoder(s.buf, s.store, false)
+	s.enc = NewEncoder(s.buf, s.store, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	s.deltaOverDeltaCyclicTest(c)
 }
 
@@ -157,11 +161,11 @@ func (s *EncoderSuite) deltaOverDeltaTest(c *C) {
 
 	deltaObject, err := GetDelta(srcObject, targetObject)
 	c.Assert(err, IsNil)
-	c.Assert(deltaObject.Hash(), Not(Equals), plumbing.ZeroHash)
+	c.Assert(deltaObject.Hash(), Not(Equals), sha1.ZeroHash())
 
 	otherDeltaObject, err := GetDelta(targetObject, otherTargetObject)
 	c.Assert(err, IsNil)
-	c.Assert(otherDeltaObject.Hash(), Not(Equals), plumbing.ZeroHash)
+	c.Assert(otherDeltaObject.Hash(), Not(Equals), sha1.ZeroHash())
 
 	srcToPack := newObjectToPack(srcObject)
 	targetToPack := newObjectToPack(targetObject)

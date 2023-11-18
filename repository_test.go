@@ -23,8 +23,11 @@ import (
 	openpgperr "github.com/ProtonMail/go-crypto/openpgp/errors"
 
 	"github.com/go-git/go-git/v5/config"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -1671,14 +1674,14 @@ func (s *RepositorySuite) TestLog(c *C) {
 	c.Assert(err, IsNil)
 
 	cIter, err := r.Log(&LogOptions{
-		From: plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
+		From: X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
 	})
 
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 	}
 
 	for _, o := range commitOrder {
@@ -1713,16 +1716,16 @@ func (s *RepositorySuite) TestLogAll(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
-		plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
-		plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea"),
-		plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
-		plumbing.NewHash("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69"),
-		plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
+		X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
+		X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea")),
+		X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
+		X(sha1.FromHex("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")),
+		X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
 	}
 
 	for _, o := range commitOrder {
@@ -1755,7 +1758,7 @@ func (s *RepositorySuite) TestLogAllMissingReferences(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(refCount, Equals, 4)
 
-	err = r.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName("DUMMY"), plumbing.NewHash("DUMMY")))
+	err = r.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName("DUMMY"), X(sha1.FromHex("DUMMY"))))
 	c.Assert(err, IsNil)
 
 	rIter, err = r.Storer.IterReferences()
@@ -1801,16 +1804,16 @@ func (s *RepositorySuite) TestLogAllOrderByTime(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
-		plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
-		plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea"),
-		plumbing.NewHash("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69"),
-		plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
-		plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
+		X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
+		X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea")),
+		X(sha1.FromHex("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")),
+		X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
+		X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 	}
 
 	for _, o := range commitOrder {
@@ -1835,15 +1838,15 @@ func (s *RepositorySuite) TestLogHead(c *C) {
 
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
-		plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea"),
-		plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
-		plumbing.NewHash("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69"),
-		plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
+		X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea")),
+		X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
+		X(sha1.FromHex("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")),
+		X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
 	}
 
 	for _, o := range commitOrder {
@@ -1864,7 +1867,7 @@ func (s *RepositorySuite) TestLogError(c *C) {
 	c.Assert(err, IsNil)
 
 	_, err = r.Log(&LogOptions{
-		From: plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		From: X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 	})
 	c.Assert(err, NotNil)
 }
@@ -1882,8 +1885,8 @@ func (s *RepositorySuite) TestLogFileNext(c *C) {
 
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
 	}
 
 	for _, o := range commitOrder {
@@ -1908,8 +1911,8 @@ func (s *RepositorySuite) TestLogFileForEach(c *C) {
 	c.Assert(err, IsNil)
 	defer cIter.Close()
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
 	}
 
 	expectedIndex := 0
@@ -1953,8 +1956,8 @@ func (s *RepositorySuite) TestLogAllFileForEach(c *C) {
 	c.Assert(err, IsNil)
 	defer cIter.Close()
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
 	}
 
 	expectedIndex := 0
@@ -2001,8 +2004,8 @@ func (s *RepositorySuite) TestLogFileInitialCommit(c *C) {
 	c.Assert(err, IsNil)
 	defer cIter.Close()
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 	}
 
 	expectedIndex := 0
@@ -2027,7 +2030,7 @@ func (s *RepositorySuite) TestLogFileWithOtherParamsFail(c *C) {
 	cIter, err := r.Log(&LogOptions{
 		Order:    LogOrderCommitterTime,
 		FileName: &fileName,
-		From:     plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		From:     X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 	c.Assert(err, IsNil)
 	defer cIter.Close()
@@ -2047,7 +2050,7 @@ func (s *RepositorySuite) TestLogFileWithOtherParamsPass(c *C) {
 	cIter, err := r.Log(&LogOptions{
 		Order:    LogOrderCommitterTime,
 		FileName: &fileName,
-		From:     plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		From:     X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 	c.Assert(err, IsNil)
 	commitVal, iterErr := cIter.Next()
@@ -2128,7 +2131,7 @@ func (s *RepositorySuite) TestLogPathFilterRegexp(c *C) {
 
 	cIter, err := r.Log(&LogOptions{
 		PathFilter: pathIter,
-		From:       plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
+		From:       X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
 	})
 	c.Assert(err, IsNil)
 	defer cIter.Close()
@@ -2157,8 +2160,8 @@ func (s *RepositorySuite) TestLogLimitNext(c *C) {
 
 	c.Assert(err, IsNil)
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")),
 	}
 
 	for _, o := range commitOrder {
@@ -2184,8 +2187,8 @@ func (s *RepositorySuite) TestLogLimitForEach(c *C) {
 	c.Assert(err, IsNil)
 	defer cIter.Close()
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
 	}
 
 	expectedIndex := 0
@@ -2213,9 +2216,9 @@ func (s *RepositorySuite) TestLogAllLimitForEach(c *C) {
 	c.Assert(err, IsNil)
 	defer cIter.Close()
 
-	commitOrder := []plumbing.Hash{
-		plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881"),
-		plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"),
+	commitOrder := []common.ObjectHash{
+		X(sha1.FromHex("e8d3ffab552895c19b9fcf7aa264d277cde33881")),
+		X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")),
 	}
 
 	expectedIndex := 0
@@ -2240,7 +2243,7 @@ func (s *RepositorySuite) TestLogLimitWithOtherParamsFail(c *C) {
 	cIter, err := r.Log(&LogOptions{
 		Order: LogOrderCommitterTime,
 		Since: &since,
-		From:  plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		From:  X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 	c.Assert(err, IsNil)
 	defer cIter.Close()
@@ -2260,7 +2263,7 @@ func (s *RepositorySuite) TestLogLimitWithOtherParamsPass(c *C) {
 	cIter, err := r.Log(&LogOptions{
 		Order: LogOrderCommitterTime,
 		Until: &until,
-		From:  plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"),
+		From:  X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")),
 	})
 	c.Assert(err, IsNil)
 	defer cIter.Close()
@@ -2297,7 +2300,7 @@ func (s *RepositorySuite) TestCommit(c *C) {
 
 	c.Assert(err, IsNil)
 
-	hash := plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47")
+	hash := X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47"))
 	commit, err := r.CommitObject(hash)
 	c.Assert(err, IsNil)
 
@@ -2344,11 +2347,11 @@ func (s *RepositorySuite) TestBlob(c *C) {
 
 	c.Assert(err, IsNil)
 
-	blob, err := r.BlobObject(plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"))
+	blob, err := r.BlobObject(X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")))
 	c.Assert(err, NotNil)
 	c.Assert(blob, IsNil)
 
-	blobHash := plumbing.NewHash("9a48f23120e880dfbe41f7c9b7b708e9ee62a492")
+	blobHash := X(sha1.FromHex("9a48f23120e880dfbe41f7c9b7b708e9ee62a492"))
 	blob, err = r.BlobObject(blobHash)
 	c.Assert(err, IsNil)
 
@@ -2390,7 +2393,7 @@ func (s *RepositorySuite) TestTagObject(c *C) {
 	err := r.clone(context.Background(), &CloneOptions{URL: url})
 	c.Assert(err, IsNil)
 
-	hash := plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")
+	hash := X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))
 	tag, err := r.TagObject(hash)
 	c.Assert(err, IsNil)
 
@@ -2521,7 +2524,7 @@ func (s *RepositorySuite) TestCreateTagAnnotatedBadHash(c *C) {
 	err := r.clone(context.Background(), &CloneOptions{URL: url})
 	c.Assert(err, IsNil)
 
-	ref, err := r.CreateTag("foobar", plumbing.ZeroHash, &CreateTagOptions{
+	ref, err := r.CreateTag("foobar", sha1.ZeroHash(), &CreateTagOptions{
 		Tagger:  defaultSignature(),
 		Message: "foo bar baz qux",
 	})
@@ -2644,7 +2647,7 @@ func (s *RepositorySuite) TestTagLightweight(c *C) {
 	err := r.clone(context.Background(), &CloneOptions{URL: url})
 	c.Assert(err, IsNil)
 
-	expected := plumbing.NewHash("f7b877701fbf855b44c0a9e86f3fdce2c298b07f")
+	expected := X(sha1.FromHex("f7b877701fbf855b44c0a9e86f3fdce2c298b07f"))
 
 	tag, err := r.Tag("lightweight-tag")
 	c.Assert(err, IsNil)
@@ -2848,12 +2851,12 @@ func (s *RepositorySuite) TestTree(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	invalidHash := plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	invalidHash := X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 	tree, err := r.TreeObject(invalidHash)
 	c.Assert(tree, IsNil)
 	c.Assert(err, NotNil)
 
-	hash := plumbing.NewHash("dbd3641b371024f44d0e469a9c8f5457b0660de1")
+	hash := X(sha1.FromHex("dbd3641b371024f44d0e469a9c8f5457b0660de1"))
 	tree, err = r.TreeObject(hash)
 	c.Assert(err, IsNil)
 
@@ -2958,7 +2961,7 @@ func (s *RepositorySuite) TestObject(c *C) {
 	err := r.clone(context.Background(), &CloneOptions{URL: s.GetBasicLocalRepositoryURL()})
 	c.Assert(err, IsNil)
 
-	hash := plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")
+	hash := X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
 	o, err := r.Object(plumbing.CommitObject, hash)
 	c.Assert(err, IsNil)
 
@@ -2993,7 +2996,7 @@ func (s *RepositorySuite) TestObjectNotFound(c *C) {
 	err := r.clone(context.Background(), &CloneOptions{URL: s.GetBasicLocalRepositoryURL()})
 	c.Assert(err, IsNil)
 
-	hash := plumbing.NewHash("0a3fb06ff80156fb153bcdcc58b5e16c2d27625c")
+	hash := X(sha1.FromHex("0a3fb06ff80156fb153bcdcc58b5e16c2d27625c"))
 	tag, err := r.Object(plumbing.TagObject, hash)
 	c.Assert(err, DeepEquals, plumbing.ErrObjectNotFound)
 	c.Assert(tag, IsNil)
@@ -3112,7 +3115,7 @@ func (s *RepositorySuite) testRepackObjects(
 	c.Assert(los, NotNil)
 
 	numLooseStart := 0
-	err = los.ForEachObjectHash(func(_ plumbing.Hash) error {
+	err = los.ForEachObjectHash(func(_ common.ObjectHash) error {
 		numLooseStart++
 		return nil
 	})
@@ -3137,7 +3140,7 @@ func (s *RepositorySuite) testRepackObjects(
 	c.Assert(err, IsNil)
 
 	numLooseEnd := 0
-	err = los.ForEachObjectHash(func(_ plumbing.Hash) error {
+	err = los.ForEachObjectHash(func(_ common.ObjectHash) error {
 		numLooseEnd++
 		return nil
 	})

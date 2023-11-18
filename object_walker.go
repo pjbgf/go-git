@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
 )
@@ -14,11 +15,11 @@ type objectWalker struct {
 	// seen is the set of objects seen in the repo.
 	// seen map can become huge if walking over large
 	// repos. Thus using struct{} as the value type.
-	seen map[plumbing.Hash]struct{}
+	seen map[common.ObjectHash]struct{}
 }
 
 func newObjectWalker(s storage.Storer) *objectWalker {
-	return &objectWalker{s, map[plumbing.Hash]struct{}{}}
+	return &objectWalker{s, map[common.ObjectHash]struct{}{}}
 }
 
 // walkAllRefs walks all (hash) references from the repo.
@@ -39,19 +40,19 @@ func (p *objectWalker) walkAllRefs() error {
 	return err
 }
 
-func (p *objectWalker) isSeen(hash plumbing.Hash) bool {
+func (p *objectWalker) isSeen(hash common.ObjectHash) bool {
 	_, seen := p.seen[hash]
 	return seen
 }
 
-func (p *objectWalker) add(hash plumbing.Hash) {
+func (p *objectWalker) add(hash common.ObjectHash) {
 	p.seen[hash] = struct{}{}
 }
 
 // walkObjectTree walks over all objects and remembers references
 // to them in the objectWalker. This is used instead of the revlist
 // walks because memory usage is tight with huge repos.
-func (p *objectWalker) walkObjectTree(hash plumbing.Hash) error {
+func (p *objectWalker) walkObjectTree(hash common.ObjectHash) error {
 	// Check if we have already seen, and mark this object
 	if p.isSeen(hash) {
 		return nil

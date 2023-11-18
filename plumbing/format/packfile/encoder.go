@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/binary"
 	"github.com/go-git/go-git/v5/utils/ioutil"
@@ -18,7 +20,8 @@ type Encoder struct {
 	selector *deltaSelector
 	w        *offsetWriter
 	zw       *zlib.Writer
-	hasher   plumbing.Hasher
+	hasher   hash.Hash
+	factory  common.HashFactory
 
 	useRefDeltas bool
 }
@@ -26,10 +29,7 @@ type Encoder struct {
 // NewEncoder creates a new packfile encoder using a specific Writer and
 // EncodedObjectStorer. By default deltas used to generate the packfile will be
 // OFSDeltaObject. To use Reference deltas, set useRefDeltas to true.
-func NewEncoder(w io.Writer, s storer.EncodedObjectStorer, useRefDeltas bool) *Encoder {
-	h := plumbing.Hasher{
-		Hash: hash.New(hash.CryptoType),
-	}
+func NewEncoder(w io.Writer, s storer.EncodedObjectStorer, useRefDeltas bool, h hash.Hash, f common.HashFactory) *Encoder {
 	mw := io.MultiWriter(w, h)
 	ow := newOffsetWriter(mw)
 	zw := zlib.NewWriter(mw)
@@ -39,6 +39,7 @@ func NewEncoder(w io.Writer, s storer.EncodedObjectStorer, useRefDeltas bool) *E
 		zw:           zw,
 		hasher:       h,
 		useRefDeltas: useRefDeltas,
+		factory:      f,
 	}
 }
 
@@ -47,25 +48,25 @@ func NewEncoder(w io.Writer, s storer.EncodedObjectStorer, useRefDeltas bool) *E
 // specifies the size of the sliding window used to compare objects
 // for delta compression; 0 turns off delta compression entirely.
 func (e *Encoder) Encode(
-	hashes []plumbing.Hash,
+	hashes []common.ObjectHash,
 	packWindow uint,
-) (plumbing.Hash, error) {
+) (common.ObjectHash, error) {
 	objects, err := e.selector.ObjectsToPack(hashes, packWindow)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return e.encode(objects)
 }
 
-func (e *Encoder) encode(objects []*ObjectToPack) (plumbing.Hash, error) {
+func (e *Encoder) encode(objects []*ObjectToPack) (common.ObjectHash, error) {
 	if err := e.head(len(objects)); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	for _, o := range objects {
 		if err := e.entry(o); err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 	}
 
@@ -161,7 +162,7 @@ func (e *Encoder) writeDeltaHeader(o *ObjectToPack) error {
 	}
 }
 
-func (e *Encoder) writeRefDeltaHeader(base plumbing.Hash) error {
+func (e *Encoder) writeRefDeltaHeader(base common.ObjectHash) error {
 	return binary.Write(e.w, base)
 }
 
@@ -196,8 +197,8 @@ func (e *Encoder) entryHead(typeNum plumbing.ObjectType, size int64) error {
 	return err
 }
 
-func (e *Encoder) footer() (plumbing.Hash, error) {
-	h := e.hasher.Sum()
+func (e *Encoder) footer() (common.ObjectHash, error) {
+	h := e.factory.FromBytes(e.hasher.Sum(nil))
 	return h, binary.Write(e.w, h)
 }
 

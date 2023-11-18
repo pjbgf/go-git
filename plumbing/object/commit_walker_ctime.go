@@ -5,13 +5,13 @@ import (
 
 	"github.com/emirpasic/gods/trees/binaryheap"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
 type commitIteratorByCTime struct {
-	seenExternal map[plumbing.Hash]bool
-	seen         map[plumbing.Hash]bool
+	seenExternal map[common.ObjectHash]bool
+	seen         map[common.ObjectHash]bool
 	heap         *binaryheap.Heap
 }
 
@@ -25,10 +25,10 @@ type commitIteratorByCTime struct {
 // commits from being iterated.
 func NewCommitIterCTime(
 	c *Commit,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitIter {
-	seen := make(map[plumbing.Hash]bool)
+	seen := make(map[common.ObjectHash]bool)
 	for _, h := range ignore {
 		seen[h] = true
 	}

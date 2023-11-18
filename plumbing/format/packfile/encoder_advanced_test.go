@@ -8,8 +8,11 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	. "github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
@@ -60,8 +63,8 @@ func (s *EncoderAdvancedSuite) testEncodeDecode(
 	objIter, err := storage.IterEncodedObjects(plumbing.AnyObject)
 	c.Assert(err, IsNil)
 
-	expectedObjects := map[plumbing.Hash]bool{}
-	var hashes []plumbing.Hash
+	expectedObjects := map[common.ObjectHash]bool{}
+	var hashes []common.ObjectHash
 	err = objIter.ForEach(func(o plumbing.EncodedObject) error {
 		expectedObjects[o.Hash()] = true
 		hashes = append(hashes, o.Hash())
@@ -72,14 +75,14 @@ func (s *EncoderAdvancedSuite) testEncodeDecode(
 
 	// Shuffle hashes to avoid delta selector getting order right just because
 	// the initial order is correct.
-	auxHashes := make([]plumbing.Hash, len(hashes))
+	auxHashes := make([]common.ObjectHash, len(hashes))
 	for i, j := range rand.Perm(len(hashes)) {
 		auxHashes[j] = hashes[i]
 	}
 	hashes = auxHashes
 
 	buf := bytes.NewBuffer(nil)
-	enc := NewEncoder(buf, storage, false)
+	enc := NewEncoder(buf, storage, false, hash.NewHasher(config.SHA1), hash.HashFactory(config.SHA1))
 	encodeHash, err := enc.Encode(hashes, packWindow)
 	c.Assert(err, IsNil)
 
@@ -113,7 +116,7 @@ func (s *EncoderAdvancedSuite) testEncodeDecode(
 
 	objIter, err = p.GetAll()
 	c.Assert(err, IsNil)
-	obtainedObjects := map[plumbing.Hash]bool{}
+	obtainedObjects := map[common.ObjectHash]bool{}
 	err = objIter.ForEach(func(o plumbing.EncodedObject) error {
 		obtainedObjects[o.Hash()] = true
 		return nil

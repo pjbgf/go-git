@@ -7,8 +7,10 @@ import (
 	"time"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
 
@@ -28,7 +30,7 @@ func (s *TagSuite) SetUpSuite(c *C) {
 }
 
 func (s *TagSuite) TestNameIDAndType(c *C) {
-	h := plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")
+	h := X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
 	tag := s.tag(c, h)
 	c.Assert(tag.Name, Equals, "annotated-tag")
 	c.Assert(h, Equals, tag.ID())
@@ -36,12 +38,12 @@ func (s *TagSuite) TestNameIDAndType(c *C) {
 }
 
 func (s *TagSuite) TestTagger(c *C) {
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 	c.Assert(tag.Tagger.String(), Equals, "Máximo Cuadros <mcuadros@gmail.com>")
 }
 
 func (s *TagSuite) TestAnnotated(c *C) {
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 	c.Assert(tag.Message, Equals, "example annotated tag\n")
 
 	commit, err := tag.Commit()
@@ -51,7 +53,7 @@ func (s *TagSuite) TestAnnotated(c *C) {
 }
 
 func (s *TagSuite) TestCommitError(c *C) {
-	tag := s.tag(c, plumbing.NewHash("fe6cb94756faa81e5ed9240f9191b833db5f40ae"))
+	tag := s.tag(c, X(sha1.FromHex("fe6cb94756faa81e5ed9240f9191b833db5f40ae")))
 
 	commit, err := tag.Commit()
 	c.Assert(commit, IsNil)
@@ -60,7 +62,7 @@ func (s *TagSuite) TestCommitError(c *C) {
 }
 
 func (s *TagSuite) TestCommit(c *C) {
-	tag := s.tag(c, plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))
+	tag := s.tag(c, X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")))
 	c.Assert(tag.Message, Equals, "a tagged commit\n")
 
 	commit, err := tag.Commit()
@@ -70,7 +72,7 @@ func (s *TagSuite) TestCommit(c *C) {
 }
 
 func (s *TagSuite) TestBlobError(c *C) {
-	tag := s.tag(c, plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))
+	tag := s.tag(c, X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")))
 
 	commit, err := tag.Blob()
 	c.Assert(commit, IsNil)
@@ -79,7 +81,7 @@ func (s *TagSuite) TestBlobError(c *C) {
 }
 
 func (s *TagSuite) TestBlob(c *C) {
-	tag := s.tag(c, plumbing.NewHash("fe6cb94756faa81e5ed9240f9191b833db5f40ae"))
+	tag := s.tag(c, X(sha1.FromHex("fe6cb94756faa81e5ed9240f9191b833db5f40ae")))
 	c.Assert(tag.Message, Equals, "a tagged blob\n")
 
 	blob, err := tag.Blob()
@@ -89,7 +91,7 @@ func (s *TagSuite) TestBlob(c *C) {
 }
 
 func (s *TagSuite) TestTreeError(c *C) {
-	tag := s.tag(c, plumbing.NewHash("fe6cb94756faa81e5ed9240f9191b833db5f40ae"))
+	tag := s.tag(c, X(sha1.FromHex("fe6cb94756faa81e5ed9240f9191b833db5f40ae")))
 
 	tree, err := tag.Tree()
 	c.Assert(tree, IsNil)
@@ -98,7 +100,7 @@ func (s *TagSuite) TestTreeError(c *C) {
 }
 
 func (s *TagSuite) TestTree(c *C) {
-	tag := s.tag(c, plumbing.NewHash("152175bf7e5580299fa1f0ba41ef6474cc043b70"))
+	tag := s.tag(c, X(sha1.FromHex("152175bf7e5580299fa1f0ba41ef6474cc043b70")))
 	c.Assert(tag.Message, Equals, "a tagged tree\n")
 
 	tree, err := tag.Tree()
@@ -108,7 +110,7 @@ func (s *TagSuite) TestTree(c *C) {
 }
 
 func (s *TagSuite) TestTreeFromCommit(c *C) {
-	tag := s.tag(c, plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))
+	tag := s.tag(c, X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")))
 	c.Assert(tag.Message, Equals, "a tagged commit\n")
 
 	tree, err := tag.Tree()
@@ -118,7 +120,7 @@ func (s *TagSuite) TestTreeFromCommit(c *C) {
 }
 
 func (s *TagSuite) TestObject(c *C) {
-	tag := s.tag(c, plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))
+	tag := s.tag(c, X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")))
 
 	obj, err := tag.Object()
 	c.Assert(err, IsNil)
@@ -184,13 +186,13 @@ func (s *TagSuite) TestTagEncodeDecodeIdempotent(c *C) {
 			Tagger:     Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			Message:    "Message\n\nFoo\nBar\nBaz\n\n",
 			TargetType: plumbing.BlobObject,
-			Target:     plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+			Target:     X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 		},
 		{
 			Name:       "foo",
 			Tagger:     Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			TargetType: plumbing.BlobObject,
-			Target:     plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
+			Target:     X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
 		},
 	}
 	for _, tag := range tags {
@@ -206,7 +208,7 @@ func (s *TagSuite) TestTagEncodeDecodeIdempotent(c *C) {
 }
 
 func (s *TagSuite) TestString(c *C) {
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 	c.Assert(tag.String(), Equals, ""+
 		"tag annotated-tag\n"+
 		"Tagger: Máximo Cuadros <mcuadros@gmail.com>\n"+
@@ -222,7 +224,7 @@ func (s *TagSuite) TestString(c *C) {
 		"\n",
 	)
 
-	tag = s.tag(c, plumbing.NewHash("152175bf7e5580299fa1f0ba41ef6474cc043b70"))
+	tag = s.tag(c, X(sha1.FromHex("152175bf7e5580299fa1f0ba41ef6474cc043b70")))
 	c.Assert(tag.String(), Equals, ""+
 		"tag tree-tag\n"+
 		"Tagger: Máximo Cuadros <mcuadros@gmail.com>\n"+
@@ -237,7 +239,7 @@ func (s *TagSuite) TestStringNonCommit(c *C) {
 	store := memory.NewStorage()
 
 	target := &Tag{
-		Target:     plumbing.NewHash("TAGONE"),
+		Target:     X(sha1.FromHex("TAGONE")),
 		Name:       "TAG ONE",
 		Message:    "tag one",
 		TargetType: plumbing.TagObject,
@@ -272,7 +274,7 @@ func (s *TagSuite) TestStringNonCommit(c *C) {
 func (s *TagSuite) TestLongTagNameSerialization(c *C) {
 	encoded := &plumbing.MemoryObject{}
 	decoded := &Tag{}
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 
 	longName := "my tag: name " + strings.Repeat("test", 4096) + " OK"
 	tag.Name = longName
@@ -288,7 +290,7 @@ func (s *TagSuite) TestLongTagNameSerialization(c *C) {
 func (s *TagSuite) TestPGPSignatureSerialization(c *C) {
 	encoded := &plumbing.MemoryObject{}
 	decoded := &Tag{}
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 
 	pgpsignature := `-----BEGIN PGP SIGNATURE-----
 
@@ -314,7 +316,7 @@ RUysgqjcpT8+iQM1PblGfHR4XAhuOqN5Fx06PSaFZhqvWFezJ28/CLyX5q+oIVk=
 func (s *TagSuite) TestSSHSignatureSerialization(c *C) {
 	encoded := &plumbing.MemoryObject{}
 	decoded := &Tag{}
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 
 	signature := `-----BEGIN SSH SIGNATURE-----
 U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgij/EfHS8tCjolj5uEANXgKzFfp
@@ -341,7 +343,7 @@ func (s *TagSuite) TestVerify(c *C) {
 		Message: `This is a signed tag
 `,
 		TargetType: plumbing.CommitObject,
-		Target:     plumbing.NewHash("1eca38290a3131d0c90709496a9b2207a872631e"),
+		Target:     X(sha1.FromHex("1eca38290a3131d0c90709496a9b2207a872631e")),
 		PGPSignature: `
 -----BEGIN PGP SIGNATURE-----
 
@@ -460,7 +462,7 @@ eQnkGpsz85DfEviLtk8cZjY/t6o8lPDLiwVjIzUBaA==
 func (s *TagSuite) TestEncodeWithoutSignature(c *C) {
 	//Similar to TestString since no signature
 	encoded := &plumbing.MemoryObject{}
-	tag := s.tag(c, plumbing.NewHash("b742a2a9fa0afcfa9a6fad080980fbc26b007c69"))
+	tag := s.tag(c, X(sha1.FromHex("b742a2a9fa0afcfa9a6fad080980fbc26b007c69")))
 	err := tag.EncodeWithoutSignature(encoded)
 	c.Assert(err, IsNil)
 	er, err := encoded.Reader()

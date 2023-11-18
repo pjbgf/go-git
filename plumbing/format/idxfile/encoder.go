@@ -1,6 +1,7 @@
 package idxfile
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing/hash"
@@ -10,19 +11,33 @@ import (
 // Encoder writes MemoryIndex structs to an output stream.
 type Encoder struct {
 	io.Writer
-	hash hash.Hash
+	hash    hash.Hash
+	version Version
 }
 
 // NewEncoder returns a new stream encoder that writes to w.
-func NewEncoder(w io.Writer) *Encoder {
-	h := hash.New(hash.CryptoType)
+func NewEncoder(w io.Writer, h hash.Hash) (*Encoder, error) {
+	if w == nil {
+		return nil, fmt.Errorf("cannot create encoder: nil writer")
+	}
+
 	mw := io.MultiWriter(w, h)
-	return &Encoder{mw, h}
+
+	return &Encoder{mw, h, Version2}, nil
 }
 
 // Encode encodes an MemoryIndex to the encoder writer.
 func (e *Encoder) Encode(idx *MemoryIndex) (int, error) {
-	flow := []func(*MemoryIndex) (int, error){
+	if idx == nil {
+		return 0, fmt.Errorf("failed to encode: target index is nil")
+	}
+
+	if !idx.m.TryLock() {
+		return 0, fmt.Errorf("failed to encode: %w", ErrMemoryIndexLocked)
+	}
+	defer idx.m.Unlock()
+
+	encodeFlow := []func(*MemoryIndex) (int, error){
 		e.encodeHeader,
 		e.encodeFanout,
 		e.encodeHashes,
@@ -32,7 +47,7 @@ func (e *Encoder) Encode(idx *MemoryIndex) (int, error) {
 	}
 
 	sz := 0
-	for _, f := range flow {
+	for _, f := range encodeFlow {
 		i, err := f(idx)
 		sz += i
 
@@ -50,7 +65,7 @@ func (e *Encoder) encodeHeader(idx *MemoryIndex) (int, error) {
 		return c, err
 	}
 
-	return c + 4, binary.WriteUint32(e, idx.Version)
+	return c + 4, binary.WriteUint32(e, uint32(e.version))
 }
 
 func (e *Encoder) encodeFanout(idx *MemoryIndex) (int, error) {
@@ -132,10 +147,10 @@ func (e *Encoder) encodeChecksums(idx *MemoryIndex) (int, error) {
 		return 0, err
 	}
 
-	copy(idx.IdxChecksum[:], e.hash.Sum(nil)[:hash.Size])
+	copy(idx.IdxChecksum[:], e.hash.Sum(nil)[:e.hash.Size()])
 	if _, err := e.Write(idx.IdxChecksum[:]); err != nil {
 		return 0, err
 	}
 
-	return hash.HexSize, nil
+	return e.hash.Size() * 2, nil
 }

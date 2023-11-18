@@ -1,12 +1,12 @@
 package packp
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 )
 
@@ -44,7 +44,7 @@ func (r *UploadPackRequest) IsEmpty() bool {
 	return isSubset(r.Wants, r.Haves) && len(r.Shallows) == 0
 }
 
-func isSubset(needle []plumbing.Hash, haystack []plumbing.Hash) bool {
+func isSubset(needle []common.ObjectHash, haystack []common.ObjectHash) bool {
 	for _, h := range needle {
 		found := false
 		for _, oh := range haystack {
@@ -65,7 +65,7 @@ func isSubset(needle []plumbing.Hash, haystack []plumbing.Hash) bool {
 // UploadHaves is a message to signal the references that a client has in a
 // upload-pack. Do not use this directly. Use UploadPackRequest request instead.
 type UploadHaves struct {
-	Haves []plumbing.Hash
+	Haves []common.ObjectHash
 }
 
 // Encode encodes the UploadHaves into the Writer. If flush is true, a flush
@@ -75,9 +75,9 @@ func (u *UploadHaves) Encode(w io.Writer, flush bool) error {
 
 	plumbing.HashesSort(u.Haves)
 
-	var last plumbing.Hash
+	var last common.ObjectHash
 	for _, have := range u.Haves {
-		if bytes.Equal(last[:], have[:]) {
+		if last.Compare(have.Sum()) == 0 {
 			continue
 		}
 

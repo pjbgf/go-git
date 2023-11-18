@@ -7,24 +7,25 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 // Decode reads the next advertised-refs message form its input and
 // stores it in the AdvRefs.
 func (a *AdvRefs) Decode(r io.Reader) error {
-	d := newAdvRefsDecoder(r)
+	d := newAdvRefsDecoder(r, a.factory)
 	return d.Decode(a)
 }
 
 type advRefsDecoder struct {
-	s     *pktline.Scanner // a pkt-line scanner from the input stream
-	line  []byte           // current pkt-line contents, use parser.nextLine() to make it advance
-	nLine int              // current pkt-line number for debugging, begins at 1
-	hash  plumbing.Hash    // last hash read
-	err   error            // sticky error, use the parser.error() method to fill this out
-	data  *AdvRefs         // parsed data is stored here
+	s     *pktline.Scanner  // a pkt-line scanner from the input stream
+	line  []byte            // current pkt-line contents, use parser.nextLine() to make it advance
+	nLine int               // current pkt-line number for debugging, begins at 1
+	hash  common.ObjectHash // last hash read
+	err   error             // sticky error, use the parser.error() method to fill this out
+	data  *AdvRefs          // parsed data is stored here
 }
 
 var (
@@ -35,9 +36,10 @@ var (
 	ErrEmptyInput = errors.New("empty input")
 )
 
-func newAdvRefsDecoder(r io.Reader) *advRefsDecoder {
+func newAdvRefsDecoder(r io.Reader, f common.HashFactory) *advRefsDecoder {
 	return &advRefsDecoder{
-		s: pktline.NewScanner(r),
+		s:    pktline.NewScanner(r),
+		hash: f.ZeroHash(),
 	}
 }
 
@@ -139,7 +141,7 @@ func decodeFirstHash(p *advRefsDecoder) decoderStateFn {
 		return nil
 	}
 
-	if _, err := hex.Decode(p.hash[:], p.line[:hashSize]); err != nil {
+	if _, err := hex.Decode(p.hash.Sum(), p.line[:hashSize]); err != nil {
 		p.error("invalid hash text: %s", err)
 		return nil
 	}
@@ -192,7 +194,7 @@ func decodeFirstRef(l *advRefsDecoder) decoderStateFn {
 	l.line = chunks[1]
 
 	if bytes.Equal(ref, []byte(head)) {
-		l.data.Head = &l.hash
+		l.data.Head = l.hash
 	} else {
 		l.data.References[string(ref)] = l.hash
 	}
@@ -241,15 +243,15 @@ func decodeOtherRefs(p *advRefsDecoder) decoderStateFn {
 }
 
 // Reads a ref-name
-func readRef(data []byte) (string, plumbing.Hash, error) {
+func readRef(data []byte) (string, common.ObjectHash, error) {
 	chunks := bytes.Split(data, sp)
 	switch {
 	case len(chunks) == 1:
-		return "", plumbing.ZeroHash, fmt.Errorf("malformed ref data: no space was found")
+		return "", sha1.ZeroHash(), fmt.Errorf("malformed ref data: no space was found")
 	case len(chunks) > 2:
-		return "", plumbing.ZeroHash, fmt.Errorf("malformed ref data: more than one space found")
+		return "", sha1.ZeroHash(), fmt.Errorf("malformed ref data: more than one space found")
 	default:
-		return string(chunks[1]), plumbing.NewHash(string(chunks[0])), nil
+		return string(chunks[1]), sha1.FromBytes(chunks[0]), nil
 	}
 }
 
@@ -269,9 +271,10 @@ func decodeShallow(p *advRefsDecoder) decoderStateFn {
 	}
 
 	text := p.line[:hashSize]
-	var h plumbing.Hash
-	if _, err := hex.Decode(h[:], text); err != nil {
-		p.error("invalid hash text: %s", err)
+	// TODO: confirm this is working
+	h, ok := p.data.factory.FromHex(string(text))
+	if ok {
+		p.error("invalid hash text: %s", text)
 		return nil
 	}
 

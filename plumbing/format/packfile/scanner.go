@@ -9,6 +9,8 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/binary"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -32,7 +34,7 @@ type ObjectHeader struct {
 	Type            plumbing.ObjectType
 	Offset          int64
 	Length          int64
-	Reference       plumbing.Hash
+	Reference       common.ObjectHash
 	OffsetReference int64
 }
 
@@ -368,10 +370,10 @@ func (s *Scanner) SeekFromStart(offset int64) (previous int64, err error) {
 }
 
 // Checksum returns the checksum of the packfile
-func (s *Scanner) Checksum() (plumbing.Hash, error) {
+func (s *Scanner) Checksum() (common.ObjectHash, error) {
 	err := s.discardObjectIfNeeded()
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return binary.ReadHash(s.r)

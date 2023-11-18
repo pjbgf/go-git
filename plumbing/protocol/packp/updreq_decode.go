@@ -2,13 +2,14 @@ package packp
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
 
 var (
@@ -141,7 +142,7 @@ func (d *updReqDecoder) decodeShallow() error {
 		return d.scanErrorOr(errNoCommands)
 	}
 
-	d.req.Shallow = &h
+	d.req.Shallow = h
 
 	return nil
 }
@@ -227,16 +228,16 @@ func parseCommand(b []byte) (*Command, error) {
 	return &Command{Old: oh, New: nh, Name: n}, nil
 }
 
-func parseHash(s string) (plumbing.Hash, error) {
+func parseHash(s string) (common.ObjectHash, error) {
 	if len(s) != hashSize {
-		return plumbing.ZeroHash, errInvalidHashSize(len(s))
+		return sha1.ZeroHash(), errInvalidHashSize(len(s))
 	}
 
-	if _, err := hex.DecodeString(s); err != nil {
-		return plumbing.ZeroHash, errInvalidHash(err)
+	h, ok := sha1.FromHex(s)
+	if !ok {
+		return sha1.ZeroHash(), errInvalidHash(fmt.Errorf(s))
 	}
 
-	h := plumbing.NewHash(s)
 	return h, nil
 }
 

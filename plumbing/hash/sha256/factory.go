@@ -6,6 +6,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
+var Factory = SHA256HashFactory{}
+
 type SHA256HashFactory struct {
 }
 

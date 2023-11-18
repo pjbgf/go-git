@@ -9,8 +9,11 @@ import (
 	"time"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	. "gopkg.in/check.v1"
@@ -26,13 +29,13 @@ var _ = Suite(&SuiteCommit{})
 func (s *SuiteCommit) SetUpSuite(c *C) {
 	s.BaseObjectsSuite.SetUpSuite(c)
 
-	hash := plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea")
+	hash := X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea"))
 
 	s.Commit = s.commit(c, hash)
 }
 
 func (s *SuiteCommit) TestDecodeNonCommit(c *C) {
-	hash := plumbing.NewHash("9a48f23120e880dfbe41f7c9b7b708e9ee62a492")
+	hash := X(sha1.FromHex("9a48f23120e880dfbe41f7c9b7b708e9ee62a492"))
 	blob, err := s.Storer.EncodedObject(plumbing.AnyObject, hash)
 	c.Assert(err, IsNil)
 
@@ -83,8 +86,8 @@ func (s *SuiteCommit) TestParentNotFound(c *C) {
 }
 
 func (s *SuiteCommit) TestPatch(c *C) {
-	from := s.commit(c, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
-	to := s.commit(c, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	from := s.commit(c, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
+	to := s.commit(c, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	patch, err := from.Patch(to)
 	c.Assert(err, IsNil)
@@ -109,8 +112,8 @@ index 0000000000000000000000000000000000000000..9dea2395f5403188298c1dabe8bdafe5
 `)
 	c.Assert(buf.String(), Equals, patch.String())
 
-	from = s.commit(c, plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"))
-	to = s.commit(c, plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"))
+	from = s.commit(c, X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")))
+	to = s.commit(c, X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")))
 
 	patch, err = from.Patch(to)
 	c.Assert(err, IsNil)
@@ -136,8 +139,8 @@ Binary files /dev/null and b/binary.jpg differ
 }
 
 func (s *SuiteCommit) TestPatchContext(c *C) {
-	from := s.commit(c, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
-	to := s.commit(c, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	from := s.commit(c, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
+	to := s.commit(c, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	patch, err := from.PatchContext(context.Background(), to)
 	c.Assert(err, IsNil)
@@ -162,8 +165,8 @@ index 0000000000000000000000000000000000000000..9dea2395f5403188298c1dabe8bdafe5
 `)
 	c.Assert(buf.String(), Equals, patch.String())
 
-	from = s.commit(c, plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"))
-	to = s.commit(c, plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"))
+	from = s.commit(c, X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")))
+	to = s.commit(c, X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")))
 
 	patch, err = from.PatchContext(context.Background(), to)
 	c.Assert(err, IsNil)
@@ -189,7 +192,7 @@ Binary files /dev/null and b/binary.jpg differ
 }
 
 func (s *SuiteCommit) TestPatchContext_ToNil(c *C) {
-	from := s.commit(c, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
+	from := s.commit(c, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
 
 	patch, err := from.PatchContext(context.Background(), nil)
 	c.Assert(err, IsNil)
@@ -226,20 +229,20 @@ change
 			Author:       Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			Committer:    Signature{Name: "Bar", Email: "bar@example.local", When: ts},
 			Message:      "Message\n\nFoo\nBar\nWith trailing blank lines\n\n",
-			TreeHash:     plumbing.NewHash("f000000000000000000000000000000000000001"),
-			ParentHashes: []plumbing.Hash{plumbing.NewHash("f000000000000000000000000000000000000002")},
+			TreeHash:     X(sha1.FromHex("f000000000000000000000000000000000000001")),
+			ParentHashes: []common.ObjectHash{X(sha1.FromHex("f000000000000000000000000000000000000002"))},
 			Encoding:     defaultUtf8CommitMesageEncoding,
 		},
 		{
 			Author:    Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			Committer: Signature{Name: "Bar", Email: "bar@example.local", When: ts},
 			Message:   "Message\n\nFoo\nBar\nWith no trailing blank lines",
-			TreeHash:  plumbing.NewHash("0000000000000000000000000000000000000003"),
-			ParentHashes: []plumbing.Hash{
-				plumbing.NewHash("f000000000000000000000000000000000000004"),
-				plumbing.NewHash("f000000000000000000000000000000000000005"),
-				plumbing.NewHash("f000000000000000000000000000000000000006"),
-				plumbing.NewHash("f000000000000000000000000000000000000007"),
+			TreeHash:  X(sha1.FromHex("0000000000000000000000000000000000000003")),
+			ParentHashes: []common.ObjectHash{
+				X(sha1.FromHex("f000000000000000000000000000000000000004")),
+				X(sha1.FromHex("f000000000000000000000000000000000000005")),
+				X(sha1.FromHex("f000000000000000000000000000000000000006")),
+				X(sha1.FromHex("f000000000000000000000000000000000000007")),
 			},
 			Encoding: MessageEncoding("ISO-8859-1"),
 		},
@@ -247,10 +250,10 @@ change
 			Author:    Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			Committer: Signature{Name: "Bar", Email: "bar@example.local", When: ts},
 			Message:   "Testing mergetag\n\nHere, commit is not signed",
-			TreeHash:  plumbing.NewHash("f000000000000000000000000000000000000001"),
-			ParentHashes: []plumbing.Hash{
-				plumbing.NewHash("f000000000000000000000000000000000000002"),
-				plumbing.NewHash("f000000000000000000000000000000000000003"),
+			TreeHash:  X(sha1.FromHex("f000000000000000000000000000000000000001")),
+			ParentHashes: []common.ObjectHash{
+				X(sha1.FromHex("f000000000000000000000000000000000000002")),
+				X(sha1.FromHex("f000000000000000000000000000000000000003")),
 			},
 			MergeTag: tag,
 			Encoding: defaultUtf8CommitMesageEncoding,
@@ -259,10 +262,10 @@ change
 			Author:    Signature{Name: "Foo", Email: "foo@example.local", When: ts},
 			Committer: Signature{Name: "Bar", Email: "bar@example.local", When: ts},
 			Message:   "Testing mergetag\n\nHere, commit is also signed",
-			TreeHash:  plumbing.NewHash("f000000000000000000000000000000000000001"),
-			ParentHashes: []plumbing.Hash{
-				plumbing.NewHash("f000000000000000000000000000000000000002"),
-				plumbing.NewHash("f000000000000000000000000000000000000003"),
+			TreeHash:  X(sha1.FromHex("f000000000000000000000000000000000000001")),
+			ParentHashes: []common.ObjectHash{
+				X(sha1.FromHex("f000000000000000000000000000000000000002")),
+				X(sha1.FromHex("f000000000000000000000000000000000000003")),
 			},
 			MergeTag:     tag,
 			PGPSignature: pgpsignature,
@@ -303,7 +306,7 @@ func (s *SuiteCommit) TestString(c *C) {
 }
 
 func (s *SuiteCommit) TestStringMultiLine(c *C) {
-	hash := plumbing.NewHash("e7d896db87294e33ca3202e536d4d9bb16023db3")
+	hash := X(sha1.FromHex("e7d896db87294e33ca3202e536d4d9bb16023db3"))
 
 	f := fixtures.ByURL("https://github.com/src-d/go-git.git").One()
 	sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
@@ -433,7 +436,7 @@ RUysgqjcpT8+iQM1PblGfHR4XAhuOqN5Fx06PSaFZhqvWFezJ28/CLyX5q+oIVk=
 }
 
 func (s *SuiteCommit) TestStat(c *C) {
-	aCommit := s.commit(c, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	aCommit := s.commit(c, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 	fileStats, err := aCommit.Stats()
 	c.Assert(err, IsNil)
 
@@ -443,7 +446,7 @@ func (s *SuiteCommit) TestStat(c *C) {
 	c.Assert(fileStats[0].String(), Equals, " vendor/foo.go | 7 +++++++\n")
 
 	// Stats for another commit.
-	aCommit = s.commit(c, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
+	aCommit = s.commit(c, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
 	fileStats, err = aCommit.Stats()
 	c.Assert(err, IsNil)
 
@@ -462,13 +465,13 @@ func (s *SuiteCommit) TestVerify(c *C) {
 	ts := time.Unix(1617402711, 0)
 	loc, _ := time.LoadLocation("UTC")
 	commit := &Commit{
-		Hash:      plumbing.NewHash("1eca38290a3131d0c90709496a9b2207a872631e"),
+		Hash:      X(sha1.FromHex("1eca38290a3131d0c90709496a9b2207a872631e")),
 		Author:    Signature{Name: "go-git", Email: "go-git@example.com", When: ts.In(loc)},
 		Committer: Signature{Name: "go-git", Email: "go-git@example.com", When: ts.In(loc)},
 		Message: `test
 `,
-		TreeHash:     plumbing.NewHash("52a266a58f2c028ad7de4dfd3a72fdf76b0d4e24"),
-		ParentHashes: []plumbing.Hash{plumbing.NewHash("e4fbb611cd14149c7a78e9c08425f59f4b736a9a")},
+		TreeHash:     X(sha1.FromHex("52a266a58f2c028ad7de4dfd3a72fdf76b0d4e24")),
+		ParentHashes: []common.ObjectHash{X(sha1.FromHex("e4fbb611cd14149c7a78e9c08425f59f4b736a9a"))},
 		PGPSignature: `
 -----BEGIN PGP SIGNATURE-----
 
@@ -504,8 +507,8 @@ YIefGtzXfldDxg4=
 }
 
 func (s *SuiteCommit) TestPatchCancel(c *C) {
-	from := s.commit(c, plumbing.NewHash("918c48b83bd081e863dbe1b80f8998f058cd8294"))
-	to := s.commit(c, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	from := s.commit(c, X(sha1.FromHex("918c48b83bd081e863dbe1b80f8998f058cd8294")))
+	to := s.commit(c, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -557,13 +560,13 @@ func (s *SuiteCommit) TestLess(c *C) {
 	when1 := time.Now()
 	when2 := when1.Add(time.Hour)
 
-	hash1 := plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea")
-	hash2 := plumbing.NewHash("2669dce138d9b841a518c64b10914d88f5e488ea")
+	hash1 := X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea"))
+	hash2 := X(sha1.FromHex("2669dce138d9b841a518c64b10914d88f5e488ea"))
 
 	commitLessTests := []struct {
 		Committer1When, Committer2When time.Time
 		Author1When, Author2When       time.Time
-		Hash1, Hash2                   plumbing.Hash
+		Hash1, Hash2                   common.ObjectHash
 		Exp                            bool
 	}{
 		{when1, when1, when1, when1, hash1, hash2, true},

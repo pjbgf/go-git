@@ -2,6 +2,7 @@ package transactional
 
 import (
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	. "gopkg.in/check.v1"
@@ -107,7 +108,7 @@ func (s *ObjectSuite) TestIterEncodedObjects(c *C) {
 	iter, err := os.IterEncodedObjects(plumbing.AnyObject)
 	c.Assert(err, IsNil)
 
-	var hashes []plumbing.Hash
+	var hashes []common.ObjectHash
 	err = iter.ForEach(func(obj plumbing.EncodedObject) error {
 		hashes = append(hashes, obj.Hash())
 		return nil
@@ -143,7 +144,7 @@ func (s *ObjectSuite) TestCommit(c *C) {
 	iter, err := base.IterEncodedObjects(plumbing.AnyObject)
 	c.Assert(err, IsNil)
 
-	var hashes []plumbing.Hash
+	var hashes []common.ObjectHash
 	err = iter.ForEach(func(obj plumbing.EncodedObject) error {
 		hashes = append(hashes, obj.Hash())
 		return nil

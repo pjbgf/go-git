@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -185,24 +186,24 @@ func (fi *fileIndex) readFanout() error {
 }
 
 // GetIndexByHash looks up the provided hash in the commit-graph fanout and returns the index of the commit data for the given hash.
-func (fi *fileIndex) GetIndexByHash(h plumbing.Hash) (uint32, error) {
-	var oid plumbing.Hash
+func (fi *fileIndex) GetIndexByHash(h common.ObjectHash) (uint32, error) {
+	var oid common.ObjectHash
 
 	// Find the hash in the oid lookup table
 	var low uint32
-	if h[0] == 0 {
+	if h.Sum()[0] == 0 {
 		low = 0
 	} else {
-		low = fi.fanout[h[0]-1]
+		low = fi.fanout[h.Sum()[0]-1]
 	}
-	high := fi.fanout[h[0]]
+	high := fi.fanout[h.Sum()[0]]
 	for low < high {
 		mid := (low + high) >> 1
 		offset := fi.offsets[OIDLookupChunk] + int64(mid)*hash.Size
-		if _, err := fi.reader.ReadAt(oid[:], offset); err != nil {
+		if _, err := fi.reader.ReadAt(oid.Sum(), offset); err != nil {
 			return 0, err
 		}
-		cmp := bytes.Compare(h[:], oid[:])
+		cmp := h.Compare(oid.Sum())
 		if cmp < 0 {
 			high = mid
 		} else if cmp == 0 {
@@ -332,7 +333,7 @@ func (fi *fileIndex) GetCommitDataByIndex(idx uint32) (*CommitData, error) {
 }
 
 // GetHashByIndex looks up the hash for the given index in the commit-graph.
-func (fi *fileIndex) GetHashByIndex(idx uint32) (found plumbing.Hash, err error) {
+func (fi *fileIndex) GetHashByIndex(idx uint32) (found common.ObjectHash, err error) {
 	if idx < fi.minimumNumberOfHashes {
 		if fi.parent != nil {
 			return fi.parent.GetHashByIndex(idx)
@@ -345,15 +346,15 @@ func (fi *fileIndex) GetHashByIndex(idx uint32) (found plumbing.Hash, err error)
 	}
 
 	offset := fi.offsets[OIDLookupChunk] + int64(idx)*hash.Size
-	if _, err := fi.reader.ReadAt(found[:], offset); err != nil {
+	if _, err := fi.reader.ReadAt(found.Sum(), offset); err != nil {
 		return found, err
 	}
 
 	return found, nil
 }
 
-func (fi *fileIndex) getHashesFromIndexes(indexes []uint32) ([]plumbing.Hash, error) {
-	hashes := make([]plumbing.Hash, len(indexes))
+func (fi *fileIndex) getHashesFromIndexes(indexes []uint32) ([]common.ObjectHash, error) {
+	hashes := make([]common.ObjectHash, len(indexes))
 
 	for i, idx := range indexes {
 		if idx < fi.minimumNumberOfHashes {
@@ -375,7 +376,7 @@ func (fi *fileIndex) getHashesFromIndexes(indexes []uint32) ([]plumbing.Hash, er
 		}
 
 		offset := fi.offsets[OIDLookupChunk] + int64(idx)*hash.Size
-		if _, err := fi.reader.ReadAt(hashes[i][:], offset); err != nil {
+		if _, err := fi.reader.ReadAt(hashes[i].Sum(), offset); err != nil {
 			return nil, err
 		}
 	}
@@ -384,8 +385,8 @@ func (fi *fileIndex) getHashesFromIndexes(indexes []uint32) ([]plumbing.Hash, er
 }
 
 // Hashes returns all the hashes that are available in the index.
-func (fi *fileIndex) Hashes() []plumbing.Hash {
-	hashes := make([]plumbing.Hash, fi.fanout[0xff]+fi.minimumNumberOfHashes)
+func (fi *fileIndex) Hashes() []common.ObjectHash {
+	hashes := make([]common.ObjectHash, fi.fanout[0xff]+fi.minimumNumberOfHashes)
 	for i := uint32(0); i < fi.minimumNumberOfHashes; i++ {
 		hash, err := fi.parent.GetHashByIndex(i)
 		if err != nil {
@@ -396,7 +397,7 @@ func (fi *fileIndex) Hashes() []plumbing.Hash {
 
 	for i := uint32(0); i < fi.fanout[0xff]; i++ {
 		offset := fi.offsets[OIDLookupChunk] + int64(i)*hash.Size
-		if n, err := fi.reader.ReadAt(hashes[i+fi.minimumNumberOfHashes][:], offset); err != nil || n < hash.Size {
+		if n, err := fi.reader.ReadAt(hashes[i+fi.minimumNumberOfHashes].Sum(), offset); err != nil || n < hash.Size {
 			return nil
 		}
 	}

@@ -1,6 +1,9 @@
 package cache
 
-import "github.com/go-git/go-git/v5/plumbing"
+import (
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+)
 
 const (
 	Byte FileSize = 1 << (iota * 10)
@@ -20,7 +23,7 @@ type Object interface {
 	Put(o plumbing.EncodedObject)
 	// Get gets an object from the cache given its hash. The second return value
 	// is true if the object was returned, and false otherwise.
-	Get(k plumbing.Hash) (plumbing.EncodedObject, bool)
+	Get(k common.ObjectHash) (plumbing.EncodedObject, bool)
 	// Clear clears every object from the cache.
 	Clear()
 }

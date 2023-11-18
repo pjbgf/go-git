@@ -2,6 +2,7 @@ package packfile
 
 import (
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 )
 
 // ObjectToPack is a representation of an object that is going to be into a
@@ -28,7 +29,7 @@ type ObjectToPack struct {
 	resolvedOriginal bool
 	originalType     plumbing.ObjectType
 	originalSize     int64
-	originalHash     plumbing.Hash
+	originalHash     common.ObjectHash
 }
 
 // newObjectToPack creates a correct ObjectToPack based on a non-delta object
@@ -119,7 +120,7 @@ func (o *ObjectToPack) Type() plumbing.ObjectType {
 	panic("cannot get type")
 }
 
-func (o *ObjectToPack) Hash() plumbing.Hash {
+func (o *ObjectToPack) Hash() common.ObjectHash {
 	if o.Original != nil {
 		return o.Original.Hash()
 	}

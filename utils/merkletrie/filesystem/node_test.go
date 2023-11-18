@@ -7,7 +7,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/go-git/go-git/v5/utils/merkletrie/noder"
 
@@ -179,11 +181,11 @@ func (s *NoderSuite) TestDiffDirectory(c *C) {
 	fsB.MkdirAll(dir, 0644)
 
 	ch, err := merkletrie.DiffTree(
-		NewRootNode(fsA, map[string]plumbing.Hash{
-			dir: plumbing.NewHash("aa102815663d23f8b75a47e7a01965dcdc96468c"),
+		NewRootNode(fsA, map[string]common.ObjectHash{
+			dir: X(sha1.FromHex("aa102815663d23f8b75a47e7a01965dcdc96468c")),
 		}),
-		NewRootNode(fsB, map[string]plumbing.Hash{
-			dir: plumbing.NewHash("19102815663d23f8b75a47e7a01965dcdc96468c"),
+		NewRootNode(fsB, map[string]common.ObjectHash{
+			dir: X(sha1.FromHex("19102815663d23f8b75a47e7a01965dcdc96468c")),
 		}),
 		IsEquals,
 	)

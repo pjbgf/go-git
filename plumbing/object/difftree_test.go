@@ -4,10 +4,12 @@ import (
 	"sort"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
@@ -31,7 +33,7 @@ func (s *DiffTreeSuite) SetUpSuite(c *C) {
 }
 
 func (s *DiffTreeSuite) commitFromStorer(c *C, sto storer.EncodedObjectStorer,
-	h plumbing.Hash) *Commit {
+	h common.ObjectHash) *Commit {
 
 	commit, err := GetCommit(sto, h)
 	c.Assert(err, IsNil)
@@ -319,14 +321,14 @@ func (s *DiffTreeSuite) TestDiffTree(c *C) {
 		var err error
 		if t.commit1 != "" {
 			tree1, err = s.commitFromStorer(c, sto,
-				plumbing.NewHash(t.commit1)).Tree()
+				X(sha1.FromHex(t.commit1))).Tree()
 			c.Assert(err, IsNil,
 				Commentf("subtest %d: unable to retrieve tree from commit %s and repo %s: %s", i, t.commit1, t.repository, err))
 		}
 
 		if t.commit2 != "" {
 			tree2, err = s.commitFromStorer(c, sto,
-				plumbing.NewHash(t.commit2)).Tree()
+				X(sha1.FromHex(t.commit2))).Tree()
 			c.Assert(err, IsNil,
 				Commentf("subtest %d: unable to retrieve tree from commit %s and repo %s", i, t.commit2, t.repository, err))
 		}
@@ -352,23 +354,23 @@ func (s *DiffTreeSuite) TestIssue279(c *C) {
 	// treeNoders should have the same hash when their mode is
 	// filemode.Deprecated and filemode.Regular.
 	a := &treeNoder{
-		hash: plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		hash: X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 		mode: filemode.Regular,
 	}
 	b := &treeNoder{
-		hash: plumbing.NewHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		hash: X(sha1.FromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
 		mode: filemode.Deprecated,
 	}
 	c.Assert(a.Hash(), DeepEquals, b.Hash())
 
 	// yet, they should have different hashes if their contents change.
 	aa := &treeNoder{
-		hash: plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		hash: X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		mode: filemode.Regular,
 	}
 	c.Assert(a.Hash(), Not(DeepEquals), aa.Hash())
 	bb := &treeNoder{
-		hash: plumbing.NewHash("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		hash: X(sha1.FromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
 		mode: filemode.Deprecated,
 	}
 	c.Assert(b.Hash(), Not(DeepEquals), bb.Hash())

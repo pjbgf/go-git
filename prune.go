@@ -4,11 +4,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
-type PruneHandler func(unreferencedObjectHash plumbing.Hash) error
+type PruneHandler func(unreferencedObjectHash common.ObjectHash) error
 type PruneOptions struct {
 	// OnlyObjectsOlderThan if set to non-zero value
 	// selects only objects older than the time provided.
@@ -21,7 +21,7 @@ var ErrLooseObjectsNotSupported = errors.New("loose objects not supported")
 
 // DeleteObject deletes an object from a repository.
 // The type conveniently matches PruneHandler.
-func (r *Repository) DeleteObject(hash plumbing.Hash) error {
+func (r *Repository) DeleteObject(hash common.ObjectHash) error {
 	los, ok := r.Storer.(storer.LooseObjectStorer)
 	if !ok {
 		return ErrLooseObjectsNotSupported
@@ -42,7 +42,7 @@ func (r *Repository) Prune(opt PruneOptions) error {
 		return err
 	}
 	// Now walk all (loose) objects in storage.
-	return los.ForEachObjectHash(func(hash plumbing.Hash) error {
+	return los.ForEachObjectHash(func(hash common.ObjectHash) error {
 		// Get out if we have seen this object.
 		if pw.isSeen(hash) {
 			return nil

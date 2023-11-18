@@ -3,8 +3,11 @@ package revlist
 import (
 	"testing"
 
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -65,7 +68,7 @@ func (s *RevListSuite) TestRevListObjects_Submodules(c *C) {
 	ref, err := storer.ResolveReference(sto, plumbing.HEAD)
 	c.Assert(err, IsNil)
 
-	revList, err := Objects(sto, []plumbing.Hash{ref.Hash()}, nil)
+	revList, err := Objects(sto, []common.ObjectHash{ref.Hash()}, nil)
 	c.Assert(err, IsNil)
 	for _, h := range revList {
 		c.Assert(submodules[h.String()], Equals, false)
@@ -87,11 +90,11 @@ func (s *RevListSuite) TestRevListObjects(c *C) {
 	}
 
 	localHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(initialCommit)}, nil)
+		[]common.ObjectHash{X(sha1.FromHex(initialCommit))}, nil)
 	c.Assert(err, IsNil)
 
 	remoteHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(secondCommit)}, localHist)
+		[]common.ObjectHash{X(sha1.FromHex(secondCommit))}, localHist)
 	c.Assert(err, IsNil)
 
 	for _, h := range remoteHist {
@@ -112,7 +115,7 @@ func (s *RevListSuite) TestRevListObjectsTagObject(c *C) {
 		"f7b877701fbf855b44c0a9e86f3fdce2c298b07f": true,
 	}
 
-	hist, err := Objects(sto, []plumbing.Hash{plumbing.NewHash("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc")}, nil)
+	hist, err := Objects(sto, []common.ObjectHash{X(sha1.FromHex("ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"))}, nil)
 	c.Assert(err, IsNil)
 
 	for _, h := range hist {
@@ -138,7 +141,9 @@ func (s *RevListSuite) TestRevListObjectsWithStorageForIgnores(c *C) {
 		"d108adc364fb6f21395d011ae2c8a11d96905b0d": true, // haskal/
 	}
 
-	hist, err := ObjectsWithStorageForIgnores(sto, s.Storer, []plumbing.Hash{plumbing.NewHash("1980fcf55330d9d94c34abee5ab734afecf96aba")}, []plumbing.Hash{plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")})
+	hist, err := ObjectsWithStorageForIgnores(sto, s.Storer,
+		[]common.ObjectHash{X(sha1.FromHex("1980fcf55330d9d94c34abee5ab734afecf96aba"))},
+		[]common.ObjectHash{X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))})
 	c.Assert(err, IsNil)
 
 	for _, h := range hist {
@@ -161,15 +166,15 @@ func (s *RevListSuite) TestRevListObjectsWithBlobsAndTrees(c *C) {
 	}
 
 	localHist, err := Objects(s.Storer,
-		[]plumbing.Hash{
-			plumbing.NewHash(initialCommit),
-			plumbing.NewHash("c2d30fa8ef288618f65f6eed6e168e0d514886f4"),
-			plumbing.NewHash("d3ff53e0564a9f87d8e84b6e28e5060e517008aa"),
+		[]common.ObjectHash{
+			X(sha1.FromHex(initialCommit)),
+			X(sha1.FromHex("c2d30fa8ef288618f65f6eed6e168e0d514886f4")),
+			X(sha1.FromHex("d3ff53e0564a9f87d8e84b6e28e5060e517008aa")),
 		}, nil)
 	c.Assert(err, IsNil)
 
 	remoteHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(secondCommit)}, localHist)
+		[]common.ObjectHash{X(sha1.FromHex(secondCommit))}, localHist)
 	c.Assert(err, IsNil)
 
 	for _, h := range remoteHist {
@@ -181,11 +186,11 @@ func (s *RevListSuite) TestRevListObjectsWithBlobsAndTrees(c *C) {
 func (s *RevListSuite) TestRevListObjectsReverse(c *C) {
 
 	localHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(secondCommit)}, nil)
+		[]common.ObjectHash{X(sha1.FromHex(secondCommit))}, nil)
 	c.Assert(err, IsNil)
 
 	remoteHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(initialCommit)}, localHist)
+		[]common.ObjectHash{X(sha1.FromHex(initialCommit))}, localHist)
 	c.Assert(err, IsNil)
 
 	c.Assert(len(remoteHist), Equals, 0)
@@ -193,11 +198,11 @@ func (s *RevListSuite) TestRevListObjectsReverse(c *C) {
 
 func (s *RevListSuite) TestRevListObjectsSameCommit(c *C) {
 	localHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(secondCommit)}, nil)
+		[]common.ObjectHash{X(sha1.FromHex(secondCommit))}, nil)
 	c.Assert(err, IsNil)
 
 	remoteHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(secondCommit)}, localHist)
+		[]common.ObjectHash{X(sha1.FromHex(secondCommit))}, localHist)
 	c.Assert(err, IsNil)
 
 	c.Assert(len(remoteHist), Equals, 0)
@@ -210,13 +215,13 @@ func (s *RevListSuite) TestRevListObjectsSameCommit(c *C) {
 // -----
 func (s *RevListSuite) TestRevListObjectsNewBranch(c *C) {
 	localHist, err := Objects(s.Storer,
-		[]plumbing.Hash{plumbing.NewHash(someCommit)}, nil)
+		[]common.ObjectHash{X(sha1.FromHex(someCommit))}, nil)
 	c.Assert(err, IsNil)
 
 	remoteHist, err := Objects(
-		s.Storer, []plumbing.Hash{
-			plumbing.NewHash(someCommitBranch),
-			plumbing.NewHash(someCommitOtherBranch)}, localHist)
+		s.Storer, []common.ObjectHash{
+			X(sha1.FromHex(someCommitBranch)),
+			X(sha1.FromHex(someCommitOtherBranch))}, localHist)
 	c.Assert(err, IsNil)
 
 	revList := map[string]bool{
@@ -250,7 +255,7 @@ func (s *RevListSuite) TestRevListObjectsNewBranch(c *C) {
 // |/
 // * b029517 Initial commit
 func (s *RevListSuite) TestReachableObjectsNoRevisit(c *C) {
-	obj, err := s.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"))
+	obj, err := s.Storer.EncodedObject(plumbing.CommitObject, X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")))
 	c.Assert(err, IsNil)
 
 	do, err := object.DecodeObject(s.Storer, obj)
@@ -259,17 +264,17 @@ func (s *RevListSuite) TestReachableObjectsNoRevisit(c *C) {
 	commit, ok := do.(*object.Commit)
 	c.Assert(ok, Equals, true)
 
-	var visited []plumbing.Hash
+	var visited []common.ObjectHash
 	err = reachableObjects(
 		commit,
-		map[plumbing.Hash]bool{
-			plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"): true,
+		map[common.ObjectHash]bool{
+			X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")): true,
 		},
-		map[plumbing.Hash]bool{
-			plumbing.NewHash("35e85108805c84807bc66a02d91535e1e24b38b9"): true,
+		map[common.ObjectHash]bool{
+			X(sha1.FromHex("35e85108805c84807bc66a02d91535e1e24b38b9")): true,
 		},
 		nil,
-		func(h plumbing.Hash) {
+		func(h common.ObjectHash) {
 			obj, err := s.Storer.EncodedObject(plumbing.AnyObject, h)
 			c.Assert(err, IsNil)
 
@@ -283,11 +288,11 @@ func (s *RevListSuite) TestReachableObjectsNoRevisit(c *C) {
 	)
 	c.Assert(err, IsNil)
 
-	c.Assert(visited, DeepEquals, []plumbing.Hash{
-		plumbing.NewHash("af2d6a6954d532f8ffb47615169c8fdf9d383a1a"),
-		plumbing.NewHash("1669dce138d9b841a518c64b10914d88f5e488ea"),
-		plumbing.NewHash("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69"),
-		plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d"),
-		plumbing.NewHash("b8e471f58bcbca63b07bda20e428190409c2db47"),
+	c.Assert(visited, DeepEquals, []common.ObjectHash{
+		X(sha1.FromHex("af2d6a6954d532f8ffb47615169c8fdf9d383a1a")),
+		X(sha1.FromHex("1669dce138d9b841a518c64b10914d88f5e488ea")),
+		X(sha1.FromHex("a5b8b09e2f8fcb0bb99d3ccb0958157b40890d69")),
+		X(sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")),
+		X(sha1.FromHex("b8e471f58bcbca63b07bda20e428190409c2db47")),
 	})
 }

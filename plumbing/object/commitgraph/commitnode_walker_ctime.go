@@ -3,7 +3,7 @@ package commitgraph
 import (
 	"io"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 
 	"github.com/emirpasic/gods/trees/binaryheap"
@@ -11,8 +11,8 @@ import (
 
 type commitNodeIteratorByCTime struct {
 	heap         *binaryheap.Heap
-	seenExternal map[plumbing.Hash]bool
-	seen         map[plumbing.Hash]bool
+	seenExternal map[common.ObjectHash]bool
+	seen         map[common.ObjectHash]bool
 }
 
 // NewCommitNodeIterCTime returns a CommitNodeIter that walks the commit history,
@@ -26,10 +26,10 @@ type commitNodeIteratorByCTime struct {
 // commits from being iterated.
 func NewCommitNodeIterCTime(
 	c CommitNode,
-	seenExternal map[plumbing.Hash]bool,
-	ignore []plumbing.Hash,
+	seenExternal map[common.ObjectHash]bool,
+	ignore []common.ObjectHash,
 ) CommitNodeIter {
-	seen := make(map[plumbing.Hash]bool)
+	seen := make(map[common.ObjectHash]bool)
 	for _, h := range ignore {
 		seen[h] = true
 	}

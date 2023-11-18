@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -158,7 +159,7 @@ func (s *SubmoduleSuite) TestUpdateWithInitAndUpdate(c *C) {
 
 	for i, e := range idx.Entries {
 		if e.Name == "basic" {
-			e.Hash = plumbing.NewHash("b029517f6300c2da0f4b651b8642506cd6aaf45d")
+			e.Hash, _ = sha1.FromHex("b029517f6300c2da0f4b651b8642506cd6aaf45d")
 		}
 
 		idx.Entries[i] = e

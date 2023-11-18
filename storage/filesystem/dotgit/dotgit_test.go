@@ -14,7 +14,9 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	. "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	. "gopkg.in/check.v1"
 )
 
@@ -470,7 +472,7 @@ func testObjectPacks(c *C, fs billy.Filesystem, dir *DotGit, f *fixtures.Fixture
 	hashes, err := dir.ObjectPacks()
 	c.Assert(err, IsNil)
 	c.Assert(hashes, HasLen, 1)
-	c.Assert(hashes[0], Equals, plumbing.NewHash(f.PackfileHash))
+	c.Assert(hashes[0], Equals, X(sha1.FromHex(f.PackfileHash)))
 
 	// Make sure that a random file in the pack directory doesn't
 	// break everything.
@@ -495,7 +497,7 @@ func (s *SuiteDotGit) TestObjectPack(c *C) {
 	fs := f.DotGit()
 	dir := New(fs)
 
-	pack, err := dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
+	pack, err := dir.ObjectPack(X(sha1.FromHex(f.PackfileHash)))
 	c.Assert(err, IsNil)
 	c.Assert(filepath.Ext(pack.Name()), Equals, ".pack")
 }
@@ -505,14 +507,14 @@ func (s *SuiteDotGit) TestObjectPackWithKeepDescriptors(c *C) {
 	fs := f.DotGit()
 	dir := NewWithOptions(fs, Options{KeepDescriptors: true})
 
-	pack, err := dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
+	pack, err := dir.ObjectPack(X(sha1.FromHex(f.PackfileHash)))
 	c.Assert(err, IsNil)
 	c.Assert(filepath.Ext(pack.Name()), Equals, ".pack")
 
 	// Move to an specific offset
 	pack.Seek(42, io.SeekStart)
 
-	pack2, err := dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
+	pack2, err := dir.ObjectPack(X(sha1.FromHex(f.PackfileHash)))
 	c.Assert(err, IsNil)
 
 	// If the file is the same the offset should be the same
@@ -523,7 +525,7 @@ func (s *SuiteDotGit) TestObjectPackWithKeepDescriptors(c *C) {
 	err = dir.Close()
 	c.Assert(err, IsNil)
 
-	pack2, err = dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
+	pack2, err = dir.ObjectPack(X(sha1.FromHex(f.PackfileHash)))
 	c.Assert(err, IsNil)
 
 	// If the file is opened again its offset should be 0
@@ -544,7 +546,7 @@ func (s *SuiteDotGit) TestObjectPackIdx(c *C) {
 	fs := f.DotGit()
 	dir := New(fs)
 
-	idx, err := dir.ObjectPackIdx(plumbing.NewHash(f.PackfileHash))
+	idx, err := dir.ObjectPackIdx(X(sha1.FromHex(f.PackfileHash)))
 	c.Assert(err, IsNil)
 	c.Assert(filepath.Ext(idx.Name()), Equals, ".idx")
 	c.Assert(idx.Close(), IsNil)
@@ -554,11 +556,11 @@ func (s *SuiteDotGit) TestObjectPackNotFound(c *C) {
 	fs := fixtures.Basic().ByTag(".git").One().DotGit()
 	dir := New(fs)
 
-	pack, err := dir.ObjectPack(plumbing.ZeroHash)
+	pack, err := dir.ObjectPack(sha1.ZeroHash())
 	c.Assert(err, Equals, ErrPackfileNotFound)
 	c.Assert(pack, IsNil)
 
-	idx, err := dir.ObjectPackIdx(plumbing.ZeroHash)
+	idx, err := dir.ObjectPackIdx(sha1.ZeroHash())
 	c.Assert(err, Equals, ErrPackfileNotFound)
 	c.Assert(idx, IsNil)
 }
@@ -640,7 +642,7 @@ func (s *SuiteDotGit) TestObject(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	dir := New(fs)
 
-	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
+	hash := X(sha1.FromHex("03db8e1fbe133a480f2867aac478fd866686d69e"))
 	file, err := dir.Object(hash)
 	c.Assert(err, IsNil)
 	c.Assert(strings.HasSuffix(
@@ -653,7 +655,7 @@ func (s *SuiteDotGit) TestObject(c *C) {
 	fs.MkdirAll(incomingDirPath, os.FileMode(0755))
 	fs.Create(incomingFilePath)
 
-	_, err = dir.Object(plumbing.NewHash(incomingHash))
+	_, err = dir.Object(X(sha1.FromHex(incomingHash)))
 	c.Assert(err, IsNil)
 }
 
@@ -661,7 +663,7 @@ func (s *SuiteDotGit) TestPreGit235Object(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	dir := New(fs)
 
-	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
+	hash := X(sha1.FromHex("03db8e1fbe133a480f2867aac478fd866686d69e"))
 	file, err := dir.Object(hash)
 	c.Assert(err, IsNil)
 	c.Assert(strings.HasSuffix(
@@ -674,7 +676,7 @@ func (s *SuiteDotGit) TestPreGit235Object(c *C) {
 	fs.MkdirAll(incomingDirPath, os.FileMode(0755))
 	fs.Create(incomingFilePath)
 
-	_, err = dir.Object(plumbing.NewHash(incomingHash))
+	_, err = dir.Object(X(sha1.FromHex(incomingHash)))
 	c.Assert(err, IsNil)
 }
 
@@ -682,7 +684,7 @@ func (s *SuiteDotGit) TestObjectStat(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	dir := New(fs)
 
-	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
+	hash := X(sha1.FromHex("03db8e1fbe133a480f2867aac478fd866686d69e"))
 	_, err := dir.ObjectStat(hash)
 	c.Assert(err, IsNil)
 	incomingHash := "9d25e0f9bde9f82882b49fe29117b9411cb157b7" //made up hash
@@ -691,7 +693,7 @@ func (s *SuiteDotGit) TestObjectStat(c *C) {
 	fs.MkdirAll(incomingDirPath, os.FileMode(0755))
 	fs.Create(incomingFilePath)
 
-	_, err = dir.ObjectStat(plumbing.NewHash(incomingHash))
+	_, err = dir.ObjectStat(X(sha1.FromHex(incomingHash)))
 	c.Assert(err, IsNil)
 }
 
@@ -699,7 +701,7 @@ func (s *SuiteDotGit) TestObjectDelete(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	dir := New(fs)
 
-	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
+	hash := X(sha1.FromHex("03db8e1fbe133a480f2867aac478fd866686d69e"))
 	err := dir.ObjectDelete(hash)
 	c.Assert(err, IsNil)
 
@@ -717,7 +719,7 @@ func (s *SuiteDotGit) TestObjectDelete(c *C) {
 	err = f.Close()
 	c.Assert(err, IsNil)
 
-	err = dir.ObjectDelete(plumbing.NewHash(incomingHash))
+	err = dir.ObjectDelete(X(sha1.FromHex(incomingHash)))
 	c.Assert(err, IsNil)
 }
 
@@ -725,7 +727,7 @@ func (s *SuiteDotGit) TestObjectNotFound(c *C) {
 	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
 	dir := New(fs)
 
-	hash := plumbing.NewHash("not-found-object")
+	hash := X(sha1.FromHex("not-found-object"))
 	file, err := dir.Object(hash)
 	c.Assert(err, NotNil)
 	c.Assert(file, IsNil)

@@ -3,23 +3,41 @@ package plumbing
 import (
 	"bytes"
 	"io"
+
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 )
+
+func NewMemoryObject(f common.HashFactory) *MemoryObject {
+	return &MemoryObject{
+		factory: f,
+	}
+}
 
 // MemoryObject on memory Object implementation
 type MemoryObject struct {
-	t    ObjectType
-	h    Hash
-	cont []byte
-	sz   int64
+	t       ObjectType
+	h       common.ObjectHash
+	cont    []byte
+	sz      int64
+	factory common.HashFactory
 }
 
 // Hash returns the object Hash, the hash is calculated on-the-fly the first
 // time it's called, in all subsequent calls the same Hash is returned even
 // if the type or the content have changed. The Hash is only generated if the
 // size of the content is exactly the object size.
-func (o *MemoryObject) Hash() Hash {
-	if o.h == ZeroHash && int64(len(o.cont)) == o.sz {
+func (o *MemoryObject) Hash() common.ObjectHash {
+	// TODO: fix DIP violation as part of sha256
+	if o.factory == nil {
+		o.factory = sha1.Factory
+	}
+
+	if (o.h == nil || o.h.IsZero()) && int64(len(o.cont)) == o.sz {
 		o.h = ComputeHash(o.t, o.cont)
+	}
+	if o.h == nil {
+		o.h = o.factory.ZeroHash()
 	}
 
 	return o.h

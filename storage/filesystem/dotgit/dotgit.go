@@ -18,6 +18,8 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 
@@ -93,12 +95,12 @@ type DotGit struct {
 	incomingChecked bool
 	incomingDirName string
 
-	objectList []plumbing.Hash // sorted
-	objectMap  map[plumbing.Hash]struct{}
-	packList   []plumbing.Hash
-	packMap    map[plumbing.Hash]struct{}
+	objectList []common.ObjectHash // sorted
+	objectMap  map[common.ObjectHash]struct{}
+	packList   []common.ObjectHash
+	packMap    map[common.ObjectHash]struct{}
 
-	files map[plumbing.Hash]billy.File
+	files map[common.ObjectHash]billy.File
 }
 
 // New returns a DotGit value ready to be used. The path argument must
@@ -213,7 +215,7 @@ func (d *DotGit) NewObjectPack() (*PackWriter, error) {
 }
 
 // ObjectPacks returns the list of availables packfiles
-func (d *DotGit) ObjectPacks() ([]plumbing.Hash, error) {
+func (d *DotGit) ObjectPacks() ([]common.ObjectHash, error) {
 	if !d.options.ExclusiveAccess {
 		return d.objectPacks()
 	}
@@ -226,7 +228,7 @@ func (d *DotGit) ObjectPacks() ([]plumbing.Hash, error) {
 	return d.packList, nil
 }
 
-func (d *DotGit) objectPacks() ([]plumbing.Hash, error) {
+func (d *DotGit) objectPacks() ([]common.ObjectHash, error) {
 	packDir := d.fs.Join(objectsPath, packPath)
 	files, err := d.fs.ReadDir(packDir)
 	if err != nil {
@@ -237,15 +239,15 @@ func (d *DotGit) objectPacks() ([]plumbing.Hash, error) {
 		return nil, err
 	}
 
-	var packs []plumbing.Hash
+	var packs []common.ObjectHash
 	for _, f := range files {
 		n := f.Name()
 		if !strings.HasSuffix(n, packExt) || !strings.HasPrefix(n, packPrefix) {
 			continue
 		}
 
-		h := plumbing.NewHash(n[5 : len(n)-5]) //pack-(hash).pack
-		if h.IsZero() {
+		h, ok := sha1.FromHex(n[5 : len(n)-5]) //pack-(hash).pack
+		if !ok || h.IsZero() {
 			// Ignore files with badly-formatted names.
 			continue
 		}
@@ -255,14 +257,14 @@ func (d *DotGit) objectPacks() ([]plumbing.Hash, error) {
 	return packs, nil
 }
 
-func (d *DotGit) objectPackPath(hash plumbing.Hash, extension string) string {
+func (d *DotGit) objectPackPath(hash common.ObjectHash, extension string) string {
 	return d.fs.Join(objectsPath, packPath, fmt.Sprintf("pack-%s.%s", hash.String(), extension))
 }
 
-func (d *DotGit) objectPackOpen(hash plumbing.Hash, extension string) (billy.File, error) {
+func (d *DotGit) objectPackOpen(hash common.ObjectHash, extension string) (billy.File, error) {
 	if d.options.KeepDescriptors && extension == "pack" {
 		if d.files == nil {
-			d.files = make(map[plumbing.Hash]billy.File)
+			d.files = make(map[common.ObjectHash]billy.File)
 		}
 
 		f, ok := d.files[hash]
@@ -294,7 +296,7 @@ func (d *DotGit) objectPackOpen(hash plumbing.Hash, extension string) (billy.Fil
 }
 
 // ObjectPack returns a fs.File of the given packfile
-func (d *DotGit) ObjectPack(hash plumbing.Hash) (billy.File, error) {
+func (d *DotGit) ObjectPack(hash common.ObjectHash) (billy.File, error) {
 	err := d.hasPack(hash)
 	if err != nil {
 		return nil, err
@@ -304,7 +306,7 @@ func (d *DotGit) ObjectPack(hash plumbing.Hash) (billy.File, error) {
 }
 
 // ObjectPackIdx returns a fs.File of the index file for a given packfile
-func (d *DotGit) ObjectPackIdx(hash plumbing.Hash) (billy.File, error) {
+func (d *DotGit) ObjectPackIdx(hash common.ObjectHash) (billy.File, error) {
 	err := d.hasPack(hash)
 	if err != nil {
 		return nil, err
@@ -313,7 +315,7 @@ func (d *DotGit) ObjectPackIdx(hash plumbing.Hash) (billy.File, error) {
 	return d.objectPackOpen(hash, `idx`)
 }
 
-func (d *DotGit) DeleteOldObjectPackAndIndex(hash plumbing.Hash, t time.Time) error {
+func (d *DotGit) DeleteOldObjectPackAndIndex(hash common.ObjectHash, t time.Time) error {
 	d.cleanPackList()
 
 	path := d.objectPackPath(hash, `pack`)
@@ -342,11 +344,11 @@ func (d *DotGit) NewObject() (*ObjectWriter, error) {
 }
 
 // ObjectsWithPrefix returns the hashes of objects that have the given prefix.
-func (d *DotGit) ObjectsWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
+func (d *DotGit) ObjectsWithPrefix(prefix []byte) ([]common.ObjectHash, error) {
 	// Handle edge cases.
 	if len(prefix) < 1 {
 		return d.Objects()
-	} else if len(prefix) > len(plumbing.ZeroHash) {
+	} else if len(prefix) > len(sha1.ZeroHash()) {
 		return nil, nil
 	}
 
@@ -359,25 +361,25 @@ func (d *DotGit) ObjectsWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 		// Rely on d.objectList being sorted.
 		// Figure out the half-open interval defined by the prefix.
 		first := sort.Search(len(d.objectList), func(i int) bool {
-			// Same as plumbing.HashSlice.Less.
-			return bytes.Compare(d.objectList[i][:], prefix) >= 0
+			// Same as common.ObjectHashSlice.Less.
+			return d.objectList[i].Compare(prefix) >= 0
 		})
 		lim := len(d.objectList)
 		if limPrefix, overflow := incBytes(prefix); !overflow {
 			lim = sort.Search(len(d.objectList), func(i int) bool {
-				// Same as plumbing.HashSlice.Less.
-				return bytes.Compare(d.objectList[i][:], limPrefix) >= 0
+				// Same as common.ObjectHashSlice.Less.
+				return d.objectList[i].Compare(limPrefix) >= 0
 			})
 		}
 		return d.objectList[first:lim], nil
 	}
 
 	// This is the slow path.
-	var objects []plumbing.Hash
+	var objects []common.ObjectHash
 	var n int
-	err := d.ForEachObjectHash(func(hash plumbing.Hash) error {
+	err := d.ForEachObjectHash(func(hash common.ObjectHash) error {
 		n++
-		if bytes.HasPrefix(hash[:], prefix) {
+		if bytes.HasPrefix(hash.Sum(), prefix) {
 			objects = append(objects, hash)
 		}
 		return nil
@@ -390,7 +392,7 @@ func (d *DotGit) ObjectsWithPrefix(prefix []byte) ([]plumbing.Hash, error) {
 
 // Objects returns a slice with the hashes of objects found under the
 // .git/objects/ directory.
-func (d *DotGit) Objects() ([]plumbing.Hash, error) {
+func (d *DotGit) Objects() ([]common.ObjectHash, error) {
 	if d.options.ExclusiveAccess {
 		err := d.genObjectList()
 		if err != nil {
@@ -400,8 +402,8 @@ func (d *DotGit) Objects() ([]plumbing.Hash, error) {
 		return d.objectList, nil
 	}
 
-	var objects []plumbing.Hash
-	err := d.ForEachObjectHash(func(hash plumbing.Hash) error {
+	var objects []common.ObjectHash
+	err := d.ForEachObjectHash(func(hash common.ObjectHash) error {
 		objects = append(objects, hash)
 		return nil
 	})
@@ -413,7 +415,7 @@ func (d *DotGit) Objects() ([]plumbing.Hash, error) {
 
 // ForEachObjectHash iterates over the hashes of objects found under the
 // .git/objects/ directory and executes the provided function.
-func (d *DotGit) ForEachObjectHash(fun func(plumbing.Hash) error) error {
+func (d *DotGit) ForEachObjectHash(fun func(common.ObjectHash) error) error {
 	if !d.options.ExclusiveAccess {
 		return d.forEachObjectHash(fun)
 	}
@@ -433,7 +435,7 @@ func (d *DotGit) ForEachObjectHash(fun func(plumbing.Hash) error) error {
 	return nil
 }
 
-func (d *DotGit) forEachObjectHash(fun func(plumbing.Hash) error) error {
+func (d *DotGit) forEachObjectHash(fun func(common.ObjectHash) error) error {
 	files, err := d.fs.ReadDir(objectsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -452,8 +454,8 @@ func (d *DotGit) forEachObjectHash(fun func(plumbing.Hash) error) error {
 			}
 
 			for _, o := range d {
-				h := plumbing.NewHash(base + o.Name())
-				if h.IsZero() {
+				h, ok := sha1.FromHex(base + o.Name())
+				if !ok || h.IsZero() {
 					// Ignore files with badly-formatted names.
 					continue
 				}
@@ -478,8 +480,8 @@ func (d *DotGit) genObjectList() error {
 		return nil
 	}
 
-	d.objectMap = make(map[plumbing.Hash]struct{})
-	populate := func(h plumbing.Hash) error {
+	d.objectMap = make(map[common.ObjectHash]struct{})
+	populate := func(h common.ObjectHash) error {
 		d.objectList = append(d.objectList, h)
 		d.objectMap[h] = struct{}{}
 
@@ -492,7 +494,7 @@ func (d *DotGit) genObjectList() error {
 	return nil
 }
 
-func (d *DotGit) hasObject(h plumbing.Hash) error {
+func (d *DotGit) hasObject(h common.ObjectHash) error {
 	if !d.options.ExclusiveAccess {
 		return nil
 	}
@@ -525,7 +527,7 @@ func (d *DotGit) genPackList() error {
 		return err
 	}
 
-	d.packMap = make(map[plumbing.Hash]struct{})
+	d.packMap = make(map[common.ObjectHash]struct{})
 	d.packList = nil
 
 	for _, h := range op {
@@ -536,7 +538,7 @@ func (d *DotGit) genPackList() error {
 	return nil
 }
 
-func (d *DotGit) hasPack(h plumbing.Hash) error {
+func (d *DotGit) hasPack(h common.ObjectHash) error {
 	if !d.options.ExclusiveAccess {
 		return nil
 	}
@@ -554,7 +556,7 @@ func (d *DotGit) hasPack(h plumbing.Hash) error {
 	return nil
 }
 
-func (d *DotGit) objectPath(h plumbing.Hash) string {
+func (d *DotGit) objectPath(h common.ObjectHash) string {
 	hex := h.String()
 	return d.fs.Join(objectsPath, hex[0:2], hex[2:hash.HexSize])
 }
@@ -568,7 +570,7 @@ func (d *DotGit) objectPath(h plumbing.Hash) string {
 // More on 'quarantine'/incoming directory here:
 //
 //	https://git-scm.com/docs/git-receive-pack
-func (d *DotGit) incomingObjectPath(h plumbing.Hash) string {
+func (d *DotGit) incomingObjectPath(h common.ObjectHash) string {
 	hString := h.String()
 
 	if d.incomingDirName == "" {
@@ -600,7 +602,7 @@ func (d *DotGit) hasIncomingObjects() bool {
 }
 
 // Object returns a fs.File pointing the object file, if exists
-func (d *DotGit) Object(h plumbing.Hash) (billy.File, error) {
+func (d *DotGit) Object(h common.ObjectHash) (billy.File, error) {
 	err := d.hasObject(h)
 	if err != nil {
 		return nil, err
@@ -618,7 +620,7 @@ func (d *DotGit) Object(h plumbing.Hash) (billy.File, error) {
 }
 
 // ObjectStat returns a os.FileInfo pointing the object file, if exists
-func (d *DotGit) ObjectStat(h plumbing.Hash) (os.FileInfo, error) {
+func (d *DotGit) ObjectStat(h common.ObjectHash) (os.FileInfo, error) {
 	err := d.hasObject(h)
 	if err != nil {
 		return nil, err
@@ -636,7 +638,7 @@ func (d *DotGit) ObjectStat(h plumbing.Hash) (os.FileInfo, error) {
 }
 
 // ObjectDelete removes the object file, if exists
-func (d *DotGit) ObjectDelete(h plumbing.Hash) error {
+func (d *DotGit) ObjectDelete(h common.ObjectHash) error {
 	d.cleanObjectList()
 
 	err1 := d.fs.Remove(d.objectPath(h))

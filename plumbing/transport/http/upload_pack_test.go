@@ -8,7 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/test"
@@ -43,9 +44,9 @@ func (s *UploadPackSuite) TestAdvertisedReferencesNotExists(c *C) {
 
 func (s *UploadPackSuite) TestuploadPackRequestToReader(c *C) {
 	r := packp.NewUploadPackRequest()
-	r.Wants = append(r.Wants, plumbing.NewHash("d82f291cde9987322c8a0c81a325e1ba6159684c"))
-	r.Wants = append(r.Wants, plumbing.NewHash("2b41ef280fdb67a9b250678686a0c3e03b0a9989"))
-	r.Haves = append(r.Haves, plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
+	r.Wants = append(r.Wants, X(sha1.FromHex("d82f291cde9987322c8a0c81a325e1ba6159684c")))
+	r.Wants = append(r.Wants, X(sha1.FromHex("2b41ef280fdb67a9b250678686a0c3e03b0a9989")))
+	r.Haves = append(r.Haves, X(sha1.FromHex("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")))
 
 	sr, err := uploadPackRequestToReader(r)
 	c.Assert(err, IsNil)

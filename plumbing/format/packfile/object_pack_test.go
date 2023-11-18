@@ -4,6 +4,8 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 
 	. "gopkg.in/check.v1"
 )
@@ -31,7 +33,7 @@ func (s *ObjectToPackSuite) TestObjectToPack(c *C) {
 
 type dummyObject struct{}
 
-func (*dummyObject) Hash() plumbing.Hash             { return plumbing.ZeroHash }
+func (*dummyObject) Hash() common.ObjectHash         { return sha1.ZeroHash() }
 func (*dummyObject) Type() plumbing.ObjectType       { return plumbing.InvalidObject }
 func (*dummyObject) SetType(plumbing.ObjectType)     {}
 func (*dummyObject) Size() int64                     { return 0 }

@@ -25,9 +25,12 @@ import (
 	"github.com/go-git/go-git/v5/internal/url"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	formatcfg "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
 	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage"
@@ -70,8 +73,9 @@ var (
 type Repository struct {
 	Storer storage.Storer
 
-	r  map[string]*Remote
-	wt billy.Filesystem
+	r       map[string]*Remote
+	wt      billy.Filesystem
+	factory common.HashFactory
 }
 
 type InitOptions struct {
@@ -723,7 +727,7 @@ func (r *Repository) DeleteBranch(name string) error {
 
 // CreateTag creates a tag. If opts is included, the tag is an annotated tag,
 // otherwise a lightweight tag is created.
-func (r *Repository) CreateTag(name string, hash plumbing.Hash, opts *CreateTagOptions) (*plumbing.Reference, error) {
+func (r *Repository) CreateTag(name string, hash common.ObjectHash, opts *CreateTagOptions) (*plumbing.Reference, error) {
 	rname := plumbing.ReferenceName(path.Join("refs", "tags", name))
 
 	_, err := r.Storer.Reference(rname)
@@ -738,7 +742,7 @@ func (r *Repository) CreateTag(name string, hash plumbing.Hash, opts *CreateTagO
 		return nil, err
 	}
 
-	var target plumbing.Hash
+	var target common.ObjectHash
 	if opts != nil {
 		target, err = r.createTagObject(name, hash, opts)
 		if err != nil {
@@ -756,14 +760,14 @@ func (r *Repository) CreateTag(name string, hash plumbing.Hash, opts *CreateTagO
 	return ref, nil
 }
 
-func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *CreateTagOptions) (plumbing.Hash, error) {
+func (r *Repository) createTagObject(name string, hash common.ObjectHash, opts *CreateTagOptions) (common.ObjectHash, error) {
 	if err := opts.Validate(r, hash); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	rawobj, err := object.GetObject(r.Storer, hash)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	tag := &object.Tag{
@@ -777,7 +781,7 @@ func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *Crea
 	if opts.SignKey != nil {
 		sig, err := r.buildTagSignature(tag, opts.SignKey)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 
 		tag.PGPSignature = sig
@@ -785,7 +789,7 @@ func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *Crea
 
 	obj := r.Storer.NewEncodedObject()
 	if err := tag.Encode(obj); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return r.Storer.SetEncodedObject(obj)
@@ -853,22 +857,22 @@ func (r *Repository) DeleteTag(name string) error {
 	return r.Storer.RemoveReference(plumbing.ReferenceName(path.Join("refs", "tags", name)))
 }
 
-func (r *Repository) resolveToCommitHash(h plumbing.Hash) (plumbing.Hash, error) {
+func (r *Repository) resolveToCommitHash(h common.ObjectHash) (common.ObjectHash, error) {
 	obj, err := r.Storer.EncodedObject(plumbing.AnyObject, h)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 	switch obj.Type() {
 	case plumbing.TagObject:
 		t, err := object.DecodeTag(r.Storer, obj)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return sha1.ZeroHash(), err
 		}
 		return r.resolveToCommitHash(t.Target)
 	case plumbing.CommitObject:
 		return h, nil
 	default:
-		return plumbing.ZeroHash, ErrUnableToResolveCommit
+		return sha1.ZeroHash(), ErrUnableToResolveCommit
 	}
 }
 
@@ -1263,9 +1267,9 @@ func (r *Repository) Log(o *LogOptions) (object.CommitIter, error) {
 	return it, nil
 }
 
-func (r *Repository) log(from plumbing.Hash, commitIterFunc func(*object.Commit) object.CommitIter) (object.CommitIter, error) {
+func (r *Repository) log(from common.ObjectHash, commitIterFunc func(*object.Commit) object.CommitIter) (object.CommitIter, error) {
 	h := from
-	if from == plumbing.ZeroHash {
+	if from == sha1.ZeroHash() {
 		head, err := r.Head()
 		if err != nil {
 			return nil, err
@@ -1398,7 +1402,7 @@ func (r *Repository) Notes() (storer.ReferenceIter, error) {
 
 // TreeObject return a Tree with the given hash. If not found
 // plumbing.ErrObjectNotFound is returned
-func (r *Repository) TreeObject(h plumbing.Hash) (*object.Tree, error) {
+func (r *Repository) TreeObject(h common.ObjectHash) (*object.Tree, error) {
 	return object.GetTree(r.Storer, h)
 }
 
@@ -1414,7 +1418,7 @@ func (r *Repository) TreeObjects() (*object.TreeIter, error) {
 
 // CommitObject return a Commit with the given hash. If not found
 // plumbing.ErrObjectNotFound is returned.
-func (r *Repository) CommitObject(h plumbing.Hash) (*object.Commit, error) {
+func (r *Repository) CommitObject(h common.ObjectHash) (*object.Commit, error) {
 	return object.GetCommit(r.Storer, h)
 }
 
@@ -1430,7 +1434,7 @@ func (r *Repository) CommitObjects() (object.CommitIter, error) {
 
 // BlobObject returns a Blob with the given hash. If not found
 // plumbing.ErrObjectNotFound is returned.
-func (r *Repository) BlobObject(h plumbing.Hash) (*object.Blob, error) {
+func (r *Repository) BlobObject(h common.ObjectHash) (*object.Blob, error) {
 	return object.GetBlob(r.Storer, h)
 }
 
@@ -1447,7 +1451,7 @@ func (r *Repository) BlobObjects() (*object.BlobIter, error) {
 // TagObject returns a Tag with the given hash. If not found
 // plumbing.ErrObjectNotFound is returned. This method only returns
 // annotated Tags, no lightweight Tags.
-func (r *Repository) TagObject(h plumbing.Hash) (*object.Tag, error) {
+func (r *Repository) TagObject(h common.ObjectHash) (*object.Tag, error) {
 	return object.GetTag(r.Storer, h)
 }
 
@@ -1464,7 +1468,7 @@ func (r *Repository) TagObjects() (*object.TagIter, error) {
 
 // Object returns an Object with the given hash. If not found
 // plumbing.ErrObjectNotFound is returned.
-func (r *Repository) Object(t plumbing.ObjectType, h plumbing.Hash) (object.Object, error) {
+func (r *Repository) Object(t plumbing.ObjectType, h common.ObjectHash) (object.Object, error) {
 	obj, err := r.Storer.EncodedObject(t, h)
 	if err != nil {
 		return nil, err
@@ -1537,10 +1541,10 @@ func expand_ref(s storer.ReferenceStorer, ref plumbing.ReferenceName) (*plumbing
 //
 // Implemented resolvers : HEAD, branch, tag, heads/branch, refs/heads/branch,
 // refs/tags/tag, refs/remotes/origin/branch, refs/remotes/origin/HEAD, tilde and caret (HEAD~1, master~^, tag~2, ref/heads/master~1, ...), selection by text (HEAD^{/fix nasty bug}), hash (prefix and full)
-func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, error) {
+func (r *Repository) ResolveRevision(in plumbing.Revision) (common.ObjectHash, error) {
 	rev := in.String()
 	if rev == "" {
-		return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+		return r.factory.ZeroHash(), plumbing.ErrReferenceNotFound
 	}
 
 	p := revision.NewParserFromString(rev)
@@ -1557,7 +1561,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 		case revision.Ref:
 			revisionRef := item
 
-			var tryHashes []plumbing.Hash
+			var tryHashes []common.ObjectHash
 
 			tryHashes = append(tryHashes, r.resolveHashPrefix(string(revisionRef))...)
 
@@ -1587,7 +1591,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 					// error bubble up.
 					tagCommit, err := tagObj.Commit()
 					if err != nil {
-						return &plumbing.ZeroHash, err
+						return r.factory.ZeroHash(), err
 					}
 					commit = tagCommit
 					gotOne = true
@@ -1596,7 +1600,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			}
 
 			if !gotOne {
-				return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+				return r.factory.ZeroHash(), plumbing.ErrReferenceNotFound
 			}
 
 		case revision.CaretPath:
@@ -1611,7 +1615,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			c, err := iter.Next()
 
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return r.factory.ZeroHash(), err
 			}
 
 			if depth == 1 {
@@ -1623,7 +1627,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			c, err = iter.Next()
 
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return r.factory.ZeroHash(), err
 			}
 
 			commit = c
@@ -1632,7 +1636,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 				c, err := commit.Parents().Next()
 
 				if err != nil {
-					return &plumbing.ZeroHash, err
+					return r.factory.ZeroHash(), err
 				}
 
 				commit = c
@@ -1659,11 +1663,11 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 				return nil
 			})
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return r.factory.ZeroHash(), err
 			}
 
 			if c == nil {
-				return &plumbing.ZeroHash, fmt.Errorf("no commit message match regexp: %q", re.String())
+				return r.factory.ZeroHash(), fmt.Errorf("no commit message match regexp: %q", re.String())
 			}
 
 			commit = c
@@ -1671,15 +1675,15 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 	}
 
 	if commit == nil {
-		return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+		return r.factory.ZeroHash(), plumbing.ErrReferenceNotFound
 	}
 
-	return &commit.Hash, nil
+	return commit.Hash, nil
 }
 
 // resolveHashPrefix returns a list of potential hashes that the given string
 // is a prefix of. It quietly swallows errors, returning nil.
-func (r *Repository) resolveHashPrefix(hashStr string) []plumbing.Hash {
+func (r *Repository) resolveHashPrefix(hashStr string) []common.ObjectHash {
 	// Handle complete and partial hashes.
 	// plumbing.NewHash forces args into a full 20 byte hash, which isn't suitable
 	// for partial hashes since they will become zero-filled.
@@ -1687,15 +1691,13 @@ func (r *Repository) resolveHashPrefix(hashStr string) []plumbing.Hash {
 	if hashStr == "" {
 		return nil
 	}
-	if len(hashStr) == len(plumbing.ZeroHash)*2 {
+	if len(hashStr) == r.factory.HexSize() {
 		// Only a full hash is possible.
-		hexb, err := hex.DecodeString(hashStr)
-		if err != nil {
+		h, ok := r.factory.FromHex(hashStr)
+		if !ok {
 			return nil
 		}
-		var h plumbing.Hash
-		copy(h[:], hexb)
-		return []plumbing.Hash{h}
+		return []common.ObjectHash{h}
 	}
 
 	// Partial hash.
@@ -1711,7 +1713,7 @@ func (r *Repository) resolveHashPrefix(hashStr string) []plumbing.Hash {
 		return candidates
 	}
 	// Do another prefix check to ensure the dangling nybble is correct.
-	var hashes []plumbing.Hash
+	var hashes []common.ObjectHash
 	for _, h := range candidates {
 		if strings.HasPrefix(h.String(), hashStr) {
 			hashes = append(hashes, h)
@@ -1765,13 +1767,13 @@ func (r *Repository) RepackObjects(cfg *RepackConfig) (err error) {
 // createNewObjectPack is a helper for RepackObjects taking care
 // of creating a new pack. It is used so the the PackfileWriter
 // deferred close has the right scope.
-func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h plumbing.Hash, err error) {
+func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h common.ObjectHash, err error) {
 	ow := newObjectWalker(r.Storer)
 	err = ow.walkAllRefs()
 	if err != nil {
 		return h, err
 	}
-	objs := make([]plumbing.Hash, 0, len(ow.seen))
+	objs := make([]common.ObjectHash, 0, len(ow.seen))
 	for h := range ow.seen {
 		objs = append(objs, h)
 	}
@@ -1788,7 +1790,7 @@ func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h plumbing.Hash, er
 	if err != nil {
 		return h, err
 	}
-	enc := packfile.NewEncoder(wc, r.Storer, cfg.UseRefDeltas)
+	enc := packfile.NewEncoder(wc, r.Storer, cfg.UseRefDeltas, hash.NewHasher(formatcfg.SHA1), hash.HashFactory(format.SHA1))
 	h, err = enc.Encode(objs, scfg.Pack.Window)
 	if err != nil {
 		return h, err
@@ -1796,7 +1798,7 @@ func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h plumbing.Hash, er
 
 	// Delete the packed, loose objects.
 	if los, ok := r.Storer.(storer.LooseObjectStorer); ok {
-		err = los.ForEachObjectHash(func(hash plumbing.Hash) error {
+		err = los.ForEachObjectHash(func(hash common.ObjectHash) error {
 			if ow.isSeen(hash) {
 				err = los.DeleteLooseObject(hash)
 				if err != nil {
@@ -1813,10 +1815,10 @@ func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h plumbing.Hash, er
 	return h, err
 }
 
-func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []plumbing.Hash) {
+func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []common.ObjectHash) {
 	// The fast version is implemented by storage/filesystem.ObjectStorage.
 	type fastIter interface {
-		HashesWithPrefix(prefix []byte) ([]plumbing.Hash, error)
+		HashesWithPrefix(prefix []byte) ([]common.ObjectHash, error)
 	}
 	if fi, ok := st.(fastIter); ok {
 		h, err := fi.HashesWithPrefix(prefix)
@@ -1833,7 +1835,7 @@ func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []p
 	}
 	iter.ForEach(func(obj plumbing.EncodedObject) error {
 		h := obj.Hash()
-		if bytes.HasPrefix(h[:], prefix) {
+		if bytes.HasPrefix(h.Sum(), prefix) {
 			hashes = append(hashes, h)
 		}
 		return nil

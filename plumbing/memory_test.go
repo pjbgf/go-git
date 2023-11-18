@@ -2,7 +2,10 @@ package plumbing
 
 import (
 	"io"
+	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
+	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
 )
 
@@ -24,12 +27,12 @@ func (s *MemoryObjectSuite) TestHash(c *C) {
 	c.Assert(o.Hash().String(), Equals, "8ab686eafeb1f44702738c8b0f24f2567c36da6d")
 }
 
-func (s *MemoryObjectSuite) TestHashNotFilled(c *C) {
+func TestHashNotFilled(t *testing.T) {
 	o := &MemoryObject{}
 	o.SetType(BlobObject)
 	o.SetSize(14)
 
-	c.Assert(o.Hash(), Equals, ZeroHash)
+	assert.Equal(t, sha1.ZeroHash(), o.Hash())
 }
 
 func (s *MemoryObjectSuite) TestType(c *C) {

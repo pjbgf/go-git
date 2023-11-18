@@ -10,6 +10,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
+	"github.com/go-git/go-git/v5/plumbing/hash/common"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 	"github.com/go-git/go-git/v5/utils/sync"
@@ -76,7 +78,7 @@ func NewPackfile(index idxfile.Index, fs billy.Filesystem, file billy.File, larg
 }
 
 // Get retrieves the encoded object in the packfile with the given hash.
-func (p *Packfile) Get(h plumbing.Hash) (plumbing.EncodedObject, error) {
+func (p *Packfile) Get(h common.ObjectHash) (plumbing.EncodedObject, error) {
 	offset, err := p.FindOffset(h)
 	if err != nil {
 		return nil, err
@@ -188,7 +190,7 @@ func (p *Packfile) getObjectType(h *ObjectHeader) (typ plumbing.ObjectType, err 
 	return
 }
 
-func (p *Packfile) objectAtOffset(offset int64, hash plumbing.Hash) (plumbing.EncodedObject, error) {
+func (p *Packfile) objectAtOffset(offset int64, hash common.ObjectHash) (plumbing.EncodedObject, error) {
 	if obj, ok := p.cacheGet(hash); ok {
 		return obj, nil
 	}
@@ -204,7 +206,7 @@ func (p *Packfile) objectAtOffset(offset int64, hash plumbing.Hash) (plumbing.En
 	return p.getNextObject(h, hash)
 }
 
-func (p *Packfile) getNextObject(h *ObjectHeader, hash plumbing.Hash) (plumbing.EncodedObject, error) {
+func (p *Packfile) getNextObject(h *ObjectHeader, hash common.ObjectHash) (plumbing.EncodedObject, error) {
 	var err error
 
 	// If we have no filesystem, we will return a MemoryObject instead
@@ -370,7 +372,7 @@ func (p *Packfile) fillRegularObjectContent(obj plumbing.EncodedObject) (err err
 	return err
 }
 
-func (p *Packfile) fillREFDeltaObjectContent(obj plumbing.EncodedObject, ref plumbing.Hash) error {
+func (p *Packfile) fillREFDeltaObjectContent(obj plumbing.EncodedObject, ref common.ObjectHash) error {
 	buf := sync.GetBytesBuffer()
 	defer sync.PutBytesBuffer(buf)
 
@@ -396,7 +398,7 @@ func (p *Packfile) readREFDeltaObjectContent(h *ObjectHeader, deltaRC io.Reader)
 	return ReaderFromDelta(base, deltaRC)
 }
 
-func (p *Packfile) fillREFDeltaObjectContentWithBuffer(obj plumbing.EncodedObject, ref plumbing.Hash, buf *bytes.Buffer) error {
+func (p *Packfile) fillREFDeltaObjectContentWithBuffer(obj plumbing.EncodedObject, ref common.ObjectHash, buf *bytes.Buffer) error {
 	var err error
 
 	base, ok := p.cacheGet(ref)
@@ -458,7 +460,7 @@ func (p *Packfile) fillOFSDeltaObjectContentWithBuffer(obj plumbing.EncodedObjec
 	return err
 }
 
-func (p *Packfile) cacheGet(h plumbing.Hash) (plumbing.EncodedObject, bool) {
+func (p *Packfile) cacheGet(h common.ObjectHash) (plumbing.EncodedObject, bool) {
 	if p.deltaBaseCache == nil {
 		return nil, false
 	}
@@ -509,19 +511,19 @@ func (p *Packfile) GetByType(typ plumbing.ObjectType) (storer.EncodedObjectIter,
 }
 
 // ID returns the ID of the packfile, which is the checksum at the end of it.
-func (p *Packfile) ID() (plumbing.Hash, error) {
+func (p *Packfile) ID() (common.ObjectHash, error) {
 	prev, err := p.file.Seek(-20, io.SeekEnd)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
-	var hash plumbing.Hash
-	if _, err := io.ReadFull(p.file, hash[:]); err != nil {
-		return plumbing.ZeroHash, err
+	var hash common.ObjectHash
+	if _, err := io.ReadFull(p.file, hash.Sum()); err != nil {
+		return sha1.ZeroHash(), err
 	}
 
 	if _, err := p.file.Seek(prev, io.SeekStart); err != nil {
-		return plumbing.ZeroHash, err
+		return sha1.ZeroHash(), err
 	}
 
 	return hash, nil

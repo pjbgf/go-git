@@ -1,7 +1,8 @@
 package git
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
+	. "github.com/go-git/go-git/v5/internal/test"
+	"github.com/go-git/go-git/v5/plumbing/hash/sha1"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -15,7 +16,7 @@ type BlameSuite struct {
 var _ = Suite(&BlameSuite{})
 
 func (s *BlameSuite) TestNewLines(c *C) {
-	h := plumbing.NewHash("ce9f123d790717599aaeb76bc62510de437761be")
+	h := X(sha1.FromHex("ce9f123d790717599aaeb76bc62510de437761be"))
 	lines, err := newLines([]string{"foo"}, []*object.Commit{{
 		Hash:    h,
 		Message: "foo",
@@ -52,7 +53,7 @@ func (s *BlameSuite) TestBlame(c *C) {
 		r := s.NewRepositoryFromPackfile(fixtures.ByURL(t.repo).One())
 
 		exp := s.mockBlame(c, t, r)
-		commit, err := r.CommitObject(plumbing.NewHash(t.rev))
+		commit, err := r.CommitObject(X(sha1.FromHex(t.rev)))
 		c.Assert(err, IsNil)
 
 		obt, err := Blame(commit, t.path)
@@ -66,7 +67,7 @@ func (s *BlameSuite) TestBlame(c *C) {
 }
 
 func (s *BlameSuite) mockBlame(c *C, t blameTest, r *Repository) (blame *BlameResult) {
-	commit, err := r.CommitObject(plumbing.NewHash(t.rev))
+	commit, err := r.CommitObject(X(sha1.FromHex(t.rev)))
 	c.Assert(err, IsNil, Commentf("%v: repo=%s, rev=%s", err, t.repo, t.rev))
 
 	f, err := commit.File(t.path)
@@ -78,7 +79,7 @@ func (s *BlameSuite) mockBlame(c *C, t blameTest, r *Repository) (blame *BlameRe
 
 	blamedLines := make([]*Line, 0, len(t.blames))
 	for i := range t.blames {
-		commit, err := r.CommitObject(plumbing.NewHash(t.blames[i]))
+		commit, err := r.CommitObject(X(sha1.FromHex(t.blames[i])))
 		c.Assert(err, IsNil)
 		l := &Line{
 			Author:     commit.Author.Email,
@@ -92,7 +93,7 @@ func (s *BlameSuite) mockBlame(c *C, t blameTest, r *Repository) (blame *BlameRe
 
 	return &BlameResult{
 		Path:  t.path,
-		Rev:   plumbing.NewHash(t.rev),
+		Rev:   X(sha1.FromHex(t.rev)),
 		Lines: blamedLines,
 	}
 }
