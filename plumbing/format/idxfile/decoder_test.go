@@ -7,6 +7,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	. "github.com/go-git/go-git/v5/plumbing/format/idxfile"
 
@@ -17,7 +18,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type IdxfileSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&IdxfileSuite{})
@@ -122,8 +123,6 @@ func BenchmarkDecode(b *testing.B) {
 	if err != nil {
 		b.Errorf("unexpected error reading idx file: %s", err)
 	}
-
-	defer fixtures.Clean()
 
 	for i := 0; i < b.N; i++ {
 		f := bytes.NewBuffer(fixture)

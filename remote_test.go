@@ -68,7 +68,7 @@ func (s *RemoteSuite) TestFetchInvalidFetchOptions(c *C) {
 
 func (s *RemoteSuite) TestFetchWildcard(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -98,7 +98,7 @@ func (s *RemoteSuite) TestFetchExactSHA1(c *C) {
 
 func (s *RemoteSuite) TestFetchExactSHA1_NotSoported(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	err := r.Fetch(&FetchOptions{
@@ -113,7 +113,7 @@ func (s *RemoteSuite) TestFetchExactSHA1_NotSoported(c *C) {
 
 func (s *RemoteSuite) TestFetchWildcardTags(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -132,7 +132,7 @@ func (s *RemoteSuite) TestFetchWildcardTags(c *C) {
 
 func (s *RemoteSuite) TestFetch(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -146,7 +146,7 @@ func (s *RemoteSuite) TestFetch(c *C) {
 
 func (s *RemoteSuite) TestFetchToNewBranch(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -172,7 +172,7 @@ func (s *RemoteSuite) TestFetchToNewBranch(c *C) {
 
 func (s *RemoteSuite) TestFetchToNewBranchWithAllTags(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -202,7 +202,7 @@ func (s *RemoteSuite) TestFetchToNewBranchWithAllTags(c *C) {
 
 func (s *RemoteSuite) TestFetchNonExistentReference(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	err := r.Fetch(&FetchOptions{
@@ -217,7 +217,7 @@ func (s *RemoteSuite) TestFetchNonExistentReference(c *C) {
 
 func (s *RemoteSuite) TestFetchContext(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -233,7 +233,7 @@ func (s *RemoteSuite) TestFetchContext(c *C) {
 
 func (s *RemoteSuite) TestFetchContextCanceled(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -249,7 +249,7 @@ func (s *RemoteSuite) TestFetchContextCanceled(c *C) {
 
 func (s *RemoteSuite) TestFetchWithAllTags(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -269,7 +269,7 @@ func (s *RemoteSuite) TestFetchWithAllTags(c *C) {
 
 func (s *RemoteSuite) TestFetchWithNoTags(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetLocalRepositoryURL(fixtures.ByTag("tags").One())},
+		URLs: []string{s.GetLocalRepositoryURL(c.MkDir, fixtures.ByTag("tags").One())},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -285,7 +285,7 @@ func (s *RemoteSuite) TestFetchWithNoTags(c *C) {
 
 func (s *RemoteSuite) TestFetchWithDepth(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -304,7 +304,7 @@ func (s *RemoteSuite) TestFetchWithDepth(c *C) {
 
 func (s *RemoteSuite) TestFetchWithDepthChange(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -347,7 +347,7 @@ func (s *RemoteSuite) testFetch(c *C, r *Remote, o *FetchOptions, expected []*pl
 }
 
 func (s *RemoteSuite) TestFetchWithProgress(c *C) {
-	url := s.GetBasicLocalRepositoryURL()
+	url := s.GetBasicLocalRepositoryURL(c)
 	sto := memory.NewStorage()
 	buf := bytes.NewBuffer(nil)
 
@@ -382,7 +382,7 @@ func (s *RemoteSuite) TestFetchWithPackfileWriter(c *C) {
 	fss := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 	mock := &mockPackfileWriter{Storer: fss}
 
-	url := s.GetBasicLocalRepositoryURL()
+	url := s.GetBasicLocalRepositoryURL(c)
 	r := NewRemote(mock, &config.RemoteConfig{Name: "foo", URLs: []string{url}})
 
 	refspec := config.RefSpec("+refs/heads/*:refs/remotes/origin/*")
@@ -406,13 +406,13 @@ func (s *RemoteSuite) TestFetchWithPackfileWriter(c *C) {
 }
 
 func (s *RemoteSuite) TestFetchNoErrAlreadyUpToDate(c *C) {
-	url := s.GetBasicLocalRepositoryURL()
+	url := s.GetBasicLocalRepositoryURL(c)
 	s.doTestFetchNoErrAlreadyUpToDate(c, url)
 }
 
 func (s *RemoteSuite) TestFetchNoErrAlreadyUpToDateButStillUpdateLocalRemoteRefs(c *C) {
 	r := NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	o := &FetchOptions{
@@ -443,7 +443,7 @@ func (s *RemoteSuite) TestFetchNoErrAlreadyUpToDateButStillUpdateLocalRemoteRefs
 
 func (s *RemoteSuite) TestFetchNoErrAlreadyUpToDateWithNonCommitObjects(c *C) {
 	fixture := fixtures.ByTag("tags").One()
-	url := s.GetLocalRepositoryURL(fixture)
+	url := s.GetLocalRepositoryURL(c.MkDir, fixture)
 	s.doTestFetchNoErrAlreadyUpToDate(c, url)
 }
 
@@ -464,7 +464,7 @@ func (s *RemoteSuite) doTestFetchNoErrAlreadyUpToDate(c *C, url string) {
 
 func (s *RemoteSuite) testFetchFastForward(c *C, sto storage.Storer) {
 	r := NewRemote(sto, &config.RemoteConfig{
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	s.testFetch(c, r, &FetchOptions{
@@ -732,7 +732,7 @@ func (s *RemoteSuite) TestPushFollowTags(c *C) {
 }
 
 func (s *RemoteSuite) TestPushNoErrAlreadyUpToDate(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	sto := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
 	r := NewRemote(sto, &config.RemoteConfig{
@@ -747,7 +747,7 @@ func (s *RemoteSuite) TestPushNoErrAlreadyUpToDate(c *C) {
 }
 
 func (s *RemoteSuite) TestPushDeleteReference(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	sto := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
 	url, clean := s.TemporalDir()
@@ -774,7 +774,7 @@ func (s *RemoteSuite) TestPushDeleteReference(c *C) {
 }
 
 func (s *RemoteSuite) TestForcePushDeleteReference(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	sto := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
 	url, clean := s.TemporalDir()
@@ -802,7 +802,7 @@ func (s *RemoteSuite) TestForcePushDeleteReference(c *C) {
 }
 
 func (s *RemoteSuite) TestPushRejectNonFastForward(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	server := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
 	url, clean := s.TemporalDir()
@@ -833,9 +833,10 @@ func (s *RemoteSuite) TestPushRejectNonFastForward(c *C) {
 
 func (s *RemoteSuite) TestPushForce(c *C) {
 	f := fixtures.Basic().One()
-	sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
+	sto := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
-	dstFs := f.DotGit()
+	dstFs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 
 	url := dstFs.Root()
@@ -860,9 +861,10 @@ func (s *RemoteSuite) TestPushForce(c *C) {
 
 func (s *RemoteSuite) TestPushForceWithOption(c *C) {
 	f := fixtures.Basic().One()
-	sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
+	sto := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
 
-	dstFs := f.DotGit()
+	dstFs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 
 	url := dstFs.Root()
@@ -915,7 +917,7 @@ func (s *RemoteSuite) TestPushForceWithLease_success(c *C) {
 
 		f := fixtures.Basic().One()
 		sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
-		dstFs := f.DotGit()
+		dstFs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 		dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 
 		newCommit := plumbing.NewHashReference(
@@ -983,7 +985,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 			),
 		), IsNil)
 
-		dstFs := f.DotGit()
+		dstFs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 		dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 		c.Assert(dstSto.SetReference(
 			plumbing.NewHashReference(
@@ -1015,7 +1017,7 @@ func (s *RemoteSuite) TestPushForceWithLease_failure(c *C) {
 }
 
 func (s *RemoteSuite) TestPushPrune(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	url, clean := s.TemporalDir()
 	defer clean()
@@ -1078,7 +1080,7 @@ func (s *RemoteSuite) TestPushPrune(c *C) {
 }
 
 func (s *RemoteSuite) TestPushNewReference(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	url, clean := s.TemporalDir()
 	defer clean()
@@ -1117,7 +1119,7 @@ func (s *RemoteSuite) TestPushNewReference(c *C) {
 }
 
 func (s *RemoteSuite) TestPushNewReferenceAndDeleteInBatch(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	url, clean := s.TemporalDir()
 	defer clean()
@@ -1393,9 +1395,9 @@ func (s *RemoteSuite) TestUseRefDeltas(c *C) {
 
 func (s *RemoteSuite) TestPushRequireRemoteRefs(c *C) {
 	f := fixtures.Basic().One()
-	sto := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
+	sto := filesystem.NewStorage(f.DotGit(fixtures.WithTargetDir(c.MkDir)), cache.NewObjectLRUDefault())
 
-	dstFs := f.DotGit()
+	dstFs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dstSto := filesystem.NewStorage(dstFs, cache.NewObjectLRUDefault())
 
 	url := dstFs.Root()
@@ -1445,7 +1447,7 @@ func (s *RemoteSuite) TestPushRequireRemoteRefs(c *C) {
 }
 
 func (s *RemoteSuite) TestFetchPrune(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	url, clean := s.TemporalDir()
 	defer clean()
@@ -1502,7 +1504,7 @@ func (s *RemoteSuite) TestFetchPrune(c *C) {
 }
 
 func (s *RemoteSuite) TestFetchPruneTags(c *C) {
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	url, clean := s.TemporalDir()
 	defer clean()

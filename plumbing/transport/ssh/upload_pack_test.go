@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	checktest "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	testutils "github.com/go-git/go-git/v5/plumbing/transport/ssh/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport/test"
@@ -24,7 +25,7 @@ import (
 
 type UploadPackSuite struct {
 	test.UploadPackSuite
-	fixtures.Suite
+	checktest.Suite
 	opts []ssh.Option
 
 	port int
@@ -42,8 +43,7 @@ func (s *UploadPackSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	s.port = l.Addr().(*net.TCPAddr).Port
-	s.base, err = os.MkdirTemp(os.TempDir(), fmt.Sprintf("go-git-ssh-%d", s.port))
-	c.Assert(err, IsNil)
+	s.base = c.MkDir()
 
 	DefaultAuthBuilder = func(user string) (AuthMethod, error) {
 		return &Password{User: user}, nil
@@ -67,7 +67,7 @@ func (s *UploadPackSuite) SetUpSuite(c *C) {
 }
 
 func (s *UploadPackSuite) prepareRepository(c *C, f *fixtures.Fixture, name string) *transport.Endpoint {
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	err := fixtures.EnsureIsBare(fs)
 	c.Assert(err, IsNil)

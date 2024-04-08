@@ -26,10 +26,6 @@ func (s *ReceivePackSuite) SetUpTest(c *C) {
 	s.prepareRepositories(c)
 }
 
-func (s *ReceivePackSuite) TearDownTest(c *C) {
-	s.Suite.TearDownSuite(c)
-}
-
 // Overwritten, server returns error earlier.
 func (s *ReceivePackSuite) TestAdvertisedReferencesNotExists(c *C) {
 	r, err := s.Client.NewReceivePackSession(s.NonExistentEndpoint, s.EmptyAuth)

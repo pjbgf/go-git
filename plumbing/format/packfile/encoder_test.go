@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/go-git/go-billy/v5/memfs"
-	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
 )
 
 type EncoderSuite struct {
-	fixtures.Suite
+	test.Suite
 	buf   *bytes.Buffer
 	store *memory.Storage
 	enc   *Encoder

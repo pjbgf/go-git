@@ -5,12 +5,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	fixtures "github.com/go-git/go-git-fixtures/v4"
+	"github.com/go-git/go-git/v5/internal/test"
 	. "gopkg.in/check.v1"
 )
 
 type CommonSuite struct {
-	fixtures.Suite
+	test.Suite
 	ReceivePackBin string
 	UploadPackBin  string
 	tmpDir         string // to be removed at teardown
@@ -37,6 +37,5 @@ func (s *CommonSuite) SetUpSuite(c *C) {
 }
 
 func (s *CommonSuite) TearDownSuite(c *C) {
-	defer s.Suite.TearDownSuite(c)
 	c.Assert(os.RemoveAll(s.tmpDir), IsNil)
 }

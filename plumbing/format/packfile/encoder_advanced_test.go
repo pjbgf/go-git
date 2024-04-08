@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
@@ -19,7 +20,7 @@ import (
 )
 
 type EncoderAdvancedSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&EncoderAdvancedSuite{})
@@ -32,7 +33,8 @@ func (s *EncoderAdvancedSuite) TestEncodeDecode(c *C) {
 	fixs := fixtures.Basic().ByTag("packfile").ByTag(".git")
 	fixs = append(fixs, fixtures.ByURL("https://github.com/src-d/go-git.git").
 		ByTag("packfile").ByTag(".git").One())
-	fixs.Test(c, func(f *fixtures.Fixture) {
+
+	s.Suite.Run(c, fixs, func(f *fixtures.Fixture) {
 		storage := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 		s.testEncodeDecode(c, storage, 10)
 	})
@@ -46,7 +48,8 @@ func (s *EncoderAdvancedSuite) TestEncodeDecodeNoDeltaCompression(c *C) {
 	fixs := fixtures.Basic().ByTag("packfile").ByTag(".git")
 	fixs = append(fixs, fixtures.ByURL("https://github.com/src-d/go-git.git").
 		ByTag("packfile").ByTag(".git").One())
-	fixs.Test(c, func(f *fixtures.Fixture) {
+
+	s.Suite.Run(c, fixs, func(f *fixtures.Fixture) {
 		storage := filesystem.NewStorage(f.DotGit(), cache.NewObjectLRUDefault())
 		s.testEncodeDecode(c, storage, 0)
 	})

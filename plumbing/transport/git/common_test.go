@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
@@ -20,7 +21,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type BaseSuite struct {
-	fixtures.Suite
+	test.Suite
 
 	base   string
 	port   int
@@ -42,8 +43,7 @@ func (s *BaseSuite) SetUpTest(c *C) {
 	s.port, err = freePort()
 	c.Assert(err, IsNil)
 
-	s.base, err = os.MkdirTemp(os.TempDir(), fmt.Sprintf("go-git-protocol-%d", s.port))
-	c.Assert(err, IsNil)
+	s.base = c.MkDir()
 }
 
 func (s *BaseSuite) StartDaemon(c *C) {
@@ -78,7 +78,7 @@ func (s *BaseSuite) newEndpoint(c *C, name string) *transport.Endpoint {
 }
 
 func (s *BaseSuite) prepareRepository(c *C, f *fixtures.Fixture, name string) *transport.Endpoint {
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	err := fixtures.EnsureIsBare(fs)
 	c.Assert(err, IsNil)

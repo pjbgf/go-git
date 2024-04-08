@@ -3,6 +3,7 @@ package index
 import (
 	"testing"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
 
@@ -13,7 +14,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type IndexSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&IndexSuite{})

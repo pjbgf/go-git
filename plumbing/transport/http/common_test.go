@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
@@ -229,7 +230,7 @@ func (s *ClientSuite) TestModifyEndpointIfRedirect(c *C) {
 }
 
 type BaseSuite struct {
-	fixtures.Suite
+	test.Suite
 
 	base string
 	host string
@@ -240,7 +241,7 @@ func (s *BaseSuite) SetUpTest(c *C) {
 	l, err := net.Listen("tcp", "localhost:0")
 	c.Assert(err, IsNil)
 
-	base, err := os.MkdirTemp(os.TempDir(), fmt.Sprintf("go-git-http-%d", s.port))
+	base := c.MkDir()
 	c.Assert(err, IsNil)
 
 	s.port = l.Addr().(*net.TCPAddr).Port
@@ -265,7 +266,7 @@ func (s *BaseSuite) SetUpTest(c *C) {
 }
 
 func (s *BaseSuite) prepareRepository(c *C, f *fixtures.Fixture, name string) *transport.Endpoint {
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	err := fixtures.EnsureIsBare(fs)
 	c.Assert(err, IsNil)

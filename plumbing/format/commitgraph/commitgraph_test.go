@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/commitgraph"
 
@@ -16,7 +17,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type CommitgraphSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&CommitgraphSuite{})
@@ -74,14 +75,14 @@ func testDecodeHelper(c *C, fs billy.Filesystem, path string) {
 }
 
 func (s *CommitgraphSuite) TestDecode(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 		testDecodeHelper(c, dotgit, dotgit.Join("objects", "info", "commit-graph"))
 	})
 }
 
 func (s *CommitgraphSuite) TestReencode(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 
 		reader, err := dotgit.Open(dotgit.Join("objects", "info", "commit-graph"))
@@ -105,7 +106,7 @@ func (s *CommitgraphSuite) TestReencode(c *C) {
 }
 
 func (s *CommitgraphSuite) TestReencodeInMemory(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 
 		reader, err := dotgit.Open(dotgit.Join("objects", "info", "commit-graph"))

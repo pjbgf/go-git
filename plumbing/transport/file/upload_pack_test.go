@@ -23,13 +23,13 @@ func (s *UploadPackSuite) SetUpSuite(c *C) {
 	s.UploadPackSuite.Client = DefaultClient
 
 	fixture := fixtures.Basic().One()
-	path := fixture.DotGit().Root()
+	path := fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 	ep, err := transport.NewEndpoint(path)
 	c.Assert(err, IsNil)
 	s.Endpoint = ep
 
 	fixture = fixtures.ByTag("empty").One()
-	path = fixture.DotGit().Root()
+	path = fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 	ep, err = transport.NewEndpoint(path)
 	c.Assert(err, IsNil)
 	s.EmptyEndpoint = ep

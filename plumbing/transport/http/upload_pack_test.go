@@ -59,7 +59,7 @@ func (s *UploadPackSuite) TestuploadPackRequestToReader(c *C) {
 }
 
 func (s *UploadPackSuite) prepareRepository(c *C, f *fixtures.Fixture, name string) *transport.Endpoint {
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	err := fixtures.EnsureIsBare(fs)
 	c.Assert(err, IsNil)

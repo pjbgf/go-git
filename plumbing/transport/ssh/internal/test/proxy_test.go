@@ -12,6 +12,7 @@ import (
 
 	"github.com/armon/go-socks5"
 	"github.com/gliderlabs/ssh"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	ggssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 
@@ -23,7 +24,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type ProxyEnvSuite struct {
-	fixtures.Suite
+	test.Suite
 	port int
 	base string
 }
@@ -58,8 +59,7 @@ func (s *ProxyEnvSuite) TestCommand(c *C) {
 	}()
 
 	s.port = sshListener.Addr().(*net.TCPAddr).Port
-	s.base, err = os.MkdirTemp(os.TempDir(), fmt.Sprintf("go-git-ssh-%d", s.port))
-	c.Assert(err, IsNil)
+	s.base = c.MkDir()
 
 	ggssh.DefaultAuthBuilder = func(user string) (ggssh.AuthMethod, error) {
 		return &ggssh.Password{User: user}, nil
@@ -83,7 +83,7 @@ func (s *ProxyEnvSuite) TestCommand(c *C) {
 }
 
 func (s *ProxyEnvSuite) prepareRepository(c *C, f *fixtures.Fixture, name string) *transport.Endpoint {
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 
 	err := fixtures.EnsureIsBare(fs)
 	c.Assert(err, IsNil)

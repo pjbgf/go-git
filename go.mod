@@ -3,11 +3,13 @@ module github.com/go-git/go-git/v5
 // go-git supports the last 3 stable Go versions.
 go 1.19
 
+replace github.com/go-git/go-git-fixtures/v4 => github.com/pjbgf/go-git-fixtures/v4 v4.0.0-20240408205647-414d44e11b3a
+
 require (
 	dario.cat/mergo v1.0.0
 	github.com/ProtonMail/go-crypto v1.0.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
-	github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a
+	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
 	github.com/emirpasic/gods v1.18.1
 	github.com/gliderlabs/ssh v0.3.7
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376
@@ -38,9 +40,10 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/tools v0.13.0 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.20.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

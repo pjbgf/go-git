@@ -23,7 +23,7 @@ type SubmoduleSuite struct {
 var _ = Suite(&SubmoduleSuite{})
 
 func (s *SubmoduleSuite) SetUpTest(c *C) {
-	path := fixtures.ByTag("submodule").One().Worktree().Root()
+	path := fixtures.ByTag("submodule").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	var dir string
 	dir, s.clean = s.TemporalDir()

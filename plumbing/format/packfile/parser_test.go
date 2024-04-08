@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	fixtures "github.com/go-git/go-git-fixtures/v4"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
@@ -18,7 +19,7 @@ import (
 )
 
 type ParserSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&ParserSuite{})
@@ -228,8 +229,6 @@ func (t *testObserver) put(pos int64, o observerObject) {
 }
 
 func BenchmarkParse(b *testing.B) {
-	defer fixtures.Clean()
-
 	for _, f := range fixtures.ByTag("packfile") {
 		b.Run(f.URL, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
@@ -248,8 +247,6 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func BenchmarkParseBasic(b *testing.B) {
-	defer fixtures.Clean()
-
 	f := fixtures.Basic().One()
 	for i := 0; i < b.N; i++ {
 		parser, err := packfile.NewParser(packfile.NewScanner(f.Packfile()))
@@ -266,7 +263,6 @@ func BenchmarkParseBasic(b *testing.B) {
 
 func BenchmarkParser(b *testing.B) {
 	f := fixtures.Basic().One()
-	defer fixtures.Clean()
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

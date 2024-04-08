@@ -3,6 +3,7 @@ package object
 import (
 	"sort"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/filemode"
@@ -16,7 +17,7 @@ import (
 )
 
 type ChangeAdaptorSuite struct {
-	fixtures.Suite
+	test.Suite
 	Storer  storer.EncodedObjectStorer
 	Fixture *fixtures.Fixture
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func (s *IdxfileSuite) TestDecodeEncode(c *C) {
-	fixtures.ByTag("packfile").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("packfile"), func(f *fixtures.Fixture) {
 		expected, err := io.ReadAll(f.Idx())
 		c.Assert(err, IsNil)
 

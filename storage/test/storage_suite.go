@@ -64,10 +64,6 @@ func NewBaseStorageSuite(s Storer) BaseStorageSuite {
 		}}
 }
 
-func (s *BaseStorageSuite) TearDownTest(c *C) {
-	fixtures.Clean()
-}
-
 func (s *BaseStorageSuite) TestSetEncodedObjectAndEncodedObject(c *C) {
 	for _, to := range s.testObjects {
 		comment := Commentf("failed for type %s", to.Type.String())

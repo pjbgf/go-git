@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
@@ -23,8 +24,8 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type BaseSuite struct {
-	fixtures.Suite
 	Repository *Repository
+	Suite      *test.Suite
 
 	cache map[string]*Repository
 }
@@ -33,10 +34,6 @@ func (s *BaseSuite) SetUpSuite(c *C) {
 	s.buildBasicRepository(c)
 
 	s.cache = make(map[string]*Repository)
-}
-
-func (s *BaseSuite) TearDownSuite(c *C) {
-	s.Suite.TearDownSuite(c)
 }
 
 func (s *BaseSuite) buildBasicRepository(_ *C) {
@@ -49,17 +46,14 @@ func (s *BaseSuite) buildBasicRepository(_ *C) {
 // memfs filesystem is used as worktree.
 func (s *BaseSuite) NewRepository(f *fixtures.Fixture) *Repository {
 	var worktree, dotgit billy.Filesystem
-	if f.Is("worktree") {
-		r, err := PlainOpen(f.Worktree().Root())
-		if err != nil {
-			panic(err)
-		}
-
-		return r
-	}
 
 	dotgit = f.DotGit()
-	worktree = memfs.New()
+
+	if f.Is("worktree") {
+		worktree = f.Worktree()
+	} else {
+		worktree = memfs.New()
+	}
 
 	st := filesystem.NewStorage(dotgit, cache.NewObjectLRUDefault())
 
@@ -127,13 +121,13 @@ func (s *BaseSuite) NewRepositoryFromPackfile(f *fixtures.Fixture) *Repository {
 	return r
 }
 
-func (s *BaseSuite) GetBasicLocalRepositoryURL() string {
+func (s *BaseSuite) GetBasicLocalRepositoryURL(c *C) string {
 	fixture := fixtures.Basic().One()
-	return s.GetLocalRepositoryURL(fixture)
+	return s.GetLocalRepositoryURL(c.MkDir, fixture)
 }
 
-func (s *BaseSuite) GetLocalRepositoryURL(f *fixtures.Fixture) string {
-	return f.DotGit().Root()
+func (s *BaseSuite) GetLocalRepositoryURL(tempDir func() string, f *fixtures.Fixture) string {
+	return f.DotGit(fixtures.WithTargetDir(tempDir)).Root()
 }
 
 func (s *BaseSuite) TemporalDir() (path string, clean func()) {

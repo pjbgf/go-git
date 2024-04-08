@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
@@ -23,7 +24,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type SuiteDotGit struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&SuiteDotGit{})
@@ -166,7 +167,7 @@ func testSetRefs(c *C, dir *DotGit) {
 }
 
 func (s *SuiteDotGit) TestRefsFromPackedRefs(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	refs, err := dir.Refs()
@@ -179,7 +180,7 @@ func (s *SuiteDotGit) TestRefsFromPackedRefs(c *C) {
 }
 
 func (s *SuiteDotGit) TestRefsFromReferenceFile(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	refs, err := dir.Refs()
@@ -193,7 +194,7 @@ func (s *SuiteDotGit) TestRefsFromReferenceFile(c *C) {
 }
 
 func BenchmarkRefMultipleTimes(b *testing.B) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(b.TempDir))
 	refname := plumbing.ReferenceName("refs/remotes/origin/branch")
 
 	dir := New(fs)
@@ -211,7 +212,7 @@ func BenchmarkRefMultipleTimes(b *testing.B) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefFromReferenceFile(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	name := plumbing.ReferenceName("refs/remotes/origin/HEAD")
@@ -226,7 +227,7 @@ func (s *SuiteDotGit) TestRemoveRefFromReferenceFile(c *C) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefFromPackedRefs(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	name := plumbing.ReferenceName("refs/remotes/origin/master")
@@ -243,7 +244,7 @@ func (s *SuiteDotGit) TestRemoveRefFromPackedRefs(c *C) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefFromReferenceFileAndPackedRefs(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	// Make a ref file for a ref that's already in `packed-refs`.
@@ -284,7 +285,7 @@ func (s *SuiteDotGit) TestRemoveRefFromReferenceFileAndPackedRefs(c *C) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefNonExistent(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	before, err := util.ReadFile(fs, packedRefsPath)
@@ -301,7 +302,7 @@ func (s *SuiteDotGit) TestRemoveRefNonExistent(c *C) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefInvalidPackedRefs(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	brokenContent := "BROKEN STUFF REALLY BROKEN"
@@ -320,7 +321,7 @@ func (s *SuiteDotGit) TestRemoveRefInvalidPackedRefs(c *C) {
 }
 
 func (s *SuiteDotGit) TestRemoveRefInvalidPackedRefs2(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	brokenContent := strings.Repeat("a", bufio.MaxScanTokenSize*2)
@@ -339,7 +340,7 @@ func (s *SuiteDotGit) TestRemoveRefInvalidPackedRefs2(c *C) {
 }
 
 func (s *SuiteDotGit) TestRefsFromHEADFile(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	refs, err := dir.Refs()
@@ -352,7 +353,7 @@ func (s *SuiteDotGit) TestRefsFromHEADFile(c *C) {
 }
 
 func (s *SuiteDotGit) TestConfig(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	file, err := dir.Config()
@@ -382,7 +383,7 @@ func (s *SuiteDotGit) TestConfigWriteAndConfig(c *C) {
 }
 
 func (s *SuiteDotGit) TestIndex(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	idx, err := dir.Index()
@@ -412,7 +413,7 @@ func (s *SuiteDotGit) TestIndexWriteAndIndex(c *C) {
 }
 
 func (s *SuiteDotGit) TestShallow(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	file, err := dir.Shallow()
@@ -454,7 +455,7 @@ func findReference(refs []*plumbing.Reference, name string) *plumbing.Reference 
 
 func (s *SuiteDotGit) TestObjectPacks(c *C) {
 	f := fixtures.Basic().ByTag(".git").One()
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	testObjectPacks(c, fs, dir, f)
@@ -462,7 +463,7 @@ func (s *SuiteDotGit) TestObjectPacks(c *C) {
 
 func (s *SuiteDotGit) TestObjectPacksExclusive(c *C) {
 	f := fixtures.Basic().ByTag(".git").One()
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := NewWithOptions(fs, Options{ExclusiveAccess: true})
 
 	testObjectPacks(c, fs, dir, f)
@@ -494,7 +495,7 @@ func testObjectPacks(c *C, fs billy.Filesystem, dir *DotGit, f *fixtures.Fixture
 
 func (s *SuiteDotGit) TestObjectPack(c *C) {
 	f := fixtures.Basic().ByTag(".git").One()
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	pack, err := dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
@@ -504,7 +505,7 @@ func (s *SuiteDotGit) TestObjectPack(c *C) {
 
 func (s *SuiteDotGit) TestObjectPackWithKeepDescriptors(c *C) {
 	f := fixtures.Basic().ByTag(".git").One()
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := NewWithOptions(fs, Options{KeepDescriptors: true})
 
 	pack, err := dir.ObjectPack(plumbing.NewHash(f.PackfileHash))
@@ -543,7 +544,7 @@ func (s *SuiteDotGit) TestObjectPackWithKeepDescriptors(c *C) {
 
 func (s *SuiteDotGit) TestObjectPackIdx(c *C) {
 	f := fixtures.Basic().ByTag(".git").One()
-	fs := f.DotGit()
+	fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	idx, err := dir.ObjectPackIdx(plumbing.NewHash(f.PackfileHash))
@@ -553,7 +554,7 @@ func (s *SuiteDotGit) TestObjectPackIdx(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjectPackNotFound(c *C) {
-	fs := fixtures.Basic().ByTag(".git").One().DotGit()
+	fs := fixtures.Basic().ByTag(".git").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	pack, err := dir.ObjectPack(plumbing.ZeroHash)
@@ -590,7 +591,7 @@ func (s *SuiteDotGit) TestNewObject(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjects(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	testObjects(c, fs, dir)
@@ -598,7 +599,7 @@ func (s *SuiteDotGit) TestObjects(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjectsExclusive(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := NewWithOptions(fs, Options{ExclusiveAccess: true})
 
 	testObjects(c, fs, dir)
@@ -639,7 +640,7 @@ func (s *SuiteDotGit) TestObjectsNoFolder(c *C) {
 }
 
 func (s *SuiteDotGit) TestObject(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
@@ -660,7 +661,7 @@ func (s *SuiteDotGit) TestObject(c *C) {
 }
 
 func (s *SuiteDotGit) TestPreGit235Object(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
@@ -681,7 +682,7 @@ func (s *SuiteDotGit) TestPreGit235Object(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjectStat(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
@@ -698,7 +699,7 @@ func (s *SuiteDotGit) TestObjectStat(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjectDelete(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	hash := plumbing.NewHash("03db8e1fbe133a480f2867aac478fd866686d69e")
@@ -724,7 +725,7 @@ func (s *SuiteDotGit) TestObjectDelete(c *C) {
 }
 
 func (s *SuiteDotGit) TestObjectNotFound(c *C) {
-	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit()
+	fs := fixtures.ByTag(".git").ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	hash := plumbing.NewHash("not-found-object")
@@ -734,7 +735,7 @@ func (s *SuiteDotGit) TestObjectNotFound(c *C) {
 }
 
 func (s *SuiteDotGit) TestSubmodules(c *C) {
-	fs := fixtures.ByTag("submodule").One().DotGit()
+	fs := fixtures.ByTag("submodule").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	dir := New(fs)
 
 	m, err := dir.Module("basic")

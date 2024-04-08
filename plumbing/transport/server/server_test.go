@@ -3,6 +3,7 @@ package server_test
 import (
 	"testing"
 
+	checktest "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
@@ -18,7 +19,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type BaseSuite struct {
-	fixtures.Suite
+	checktest.Suite
 	test.ReceivePackSuite
 
 	loader       server.MapLoader
@@ -50,7 +51,7 @@ func (s *BaseSuite) TearDownSuite(c *C) {
 func (s *BaseSuite) prepareRepositories(c *C) {
 	var err error
 
-	fs := fixtures.Basic().One().DotGit()
+	fs := fixtures.Basic().One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	s.Endpoint, err = transport.NewEndpoint(fs.Root())
 	c.Assert(err, IsNil)
 	s.loader[s.Endpoint.String()] = filesystem.NewStorage(fs, cache.NewObjectLRUDefault())

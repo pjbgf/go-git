@@ -23,18 +23,14 @@ func (s *ReceivePackSuite) SetUpSuite(c *C) {
 
 func (s *ReceivePackSuite) SetUpTest(c *C) {
 	fixture := fixtures.Basic().One()
-	path := fixture.DotGit().Root()
+	path := fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 	s.Endpoint = prepareRepo(c, path)
 
 	fixture = fixtures.ByTag("empty").One()
-	path = fixture.DotGit().Root()
+	path = fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 	s.EmptyEndpoint = prepareRepo(c, path)
 
 	s.NonExistentEndpoint = prepareRepo(c, "/non-existent")
-}
-
-func (s *ReceivePackSuite) TearDownTest(c *C) {
-	s.Suite.TearDownSuite(c)
 }
 
 // TODO: fix test

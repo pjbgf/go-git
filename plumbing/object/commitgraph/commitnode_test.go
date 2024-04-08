@@ -4,6 +4,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	commitgraph "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
@@ -17,7 +18,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type CommitNodeSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&CommitNodeSuite{})

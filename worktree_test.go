@@ -53,7 +53,7 @@ func (s *WorktreeSuite) TestPullCheckout(c *C) {
 	r, _ := Init(memory.NewStorage(), fs)
 	r.CreateRemote(&config.RemoteConfig{
 		Name: DefaultRemoteName,
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	w, err := r.Worktree()
@@ -71,7 +71,7 @@ func (s *WorktreeSuite) TestPullFastForward(c *C) {
 	url, clean := s.TemporalDir()
 	defer clean()
 
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	server, err := PlainClone(url, false, &CloneOptions{
 		URL: path,
@@ -108,7 +108,7 @@ func (s *WorktreeSuite) TestPullNonFastForward(c *C) {
 	url, clean := s.TemporalDir()
 	defer clean()
 
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	server, err := PlainClone(url, false, &CloneOptions{
 		URL: path,
@@ -145,7 +145,7 @@ func (s *WorktreeSuite) TestPullUpdateReferencesIfNeeded(c *C) {
 	r, _ := Init(memory.NewStorage(), memfs.New())
 	r.CreateRemote(&config.RemoteConfig{
 		Name: DefaultRemoteName,
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	err := r.Fetch(&FetchOptions{})
@@ -175,7 +175,7 @@ func (s *WorktreeSuite) TestPullUpdateReferencesIfNeeded(c *C) {
 func (s *WorktreeSuite) TestPullInSingleBranch(c *C) {
 	r, _ := Init(memory.NewStorage(), memfs.New())
 	err := r.clone(context.Background(), &CloneOptions{
-		URL:          s.GetBasicLocalRepositoryURL(),
+		URL:          s.GetBasicLocalRepositoryURL(c),
 		SingleBranch: true,
 	})
 
@@ -203,7 +203,7 @@ func (s *WorktreeSuite) TestPullProgress(c *C) {
 
 	r.CreateRemote(&config.RemoteConfig{
 		Name: DefaultRemoteName,
-		URLs: []string{s.GetBasicLocalRepositoryURL()},
+		URLs: []string{s.GetBasicLocalRepositoryURL(c)},
 	})
 
 	w, err := r.Worktree()
@@ -223,7 +223,7 @@ func (s *WorktreeSuite) TestPullProgressWithRecursion(c *C) {
 		c.Skip("skipping test in short mode.")
 	}
 
-	path := fixtures.ByTag("submodule").One().Worktree().Root()
+	path := fixtures.ByTag("submodule").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	dir, clean := s.TemporalDir()
 	defer clean()
@@ -248,7 +248,7 @@ func (s *WorktreeSuite) TestPullProgressWithRecursion(c *C) {
 }
 
 func (s *RepositorySuite) TestPullAdd(c *C) {
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	r, err := Clone(memory.NewStorage(), memfs.New(), &CloneOptions{
 		URL: filepath.Join(path, ".git"),
@@ -284,7 +284,7 @@ func (s *RepositorySuite) TestPullAdd(c *C) {
 }
 
 func (s *WorktreeSuite) TestPullAlreadyUptodate(c *C) {
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	r, err := Clone(memory.NewStorage(), memfs.New(), &CloneOptions{
 		URL: filepath.Join(path, ".git"),
@@ -478,7 +478,7 @@ func (s *WorktreeSuite) TestCheckoutSymlink(c *C) {
 func (s *WorktreeSuite) TestCheckoutSparse(c *C) {
 	fs := memfs.New()
 	r, err := Clone(memory.NewStorage(), fs, &CloneOptions{
-		URL: s.GetBasicLocalRepositoryURL(),
+		URL: s.GetBasicLocalRepositoryURL(c),
 	})
 	c.Assert(err, IsNil)
 
@@ -514,7 +514,7 @@ func (s *WorktreeSuite) TestFilenameNormalization(c *C) {
 	url, clean := s.TemporalDir()
 	defer clean()
 
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	server, err := PlainClone(url, false, &CloneOptions{
 		URL: path,
@@ -1388,7 +1388,7 @@ func (s *WorktreeSuite) TestStatusDeleted(c *C) {
 }
 
 func (s *WorktreeSuite) TestSubmodule(c *C) {
-	path := fixtures.ByTag("submodule").One().Worktree().Root()
+	path := fixtures.ByTag("submodule").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 	r, err := PlainOpen(path)
 	c.Assert(err, IsNil)
 
@@ -1402,7 +1402,7 @@ func (s *WorktreeSuite) TestSubmodule(c *C) {
 }
 
 func (s *WorktreeSuite) TestSubmodules(c *C) {
-	path := fixtures.ByTag("submodule").One().Worktree().Root()
+	path := fixtures.ByTag("submodule").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 	r, err := PlainOpen(path)
 	c.Assert(err, IsNil)
 
@@ -2321,7 +2321,7 @@ func (s *WorktreeSuite) TestMoveToExistent(c *C) {
 }
 
 func (s *WorktreeSuite) TestClean(c *C) {
-	fs := fixtures.ByTag("dirty").One().Worktree()
+	fs := fixtures.ByTag("dirty").One().Worktree(fixtures.WithTargetDir(c.MkDir))
 
 	// Open the repo.
 	fs, err := fs.Chroot("repo")
@@ -2398,7 +2398,7 @@ func (s *WorktreeSuite) TestCleanBare(c *C) {
 }
 
 func TestAlternatesRepo(t *testing.T) {
-	fs := fixtures.ByTag("alternates").One().Worktree()
+	fs := fixtures.ByTag("alternates").One().Worktree(fixtures.WithTargetDir(t.TempDir))
 
 	// Open 1st repo.
 	rep1fs, err := fs.Chroot("rep1")
@@ -2619,7 +2619,7 @@ func (s *WorktreeSuite) TestGrep(c *C) {
 		},
 	}
 
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	dir, clean := s.TemporalDir()
 	defer clean()
@@ -2703,7 +2703,7 @@ func (s *WorktreeSuite) TestGrepBare(c *C) {
 		},
 	}
 
-	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
+	path := fixtures.Basic().ByTag("worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	dir, clean := s.TemporalDir()
 	defer clean()
@@ -2870,7 +2870,7 @@ func (s *WorktreeSuite) TestAddAndCommitEmpty(c *C) {
 }
 
 func (s *WorktreeSuite) TestLinkedWorktree(c *C) {
-	fs := fixtures.ByTag("linked-worktree").One().Worktree()
+	fs := fixtures.ByTag("linked-worktree").One().Worktree(fixtures.WithTargetDir(c.MkDir))
 
 	// Open main repo.
 	{

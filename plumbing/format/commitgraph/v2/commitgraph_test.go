@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	commitgraph "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
@@ -20,7 +21,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type CommitgraphSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&CommitgraphSuite{})
@@ -81,7 +82,7 @@ func testDecodeHelper(c *C, index commitgraph.Index) {
 }
 
 func (s *CommitgraphSuite) TestDecodeMultiChain(c *C) {
-	fixtures.ByTag("commit-graph-chain-2").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph-chain-2"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 		index, err := commitgraph.OpenChainOrFileIndex(dotgit)
 		c.Assert(err, IsNil)
@@ -112,7 +113,7 @@ func (s *CommitgraphSuite) TestDecodeMultiChain(c *C) {
 }
 
 func (s *CommitgraphSuite) TestDecode(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 		index := testReadIndex(c, dotgit, dotgit.Join("objects", "info", "commit-graph"))
 		defer index.Close()
@@ -121,7 +122,7 @@ func (s *CommitgraphSuite) TestDecode(c *C) {
 }
 
 func (s *CommitgraphSuite) TestDecodeChain(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 		index, err := commitgraph.OpenChainOrFileIndex(dotgit)
 		c.Assert(err, IsNil)
@@ -129,7 +130,7 @@ func (s *CommitgraphSuite) TestDecodeChain(c *C) {
 		testDecodeHelper(c, index)
 	})
 
-	fixtures.ByTag("commit-graph-chain").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph-chain"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 		index, err := commitgraph.OpenChainOrFileIndex(dotgit)
 		c.Assert(err, IsNil)
@@ -139,7 +140,7 @@ func (s *CommitgraphSuite) TestDecodeChain(c *C) {
 }
 
 func (s *CommitgraphSuite) TestReencode(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 
 		reader, err := dotgit.Open(dotgit.Join("objects", "info", "commit-graph"))
@@ -166,7 +167,7 @@ func (s *CommitgraphSuite) TestReencode(c *C) {
 }
 
 func (s *CommitgraphSuite) TestReencodeInMemory(c *C) {
-	fixtures.ByTag("commit-graph").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag("commit-graph"), func(f *fixtures.Fixture) {
 		dotgit := f.DotGit()
 
 		reader, err := dotgit.Open(dotgit.Join("objects", "info", "commit-graph"))

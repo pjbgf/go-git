@@ -5,6 +5,7 @@ import (
 	"math"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
@@ -12,7 +13,7 @@ import (
 )
 
 type PackfileSuite struct {
-	fixtures.Suite
+	test.Suite
 	p   *packfile.Packfile
 	idx *idxfile.MemoryIndex
 	f   *fixtures.Fixture
@@ -118,7 +119,7 @@ func (s *PackfileSuite) TearDownTest(c *C) {
 }
 
 func (s *PackfileSuite) TestDecode(c *C) {
-	fixtures.Basic().ByTag("packfile").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag("packfile"), func(f *fixtures.Fixture) {
 		index := getIndexFromIdxFile(f.Idx())
 
 		p := packfile.NewPackfile(index, fixtures.Filesystem, f.Packfile(), 0)
@@ -166,7 +167,7 @@ func (s *PackfileSuite) TestDecodeByType(c *C) {
 		plumbing.BlobObject,
 	}
 
-	fixtures.Basic().ByTag("packfile").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag("packfile"), func(f *fixtures.Fixture) {
 		for _, t := range ts {
 			index := getIndexFromIdxFile(f.Idx())
 

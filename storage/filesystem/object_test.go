@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem/dotgit"
@@ -19,7 +20,7 @@ import (
 )
 
 type FsSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var objectTypes = []plumbing.ObjectType{
@@ -42,7 +43,7 @@ func (s *FsSuite) TestGetFromObjectFile(c *C) {
 }
 
 func (s *FsSuite) TestGetFromPackfile(c *C) {
-	fixtures.Basic().ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
@@ -54,7 +55,7 @@ func (s *FsSuite) TestGetFromPackfile(c *C) {
 }
 
 func (s *FsSuite) TestGetFromPackfileKeepDescriptors(c *C) {
-	fixtures.Basic().ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		dg := dotgit.NewWithOptions(fs, dotgit.Options{KeepDescriptors: true})
 		o := NewObjectStorageWithOptions(dg, cache.NewObjectLRUDefault(), Options{KeepDescriptors: true})
@@ -139,7 +140,7 @@ func (s *FsSuite) TestGetSizeOfObjectFile(c *C) {
 }
 
 func (s *FsSuite) TestGetSizeFromPackfile(c *C) {
-	fixtures.Basic().ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
@@ -196,7 +197,7 @@ func (s *FsSuite) TestGetFromPackfileMultiplePackfilesLargeObjectThreshold(c *C)
 }
 
 func (s *FsSuite) TestIter(c *C) {
-	fixtures.ByTag(".git").ByTag("packfile").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag(".git").ByTag("packfile"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
@@ -215,7 +216,7 @@ func (s *FsSuite) TestIter(c *C) {
 }
 
 func (s *FsSuite) TestIterLargeObjectThreshold(c *C) {
-	fixtures.ByTag(".git").ByTag("packfile").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.ByTag(".git").ByTag("packfile"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		o := NewObjectStorageWithOptions(dotgit.New(fs), cache.NewObjectLRUDefault(), Options{LargeObjectThreshold: 1})
 
@@ -234,7 +235,7 @@ func (s *FsSuite) TestIterLargeObjectThreshold(c *C) {
 }
 
 func (s *FsSuite) TestIterWithType(c *C) {
-	fixtures.ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		for _, t := range objectTypes {
 			fs := f.DotGit()
 			o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
@@ -254,7 +255,7 @@ func (s *FsSuite) TestIterWithType(c *C) {
 }
 
 func (s *FsSuite) TestPackfileIter(c *C) {
-	fixtures.ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		dg := dotgit.New(fs)
 
@@ -307,8 +308,9 @@ func (s *FsSuite) TestPackfileReindex(c *C) {
 	idxFile := packFixture.Idx()
 	packFilename := packFixture.PackfileHash
 	testObjectHash := plumbing.NewHash("a771b1e94141480861332fd0e4684d33071306c6") // this is an object we know exists in the standalone packfile
-	fixtures.ByTag(".git").Test(c, func(f *fixtures.Fixture) {
-		fs := f.DotGit()
+
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
+		fs := f.DotGit(fixtures.WithTargetDir(c.MkDir))
 		storer := NewStorage(fs, cache.NewObjectLRUDefault())
 
 		// check that our test object is NOT found
@@ -336,7 +338,7 @@ func (s *FsSuite) TestPackfileReindex(c *C) {
 }
 
 func (s *FsSuite) TestPackfileIterKeepDescriptors(c *C) {
-	fixtures.ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		ops := dotgit.Options{KeepDescriptors: true}
 		dg := dotgit.NewWithOptions(fs, ops)
@@ -407,7 +409,8 @@ func (s *FsSuite) TestHashesWithPrefix(c *C) {
 
 func (s *FsSuite) TestHashesWithPrefixFromPackfile(c *C) {
 	// Same setup as TestGetFromPackfile
-	fixtures.Basic().ByTag(".git").Test(c, func(f *fixtures.Fixture) {
+
+	s.Suite.Run(c, fixtures.Basic().ByTag(".git"), func(f *fixtures.Fixture) {
 		fs := f.DotGit()
 		o := NewObjectStorage(dotgit.New(fs), cache.NewObjectLRUDefault())
 
@@ -421,8 +424,6 @@ func (s *FsSuite) TestHashesWithPrefixFromPackfile(c *C) {
 }
 
 func BenchmarkPackfileIter(b *testing.B) {
-	defer fixtures.Clean()
-
 	for _, f := range fixtures.ByTag(".git") {
 		b.Run(f.URL, func(b *testing.B) {
 			fs := f.DotGit()
@@ -469,8 +470,6 @@ func BenchmarkPackfileIter(b *testing.B) {
 }
 
 func BenchmarkPackfileIterReadContent(b *testing.B) {
-	defer fixtures.Clean()
-
 	for _, f := range fixtures.ByTag(".git") {
 		b.Run(f.URL, func(b *testing.B) {
 			fs := f.DotGit()
@@ -527,8 +526,6 @@ func BenchmarkPackfileIterReadContent(b *testing.B) {
 }
 
 func BenchmarkGetObjectFromPackfile(b *testing.B) {
-	defer fixtures.Clean()
-
 	for _, f := range fixtures.Basic() {
 		b.Run(f.URL, func(b *testing.B) {
 			fs := f.DotGit()

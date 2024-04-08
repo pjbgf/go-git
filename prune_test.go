@@ -20,7 +20,7 @@ type PruneSuite struct {
 var _ = Suite(&PruneSuite{})
 
 func (s *PruneSuite) testPrune(c *C, deleteTime time.Time) {
-	srcFs := fixtures.ByTag("unpacked").One().DotGit()
+	srcFs := fixtures.ByTag("unpacked").One().DotGit(fixtures.WithTargetDir(c.MkDir))
 	var sto storage.Storer
 	var err error
 	sto = filesystem.NewStorage(srcFs, cache.NewObjectLRUDefault())

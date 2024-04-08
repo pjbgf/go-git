@@ -5,6 +5,7 @@ import (
 	"io"
 
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/hash"
 
@@ -12,7 +13,7 @@ import (
 )
 
 type ScannerSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&ScannerSuite{})

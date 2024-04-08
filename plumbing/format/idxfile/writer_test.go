@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"io"
 
+	"github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
@@ -14,7 +15,7 @@ import (
 )
 
 type WriterSuite struct {
-	fixtures.Suite
+	test.Suite
 }
 
 var _ = Suite(&WriterSuite{})

@@ -10,7 +10,6 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/go-git/go-billy/v5/util"
 	. "gopkg.in/check.v1"
 )
 
@@ -25,11 +24,9 @@ type StorageSuite struct {
 var _ = Suite(&StorageSuite{})
 
 func (s *StorageSuite) SetUpTest(c *C) {
-	tmp, err := util.TempDir(osfs.Default, "", "go-git-filestystem-config")
-	c.Assert(err, IsNil)
-
-	s.dir = tmp
+	s.dir = c.MkDir()
 	s.fs = osfs.New(s.dir)
+
 	storage := NewStorage(s.fs, cache.NewObjectLRUDefault())
 
 	setUpTest(s, c, storage)
@@ -67,10 +64,7 @@ type StorageExclusiveSuite struct {
 var _ = Suite(&StorageExclusiveSuite{})
 
 func (s *StorageExclusiveSuite) SetUpTest(c *C) {
-	tmp, err := util.TempDir(osfs.Default, "", "go-git-filestystem-config")
-	c.Assert(err, IsNil)
-
-	s.dir = tmp
+	s.dir = c.MkDir()
 	s.fs = osfs.New(s.dir)
 
 	storage := NewStorageWithOptions(

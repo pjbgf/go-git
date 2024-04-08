@@ -11,6 +11,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	fixtures "github.com/go-git/go-git-fixtures/v4"
+	checktest "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http/internal/test"
 
@@ -19,7 +20,7 @@ import (
 
 type ProxySuite struct {
 	u UploadPackSuite
-	fixtures.Suite
+	checktest.Suite
 }
 
 var _ = Suite(&ProxySuite{})

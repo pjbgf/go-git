@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-git/go-git-fixtures/v4"
+	fixtures "github.com/go-git/go-git-fixtures/v4"
 	. "gopkg.in/check.v1"
 )
 
@@ -23,10 +23,10 @@ func (s *ServerSuite) SetUpSuite(c *C) {
 	s.RemoteName = "test"
 
 	fixture := fixtures.Basic().One()
-	s.SrcPath = fixture.DotGit().Root()
+	s.SrcPath = fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	fixture = fixtures.ByTag("empty").One()
-	s.DstPath = fixture.DotGit().Root()
+	s.DstPath = fixture.DotGit(fixtures.WithTargetDir(c.MkDir)).Root()
 
 	cmd := exec.Command("git", "remote", "add", s.RemoteName, s.DstPath)
 	cmd.Dir = s.SrcPath

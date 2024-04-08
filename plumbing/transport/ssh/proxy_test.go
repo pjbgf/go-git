@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"sync/atomic"
 
 	"github.com/armon/go-socks5"
 	"github.com/gliderlabs/ssh"
+	checktest "github.com/go-git/go-git/v5/internal/test"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh/internal/test"
 
@@ -20,7 +20,7 @@ import (
 
 type ProxySuite struct {
 	u UploadPackSuite
-	fixtures.Suite
+	checktest.Suite
 }
 
 var _ = Suite(&ProxySuite{})
@@ -53,8 +53,7 @@ func (s *ProxySuite) TestCommand(c *C) {
 	}()
 
 	s.u.port = sshListener.Addr().(*net.TCPAddr).Port
-	s.u.base, err = os.MkdirTemp(os.TempDir(), fmt.Sprintf("go-git-ssh-%d", s.u.port))
-	c.Assert(err, IsNil)
+	s.u.base = c.MkDir()
 
 	DefaultAuthBuilder = func(user string) (AuthMethod, error) {
 		return &Password{User: user}, nil
