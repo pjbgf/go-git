@@ -99,18 +99,19 @@ func (r *runner) Command(cmd string, ep *transport.Endpoint, auth transport.Auth
 	return &command{cmd: execabs.Command(cmd, adjustPathForWindows(ep.Path))}, nil
 }
 
-func isDriveLetter(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
 // On Windows, the path that results from a file: URL has a leading slash. This
 // has to be removed if there's a drive letter
 func adjustPathForWindows(p string) string {
 	if runtime.GOOS != "windows" {
 		return p
 	}
-	if len(p) >= 3 && p[0] == '/' && isDriveLetter(p[1]) && p[2] == ':' {
-		return p[1:]
+	// In Windows, the parsing may lead to path to contain the format
+	// /c:/path/to/dir
+	//
+	// For local paths, that leading / needs to be removed.
+	noprefix := strings.TrimPrefix(p, "/")
+	if filepath.VolumeName(noprefix) != "" && filepath.IsLocal(noprefix) {
+		return noprefix
 	}
 	return p
 }
