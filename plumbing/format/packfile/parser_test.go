@@ -6,7 +6,7 @@ import (
 
 	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
-	fixtures "github.com/go-git/go-git-fixtures/v5"
+	fixtures "github.com/go-git/go-git-fixtures/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
@@ -94,10 +94,8 @@ func TestThinPack(t *testing.T) {
 	// Try to parse a thin pack without having the required objects in the repo to
 	// see if the correct errors are returned
 	thinpack := fixtures.ByTag("thinpack").One()
-	pf := thinpack.Packfile()
-	parser := packfile.NewParser(pf, packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
+	parser := packfile.NewParser(thinpack.Packfile(), packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
 	assert.NoError(t, err)
-	assert.NoError(t, pf.Close())
 
 	_, err = parser.Parse()
 	assert.Equal(t, err, plumbing.ErrObjectNotFound)
@@ -119,9 +117,7 @@ func TestThinPack(t *testing.T) {
 	assert.ErrorIs(t, err, plumbing.ErrObjectNotFound)
 
 	// Now unpack the thin pack:
-	pf = thinpack.Packfile()
-	parser = packfile.NewParser(pf, packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
-	assert.NoError(t, pf.Close())
+	parser = packfile.NewParser(thinpack.Packfile(), packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
 
 	h, err := parser.Parse()
 	assert.NoError(t, err)
