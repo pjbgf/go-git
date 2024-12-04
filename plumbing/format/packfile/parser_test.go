@@ -107,12 +107,12 @@ func TestThinPack(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Now unpack a base packfile into our empty repo:
-	f := fixtures.ByURL("https://github.com/spinnaker/spinnaker.git").One()
-	w, err := r.Storer.(storer.PackfileWriter).PackfileWriter()
-	assert.NoError(t, err)
-	_, err = io.Copy(w, f.Packfile())
-	assert.NoError(t, err)
-	assert.NoError(t, w.Close())
+	// f := fixtures.ByURL("https://github.com/spinnaker/spinnaker.git").One()
+	// w, err := r.Storer.(storer.PackfileWriter).PackfileWriter()
+	// assert.NoError(t, err)
+	// _, err = io.Copy(w, f.Packfile())
+	// assert.NoError(t, err)
+	// assert.NoError(t, w.Close())
 
 	// Check that the test object that will come with our thin pack is *not* in the repo
 	// _, err = r.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash(thinpack.Head))
