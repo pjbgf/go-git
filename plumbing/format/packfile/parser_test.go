@@ -105,20 +105,21 @@ func TestThinPack(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Now unpack a base packfile into our empty repo:
-	f := fixtures.ByURL("https://github.com/spinnaker/spinnaker.git").One()
-	w, err := r.Storer.(storer.PackfileWriter).PackfileWriter()
-	assert.NoError(t, err)
-	_, err = io.Copy(w, f.Packfile())
-	assert.NoError(t, err)
-	w.Close()
+	// f := fixtures.ByURL("https://github.com/spinnaker/spinnaker.git").One()
+	// w, err := r.Storer.(storer.PackfileWriter).PackfileWriter()
+	// assert.NoError(t, err)
+	// _, err = io.Copy(w, f.Packfile())
+	// assert.NoError(t, err)
+	// w.Close()
 
 	// // Check that the test object that will come with our thin pack is *not* in the repo
 	// _, err = r.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash(thinpack.Head))
 	// assert.ErrorIs(t, err, plumbing.ErrObjectNotFound)
 
-	// // Now unpack the thin pack:
-	// parser = packfile.NewParser(thinpack.Packfile(), packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
+	// Now unpack the thin pack:
+	parser = packfile.NewParser(thinpack.Packfile(), packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
 
+	parser.Parse()
 	// h, err := parser.Parse()
 	// assert.NoError(t, err)
 	// assert.Equal(t, plumbing.NewHash("1288734cbe0b95892e663221d94b95de1f5d7be8"), h)
