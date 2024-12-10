@@ -86,7 +86,8 @@ type Scanner struct {
 
 	// storage is optional, and when set is used to store full objects found.
 	// Note that delta objects are not stored.
-	storage storer.EncodedObjectStorer
+	storage            storer.EncodedObjectStorer
+	allObjectsInMemory bool
 
 	*scannerReader
 	zr  gogitsync.ZLibReader
@@ -396,6 +397,10 @@ func objectEntry(r *Scanner) (stateFn, error) {
 		if r.hasher256 != nil {
 			r.hasher256.Reset(oh.Type, oh.Size)
 			mw = io.MultiWriter(mw, r.hasher256)
+		}
+
+		if r.allObjectsInMemory {
+			mw = io.MultiWriter(mw, &oh.content)
 		}
 
 		// For non delta objects, simply calculate the hash of each object.

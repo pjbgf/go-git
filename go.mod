@@ -9,7 +9,7 @@ toolchain go1.22.6
 replace (
 	github.com/go-git/gcfg => github.com/go-git/gcfg v1.5.1-0.20240812080926-1b398f6213c9
 	github.com/go-git/go-billy/v5 => github.com/go-git/go-billy/v5 v5.0.0-20240804231525-dc481f5289ba
-	github.com/go-git/go-git-fixtures/v5 => github.com/go-git/go-git-fixtures/v5 v5.0.0-20241112202441-82c9db888b9b
+	github.com/go-git/go-git-fixtures/v5 => github.com/go-git/go-git-fixtures/v5 v5.0.0-20241203230421-0753e18f8f03
 )
 
 require (
@@ -22,14 +22,14 @@ require (
 	github.com/gliderlabs/ssh v0.3.7
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376
 	github.com/go-git/go-billy/v5 v5.6.0
-	github.com/go-git/go-git-fixtures/v4 v4.3.1
+	github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399
 	github.com/go-git/go-git-fixtures/v5 v5.0.0-00010101000000-000000000000
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/kevinburke/ssh_config v1.2.0
 	github.com/pjbgf/sha1cd v0.3.0
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.28.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/net v0.30.0

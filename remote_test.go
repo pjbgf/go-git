@@ -16,6 +16,7 @@ import (
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -349,36 +350,35 @@ func (s *RemoteSuite) testFetch(c *C, r *Remote, o *FetchOptions, expected []*pl
 	}
 }
 
-func (s *RemoteSuite) TestFetchOfMissingObjects(c *C) {
-	tmp, clean := s.TemporalDir()
-	defer clean()
+func TestFetchOfMissingObjects(t *testing.T) {
+	tmp := t.TempDir()
 
 	// clone to a local temp folder
 	_, err := PlainClone(tmp, true, &CloneOptions{
 		URL: fixtures.Basic().One().DotGit().Root(),
 	})
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// Delete the pack files
 	fsTmp := osfs.New(tmp)
 	err = util.RemoveAll(fsTmp, "objects/pack")
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// Reopen the repo from the filesystem (with missing objects)
 	r, err := Open(filesystem.NewStorage(fsTmp, cache.NewObjectLRUDefault()), nil)
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// Confirm we are missing a commit
 	_, err = r.CommitObject(plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
-	c.Assert(err, Equals, plumbing.ErrObjectNotFound)
+	require.ErrorIs(t, err, plumbing.ErrObjectNotFound)
 
 	// Refetch to get all the missing objects
 	err = r.Fetch(&FetchOptions{})
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 
 	// Confirm we now have the commit
 	_, err = r.CommitObject(plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5"))
-	c.Assert(err, IsNil)
+	require.NoError(t, err)
 }
 
 func (s *RemoteSuite) TestFetchWithProgress(c *C) {

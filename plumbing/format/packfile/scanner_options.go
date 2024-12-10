@@ -11,3 +11,9 @@ func WithSHA256() ScannerOption {
 		s.hasher256 = &h
 	}
 }
+
+func WithAllObjectsInMemory() ScannerOption {
+	return func(s *Scanner) {
+		s.allObjectsInMemory = true
+	}
+}

@@ -97,10 +97,10 @@ func TestThinPack(t *testing.T) {
 	pf := thinpack.Packfile()
 	parser := packfile.NewParser(pf, packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
 	assert.NoError(t, err)
-	assert.NoError(t, pf.Close())
 
 	_, err = parser.Parse()
 	assert.Equal(t, err, plumbing.ErrObjectNotFound)
+	assert.NoError(t, pf.Close())
 
 	// start over with a clean repo
 	r, err = git.PlainInit(t.TempDir(), true)
@@ -112,7 +112,7 @@ func TestThinPack(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = io.Copy(w, f.Packfile())
 	assert.NoError(t, err)
-	w.Close()
+	assert.NoError(t, w.Close())
 
 	// Check that the test object that will come with our thin pack is *not* in the repo
 	_, err = r.Storer.EncodedObject(plumbing.CommitObject, plumbing.NewHash(thinpack.Head))
@@ -121,10 +121,10 @@ func TestThinPack(t *testing.T) {
 	// Now unpack the thin pack:
 	pf = thinpack.Packfile()
 	parser = packfile.NewParser(pf, packfile.WithStorage(r.Storer)) // ParserWithStorage writes to the storer all parsed objects!
-	assert.NoError(t, pf.Close())
 
 	h, err := parser.Parse()
 	assert.NoError(t, err)
+	assert.NoError(t, pf.Close())
 	assert.Equal(t, plumbing.NewHash("1288734cbe0b95892e663221d94b95de1f5d7be8"), h)
 
 	// Check that our test object is now accessible

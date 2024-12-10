@@ -3,12 +3,9 @@ package dotgit
 import (
 	"fmt"
 	"io"
-	"os"
-	"strconv"
 	"testing"
 
 	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/go-git/go-billy/v5/util"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v5/plumbing/format/packfile"
@@ -17,6 +14,37 @@ import (
 
 	fixtures "github.com/go-git/go-git-fixtures/v5"
 )
+
+func BenchmarkNewObjectPack(b *testing.B) {
+	f := fixtures.ByURL("https://github.com/src-d/go-git.git").One()
+
+	b.Run("parallel", func(b *testing.B) {
+		fs := osfs.New(b.TempDir())
+
+		for i := 0; i < b.N; i++ {
+			w, err := newPackWrite(fs)
+
+			require.NoError(b, err)
+			_, err = io.Copy(w, f.Packfile())
+
+			require.NoError(b, err)
+			require.NoError(b, w.Close())
+		}
+	})
+	b.Run("sequential", func(b *testing.B) {
+		fs := osfs.New(b.TempDir())
+
+		for i := 0; i < b.N; i++ {
+			w, err := newPackWriterSequential(fs)
+
+			require.NoError(b, err)
+			_, err = io.Copy(w, f.Packfile())
+
+			require.NoError(b, err)
+			require.NoError(b, w.Close())
+		}
+	})
+}
 
 func TestNewObjectPack(t *testing.T) {
 	t.Parallel()
@@ -85,52 +113,6 @@ func TestNewObjectPackUnused(t *testing.T) {
 	for _, fi := range info {
 		assert.True(t, fi.IsDir())
 	}
-}
-
-func TestSyncedReader(t *testing.T) {
-	t.Parallel()
-
-	tmpw, err := util.TempFile(osfs.Default, "", "example")
-	require.NoError(t, err)
-
-	tmpr, err := osfs.Default.Open(tmpw.Name())
-	require.NoError(t, err)
-
-	defer func() {
-		tmpw.Close()
-		tmpr.Close()
-		os.Remove(tmpw.Name())
-	}()
-
-	synced := newSyncedReader(tmpw, tmpr)
-
-	go func() {
-		for i := 0; i < 281; i++ {
-			_, err := synced.Write([]byte(strconv.Itoa(i) + "\n"))
-			require.NoError(t, err)
-		}
-
-		synced.Close()
-	}()
-
-	o, err := synced.Seek(1002, io.SeekStart)
-	require.NoError(t, err)
-	assert.Equal(t, int64(1002), o)
-
-	head := make([]byte, 3)
-	n, err := io.ReadFull(synced, head)
-	require.NoError(t, err)
-	assert.Equal(t, 3, n)
-	assert.Equal(t, "278", string(head))
-
-	o, err = synced.Seek(1010, io.SeekStart)
-	require.NoError(t, err)
-	assert.Equal(t, int64(1010), o)
-
-	n, err = io.ReadFull(synced, head)
-	require.NoError(t, err)
-	assert.Equal(t, 3, n)
-	assert.Equal(t, "280", string(head))
 }
 
 func TestPackWriterUnusedNotify(t *testing.T) {

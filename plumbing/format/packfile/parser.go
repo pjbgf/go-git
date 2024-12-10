@@ -50,7 +50,12 @@ func NewParser(data io.Reader, opts ...ParserOption) *Parser {
 		opt(p)
 	}
 
-	p.scanner = NewScanner(data)
+	var sopts []ScannerOption
+	_, seeker := data.(io.Seeker)
+	if p.storage == nil && !seeker {
+		sopts = append(sopts, WithAllObjectsInMemory())
+	}
+	p.scanner = NewScanner(data, sopts...)
 
 	if p.storage != nil {
 		p.scanner.storage = p.storage
