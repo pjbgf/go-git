@@ -1,9 +1,10 @@
 package dotgit
 
 import (
+	"errors"
 	"fmt"
 	"io"
-	"sync/atomic"
+	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
@@ -23,98 +24,81 @@ import (
 type PackWriter struct {
 	Notify func(plumbing.Hash, *idxfile.Writer)
 
-	fs       billy.Filesystem
-	fr, fw   billy.File
-	synced   *syncedReader
-	checksum plumbing.Hash
-	parser   *packfile.Parser
-	writer   *idxfile.Writer
-	result   chan error
+	fs   billy.Filesystem
+	temp billy.File
+	pr   *io.PipeReader
+	pw   *io.PipeWriter
+
+	checksum  plumbing.Hash
+	parser    *packfile.Parser
+	idxWriter *idxfile.Writer
+	result    error
+
+	mw io.Writer
+	wg sync.WaitGroup
 }
 
 func newPackWrite(fs billy.Filesystem) (*PackWriter, error) {
-	fw, err := fs.TempFile(fs.Join(objectsPath, packPath), "tmp_pack_")
+	tempPack, err := fs.TempFile(fs.Join(objectsPath, packPath), "tmp_pack_")
 	if err != nil {
 		return nil, err
 	}
 
-	fr, err := fs.Open(fw.Name())
-	if err != nil {
-		return nil, err
-	}
+	pr, pw := io.Pipe()
 
 	writer := &PackWriter{
-		fs:     fs,
-		fw:     fw,
-		fr:     fr,
-		synced: newSyncedReader(fw, fr),
-		result: make(chan error),
-	}
+		fs:   fs,
+		temp: tempPack,
 
-	go writer.buildIndex()
+		idxWriter: new(idxfile.Writer),
+		mw:        io.MultiWriter(pw, tempPack),
+		pr:        pr,
+		pw:        pw,
+
+		wg: sync.WaitGroup{},
+	}
+	writer.wg.Add(1)
+
+	go func() {
+		defer pw.Close()
+		defer writer.wg.Done()
+
+		writer.parser = packfile.NewParser(pr,
+			packfile.WithScannerObservers(writer.idxWriter),
+		)
+		h, err := writer.parser.Parse()
+		if err != nil {
+			if !errors.Is(err, packfile.ErrEmptyPackfile) {
+				writer.result = err
+			}
+			return
+		}
+
+		writer.checksum = h
+	}()
+
 	return writer, nil
 }
 
-func (w *PackWriter) buildIndex() {
-	w.writer = new(idxfile.Writer)
-	var err error
-
-	w.parser = packfile.NewParser(w.synced, packfile.WithScannerObservers(w.writer))
-
-	h, err := w.parser.Parse()
-	if err != nil {
-		w.result <- err
-		return
-	}
-
-	w.checksum = h
-	w.result <- nil
-}
-
-// waitBuildIndex waits until buildIndex function finishes, this can terminate
-// with a packfile.ErrEmptyPackfile, this means that nothing was written so we
-// ignore the error
-func (w *PackWriter) waitBuildIndex() error {
-	err := <-w.result
-	if err == packfile.ErrEmptyPackfile {
-		return nil
-	}
-
-	return err
-}
-
 func (w *PackWriter) Write(p []byte) (int, error) {
-	return w.synced.Write(p)
+	return w.mw.Write(p)
 }
 
 // Close closes all the file descriptors and save the final packfile, if nothing
 // was written, the tempfiles are deleted without writing a packfile.
 func (w *PackWriter) Close() error {
 	defer func() {
-		if w.Notify != nil && w.writer != nil && w.writer.Finished() {
-			w.Notify(w.checksum, w.writer)
+		if w.Notify != nil && w.idxWriter != nil && w.idxWriter.Finished() {
+			w.Notify(w.checksum, w.idxWriter)
 		}
-
-		close(w.result)
 	}()
 
-	if err := w.synced.Close(); err != nil {
+	w.wg.Wait()
+	err := w.pr.Close()
+	if err != nil {
 		return err
 	}
-
-	if err := w.waitBuildIndex(); err != nil {
-		return err
-	}
-
-	if err := w.fr.Close(); err != nil {
-		return err
-	}
-
-	if err := w.fw.Close(); err != nil {
-		return err
-	}
-
-	if w.writer == nil || !w.writer.Finished() {
+	if !w.idxWriter.Finished() {
 		return w.clean()
 	}
 
@@ -122,7 +106,7 @@ func (w *PackWriter) Close() error {
 }
 
 func (w *PackWriter) clean() error {
-	return w.fs.Remove(w.fw.Name())
+	return w.fs.Remove(w.temp.Name())
 }
 
 func (w *PackWriter) save() error {
@@ -140,11 +124,11 @@ func (w *PackWriter) save() error {
 		return err
 	}
 
-	return w.fs.Rename(w.fw.Name(), fmt.Sprintf("%s.pack", base))
+	return w.fs.Rename(w.temp.Name(), fmt.Sprintf("%s.pack", base))
 }
 
 func (w *PackWriter) encodeIdx(writer io.Writer) error {
-	idx, err := w.writer.Index()
+	idx, err := w.idxWriter.Index()
 	if err != nil {
 		return err
 	}
@@ -152,94 +136,6 @@ func (w *PackWriter) encodeIdx(writer io.Writer) error {
 	e := idxfile.NewEncoder(writer)
 	_, err = e.Encode(idx)
 	return err
-}
-
-type syncedReader struct {
-	w io.Writer
-	r io.ReadSeeker
-
-	blocked, done uint32
-	written, read uint64
-	news          chan bool
-}
-
-func newSyncedReader(w io.Writer, r io.ReadSeeker) *syncedReader {
-	return &syncedReader{
-		w:    w,
-		r:    r,
-		news: make(chan bool),
-	}
-}
-
-func (s *syncedReader) Write(p []byte) (n int, err error) {
-	defer func() {
-		written := atomic.AddUint64(&s.written, uint64(n))
-		read := atomic.LoadUint64(&s.read)
-		if written > read {
-			s.wake()
-		}
-	}()
-
-	n, err = s.w.Write(p)
-	return
-}
-
-func (s *syncedReader) Read(p []byte) (n int, err error) {
-	defer func() { atomic.AddUint64(&s.read, uint64(n)) }()
-
-	for {
-		s.sleep()
-		n, err = s.r.Read(p)
-		if err == io.EOF && !s.isDone() && n == 0 {
-			continue
-		}
-
-		break
-	}
-
-	return
-}
-
-func (s *syncedReader) isDone() bool {
-	return atomic.LoadUint32(&s.done) == 1
-}
-
-func (s *syncedReader) isBlocked() bool {
-	return atomic.LoadUint32(&s.blocked) == 1
-}
-
-func (s *syncedReader) wake() {
-	if s.isBlocked() {
-		atomic.StoreUint32(&s.blocked, 0)
-		s.news <- true
-	}
-}
-
-func (s *syncedReader) sleep() {
-	read := atomic.LoadUint64(&s.read)
-	written := atomic.LoadUint64(&s.written)
-	if read >= written {
-		atomic.StoreUint32(&s.blocked, 1)
-		<-s.news
-	}
-
-}
-
-func (s *syncedReader) Seek(offset int64, whence int) (int64, error) {
-	if whence == io.SeekCurrent {
-		return s.r.Seek(offset, whence)
-	}
-
-	p, err := s.r.Seek(offset, whence)
-	atomic.StoreUint64(&s.read, uint64(p))
-
-	return p, err
-}
-
-func (s *syncedReader) Close() error {
-	atomic.StoreUint32(&s.done, 1)
-	close(s.news)
-	return nil
 }
 
 type ObjectWriter struct {
