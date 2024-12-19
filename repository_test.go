@@ -3420,7 +3420,7 @@ func BenchmarkObjects(b *testing.B) {
 	}
 }
 
-func BenchmarkPlainClone(b *testing.B) {
+func BenchmarkBasePlainClone(b *testing.B) {
 	b.StopTimer()
 	clone := func(b *testing.B) {
 		_, err := PlainClone(b.TempDir(), true, &CloneOptions{
