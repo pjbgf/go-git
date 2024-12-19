@@ -11,10 +11,7 @@ var (
 	zlibInitBytes = []byte{0x78, 0x9c, 0x01, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01}
 	zlibReader    = sync.Pool{
 		New: func() interface{} {
-			r, _ := zlib.NewReader(bytes.NewReader(zlibInitBytes))
-			return ZLibReader{
-				Reader: r.(zlibReadCloser),
-			}
+			return NewZlibReader(nil)
 		},
 	}
 	zlibWriter = sync.Pool{
@@ -29,13 +26,29 @@ type zlibReadCloser interface {
 	zlib.Resetter
 }
 
+func NewZlibReader(dict *[]byte) ZLibReader {
+	r, _ := zlib.NewReader(bytes.NewReader(zlibInitBytes))
+	return ZLibReader{
+		Reader: r.(zlibReadCloser),
+		dict:   dict,
+	}
+}
+
 type ZLibReader struct {
 	dict   *[]byte
 	Reader zlibReadCloser
 }
 
+func (z ZLibReader) Reset(r io.Reader) error {
+	var dict []byte
+	if z.dict != nil {
+		dict = *z.dict
+	}
+	return z.Reader.Reset(r, dict)
+}
+
 // GetZlibReader returns a ZLibReader that is managed by a sync.Pool.
-// Returns a ZLibReader that is resetted using a dictionary that is
+// Returns a ZLibReader that is reset using a dictionary that is
 // also managed by a sync.Pool.
 //
 // After use, the ZLibReader should be put back into the sync.Pool
@@ -58,7 +71,7 @@ func PutZlibReader(z ZLibReader) {
 }
 
 // GetZlibWriter returns a *zlib.Writer that is managed by a sync.Pool.
-// Returns a writer that is resetted with w and ready for use.
+// Returns a writer that is reset with w and ready for use.
 //
 // After use, the *zlib.Writer should be put back into the sync.Pool
 // by calling PutZlibWriter.

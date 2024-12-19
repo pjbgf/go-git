@@ -25,6 +25,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
@@ -46,7 +47,7 @@ var _ = Suite(&WorktreeSuite{})
 
 func (s *WorktreeSuite) SetUpTest(c *C) {
 	f := fixtures.Basic().One()
-	s.Repository = s.NewRepositoryWithEmptyWorktree(f)
+	s.Repository = NewRepositoryWithEmptyWorktree(f)
 }
 
 func (s *WorktreeSuite) TestPullCheckout(c *C) {
@@ -69,8 +70,7 @@ func (s *WorktreeSuite) TestPullCheckout(c *C) {
 }
 
 func (s *WorktreeSuite) TestPullFastForward(c *C) {
-	url, clean := s.TemporalDir()
-	defer clean()
+	url := c.MkDir()
 
 	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
 
@@ -79,8 +79,7 @@ func (s *WorktreeSuite) TestPullFastForward(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, err := PlainClone(dir, false, &CloneOptions{
 		URL: url,
@@ -107,8 +106,7 @@ func (s *WorktreeSuite) TestPullFastForward(c *C) {
 }
 
 func (s *WorktreeSuite) TestPullNonFastForward(c *C) {
-	url, clean := s.TemporalDir()
-	defer clean()
+	url := c.MkDir()
 
 	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
 
@@ -117,8 +115,7 @@ func (s *WorktreeSuite) TestPullNonFastForward(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, err := PlainClone(dir, false, &CloneOptions{
 		URL: url,
@@ -229,8 +226,7 @@ func (s *WorktreeSuite) TestPullProgressWithRecursion(c *C) {
 
 	path := fixtures.ByTag("submodule").One().Worktree().Root()
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, _ := PlainInit(dir, false)
 	r.CreateRemote(&config.RemoteConfig{
@@ -324,8 +320,7 @@ func (s *WorktreeSuite) TestPullDepth(c *C) {
 }
 
 func (s *WorktreeSuite) TestPullAfterShallowClone(c *C) {
-	tempDir, clean := s.TemporalDir()
-	defer clean()
+	tempDir := c.MkDir()
 	remoteURL := filepath.Join(tempDir, "remote")
 	repoDir := filepath.Join(tempDir, "repo")
 
@@ -453,8 +448,7 @@ func (s *WorktreeSuite) TestCheckoutSymlink(c *C) {
 		c.Skip("git doesn't support symlinks by default in windows")
 	}
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, err := PlainInit(dir, false)
 	c.Assert(err, IsNil)
@@ -484,7 +478,8 @@ func (s *WorktreeSuite) TestCheckoutSymlink(c *C) {
 func (s *WorktreeSuite) TestCheckoutSparse(c *C) {
 	fs := memfs.New()
 	r, err := Clone(memory.NewStorage(), fs, &CloneOptions{
-		URL: s.GetBasicLocalRepositoryURL(),
+		URL:        s.GetBasicLocalRepositoryURL(),
+		NoCheckout: true,
 	})
 	c.Assert(err, IsNil)
 
@@ -517,8 +512,7 @@ func (s *WorktreeSuite) TestFilenameNormalization(c *C) {
 		c.Skip("windows paths may contain non utf-8 sequences")
 	}
 
-	url, clean := s.TemporalDir()
-	defer clean()
+	url := c.MkDir()
 
 	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
 
@@ -594,7 +588,7 @@ func (s *WorktreeSuite) TestFilenameNormalization(c *C) {
 
 func (s *WorktreeSuite) TestCheckoutSubmodule(c *C) {
 	url := "https://github.com/git-fixtures/submodule.git"
-	r := s.NewRepositoryWithEmptyWorktree(fixtures.ByURL(url).One())
+	r := NewRepositoryWithEmptyWorktree(fixtures.ByURL(url).One())
 
 	w, err := r.Worktree()
 	c.Assert(err, IsNil)
@@ -710,8 +704,7 @@ func (s *WorktreeSuite) TestCheckoutIndexMem(c *C) {
 }
 
 func (s *WorktreeSuite) TestCheckoutIndexOS(c *C) {
-	fs, clean := s.TemporalFilesystem()
-	defer clean()
+	fs := s.TemporalFilesystem(c)
 
 	w := &Worktree{
 		r:          s.Repository,
@@ -857,7 +850,7 @@ func (s *WorktreeSuite) TestCheckoutCreateInvalidBranch(c *C) {
 
 func (s *WorktreeSuite) TestCheckoutTag(c *C) {
 	f := fixtures.ByTag("tags").One()
-	r := s.NewRepositoryWithEmptyWorktree(f)
+	r := NewRepositoryWithEmptyWorktree(f)
 	w, err := r.Worktree()
 	c.Assert(err, IsNil)
 
@@ -894,7 +887,7 @@ func (s *WorktreeSuite) TestCheckoutTag(c *C) {
 
 func (s *WorktreeSuite) TestCheckoutTagHash(c *C) {
 	f := fixtures.ByTag("tags").One()
-	r := s.NewRepositoryWithEmptyWorktree(f)
+	r := NewRepositoryWithEmptyWorktree(f)
 	w, err := r.Worktree()
 	c.Assert(err, IsNil)
 
@@ -943,7 +936,7 @@ func (s *WorktreeSuite) TestCheckoutBisectSubmodules(c *C) {
 // checking every commit over the previous commit
 func (s *WorktreeSuite) testCheckoutBisect(c *C, url string) {
 	f := fixtures.ByURL(url).One()
-	r := s.NewRepositoryWithEmptyWorktree(f)
+	r := NewRepositoryWithEmptyWorktree(f)
 
 	w, err := r.Worktree()
 	c.Assert(err, IsNil)
@@ -1248,6 +1241,44 @@ func (s *WorktreeSuite) TestResetHard(c *C) {
 	c.Assert(branch.Hash(), Equals, commit)
 }
 
+func (s *WorktreeSuite) TestResetHardSubFolders(c *C) {
+	fs := memfs.New()
+	w := &Worktree{
+		r:          s.Repository,
+		Filesystem: fs,
+	}
+
+	err := w.Checkout(&CheckoutOptions{})
+	c.Assert(err, IsNil)
+
+	err = fs.MkdirAll("dir", os.ModePerm)
+	c.Assert(err, IsNil)
+	tf, err := fs.Create("dir/testfile.txt")
+	c.Assert(err, IsNil)
+	_, err = tf.Write([]byte("testfile content"))
+	c.Assert(err, IsNil)
+	err = tf.Close()
+	c.Assert(err, IsNil)
+	_, err = w.Add("dir/testfile.txt")
+	c.Assert(err, IsNil)
+	_, err = w.Commit("testcommit", &CommitOptions{Author: &object.Signature{Name: "name", Email: "email"}})
+	c.Assert(err, IsNil)
+
+	err = fs.Remove("dir/testfile.txt")
+	c.Assert(err, IsNil)
+
+	status, err := w.Status()
+	c.Assert(err, IsNil)
+	c.Assert(status.IsClean(), Equals, false)
+
+	err = w.Reset(&ResetOptions{Files: []string{"dir/testfile.txt"}, Mode: HardReset})
+	c.Assert(err, IsNil)
+
+	status, err = w.Status()
+	c.Assert(err, IsNil)
+	c.Assert(status.IsClean(), Equals, true)
+}
+
 func (s *WorktreeSuite) TestResetHardWithGitIgnore(c *C) {
 	fs := memfs.New()
 	w := &Worktree{
@@ -1292,6 +1323,29 @@ func (s *WorktreeSuite) TestResetHardWithGitIgnore(c *C) {
 	c.Assert(status.IsClean(), Equals, true)
 }
 
+func (s *WorktreeSuite) TestResetSparsely(c *C) {
+	fs := memfs.New()
+	w := &Worktree{
+		r:          s.Repository,
+		Filesystem: fs,
+	}
+
+	sparseResetDirs := []string{"php"}
+
+	err := w.ResetSparsely(&ResetOptions{Mode: HardReset}, sparseResetDirs)
+	c.Assert(err, IsNil)
+
+	files, err := fs.ReadDir("/")
+	c.Assert(err, IsNil)
+	c.Assert(files, HasLen, 1)
+	c.Assert(files[0].Name(), Equals, "php")
+
+	files, err = fs.ReadDir("/php")
+	c.Assert(err, IsNil)
+	c.Assert(files, HasLen, 1)
+	c.Assert(files[0].Name(), Equals, "crappy.php")
+}
+
 func (s *WorktreeSuite) TestStatusAfterCheckout(c *C) {
 	fs := memfs.New()
 	w := &Worktree{
@@ -1309,8 +1363,7 @@ func (s *WorktreeSuite) TestStatusAfterCheckout(c *C) {
 }
 
 func (s *WorktreeSuite) TestStatusModified(c *C) {
-	fs, clean := s.TemporalFilesystem()
-	defer clean()
+	fs := s.TemporalFilesystem(c)
 
 	w := &Worktree{
 		r:          s.Repository,
@@ -1401,8 +1454,7 @@ func (s *WorktreeSuite) TestStatusUntracked(c *C) {
 }
 
 func (s *WorktreeSuite) TestStatusDeleted(c *C) {
-	fs, clean := s.TemporalFilesystem()
-	defer clean()
+	fs := s.TemporalFilesystem(c)
 
 	w := &Worktree{
 		r:          s.Repository,
@@ -1774,8 +1826,7 @@ func (s *WorktreeSuite) TestAddRemovedInDirectoryDot(c *C) {
 }
 
 func (s *WorktreeSuite) TestAddSymlink(c *C) {
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, err := PlainInit(dir, false)
 	c.Assert(err, IsNil)
@@ -2655,8 +2706,7 @@ func (s *WorktreeSuite) TestGrep(c *C) {
 
 	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	server, err := PlainClone(dir, false, &CloneOptions{
 		URL: path,
@@ -2739,8 +2789,7 @@ func (s *WorktreeSuite) TestGrepBare(c *C) {
 
 	path := fixtures.Basic().ByTag("worktree").One().Worktree().Root()
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	r, err := PlainClone(dir, true, &CloneOptions{
 		URL: path,
@@ -2788,8 +2837,7 @@ func (s *WorktreeSuite) TestGrepBare(c *C) {
 }
 
 func (s *WorktreeSuite) TestResetLingeringDirectories(c *C) {
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	commitOpts := &CommitOptions{Author: &object.Signature{
 		Name:  "foo",
@@ -2840,8 +2888,7 @@ func (s *WorktreeSuite) TestResetLingeringDirectories(c *C) {
 func (s *WorktreeSuite) TestAddAndCommit(c *C) {
 	expectedFiles := 2
 
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	repo, err := PlainInit(dir, false)
 	c.Assert(err, IsNil)
@@ -2883,8 +2930,7 @@ func (s *WorktreeSuite) TestAddAndCommit(c *C) {
 }
 
 func (s *WorktreeSuite) TestAddAndCommitEmpty(c *C) {
-	dir, clean := s.TemporalDir()
-	defer clean()
+	dir := c.MkDir()
 
 	repo, err := PlainInit(dir, false)
 	c.Assert(err, IsNil)
@@ -3052,4 +3098,174 @@ func TestWindowsValidPath(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+var statusCodeNames = map[StatusCode]string{
+	Unmodified:         "Unmodified",
+	Untracked:          "Untracked",
+	Modified:           "Modified",
+	Added:              "Added",
+	Deleted:            "Deleted",
+	Renamed:            "Renamed",
+	Copied:             "Copied",
+	UpdatedButUnmerged: "UpdatedButUnmerged",
+}
+
+func setupForRestore(c *C, s *WorktreeSuite) (fs billy.Filesystem, w *Worktree, names []string) {
+	fs = memfs.New()
+	w = &Worktree{
+		r:          s.Repository,
+		Filesystem: fs,
+	}
+
+	err := w.Checkout(&CheckoutOptions{})
+	c.Assert(err, IsNil)
+
+	names = []string{"foo", "CHANGELOG", "LICENSE", "binary.jpg"}
+	verifyStatus(c, "Checkout", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+	})
+
+	// Touch of bunch of files including create a new file and delete an exsiting file
+	for _, name := range names {
+		err = util.WriteFile(fs, name, []byte("Foo Bar"), 0755)
+		c.Assert(err, IsNil)
+	}
+	err = util.RemoveAll(fs, names[3])
+	c.Assert(err, IsNil)
+
+	// Confirm the status after doing the edits without staging anything
+	verifyStatus(c, "Edits", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Modified, Staging: Unmodified},
+		{Worktree: Modified, Staging: Unmodified},
+		{Worktree: Deleted, Staging: Unmodified},
+	})
+
+	// Stage all files and verify the updated status
+	for _, name := range names {
+		_, err = w.Add(name)
+		c.Assert(err, IsNil)
+	}
+	verifyStatus(c, "Staged", w, names, []FileStatus{
+		{Worktree: Unmodified, Staging: Added},
+		{Worktree: Unmodified, Staging: Modified},
+		{Worktree: Unmodified, Staging: Modified},
+		{Worktree: Unmodified, Staging: Deleted},
+	})
+
+	// Add secondary changes to a file to make sure we only restore the staged file
+	err = util.WriteFile(fs, names[1], []byte("Foo Bar:11"), 0755)
+	c.Assert(err, IsNil)
+	err = util.WriteFile(fs, names[2], []byte("Foo Bar:22"), 0755)
+	c.Assert(err, IsNil)
+
+	verifyStatus(c, "Secondary Edits", w, names, []FileStatus{
+		{Worktree: Unmodified, Staging: Added},
+		{Worktree: Modified, Staging: Modified},
+		{Worktree: Modified, Staging: Modified},
+		{Worktree: Unmodified, Staging: Deleted},
+	})
+
+	return
+}
+
+func verifyStatus(c *C, marker string, w *Worktree, files []string, statuses []FileStatus) {
+	c.Assert(len(files), Equals, len(statuses))
+
+	status, err := w.Status()
+	c.Assert(err, IsNil)
+
+	for i, file := range files {
+		current := status.File(file)
+		expected := statuses[i]
+		c.Assert(current.Worktree, Equals, expected.Worktree, Commentf("%s - [%d] : %s Worktree %s != %s", marker, i, file, statusCodeNames[current.Worktree], statusCodeNames[expected.Worktree]))
+		c.Assert(current.Staging, Equals, expected.Staging, Commentf("%s - [%d] : %s Staging %s != %s", marker, i, file, statusCodeNames[current.Staging], statusCodeNames[expected.Staging]))
+	}
+}
+
+func (s *WorktreeSuite) TestRestoreStaged(c *C) {
+	fs, w, names := setupForRestore(c, s)
+
+	// Attempt without files should throw an error like the git restore --staged
+	opts := RestoreOptions{Staged: true}
+	err := w.Restore(&opts)
+	c.Assert(err, Equals, ErrNoRestorePaths)
+
+	// Restore Staged files in 2 groups and confirm status
+	opts.Files = []string{names[0], names[1]}
+	err = w.Restore(&opts)
+	c.Assert(err, IsNil)
+	verifyStatus(c, "Restored First", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Modified, Staging: Unmodified},
+		{Worktree: Modified, Staging: Modified},
+		{Worktree: Unmodified, Staging: Deleted},
+	})
+
+	// Make sure the restore didn't overwrite our secondary changes
+	contents, err := util.ReadFile(fs, names[1])
+	c.Assert(err, IsNil)
+	c.Assert(string(contents), Equals, "Foo Bar:11")
+
+	opts.Files = []string{names[2], names[3]}
+	err = w.Restore(&opts)
+	c.Assert(err, IsNil)
+	verifyStatus(c, "Restored Second", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Modified, Staging: Unmodified},
+		{Worktree: Modified, Staging: Unmodified},
+		{Worktree: Deleted, Staging: Unmodified},
+	})
+
+	// Make sure the restore didn't overwrite our secondary changes
+	contents, err = util.ReadFile(fs, names[2])
+	c.Assert(err, IsNil)
+	c.Assert(string(contents), Equals, "Foo Bar:22")
+}
+
+func (s *WorktreeSuite) TestRestoreWorktree(c *C) {
+	_, w, names := setupForRestore(c, s)
+
+	// Attempt without files should throw an error like the git restore
+	opts := RestoreOptions{}
+	err := w.Restore(&opts)
+	c.Assert(err, Equals, ErrNoRestorePaths)
+
+	opts.Files = []string{names[0], names[1]}
+	err = w.Restore(&opts)
+	c.Assert(err, Equals, ErrRestoreWorktreeOnlyNotSupported)
+}
+
+func (s *WorktreeSuite) TestRestoreBoth(c *C) {
+	_, w, names := setupForRestore(c, s)
+
+	// Attempt without files should throw an error like the git restore --staged --worktree
+	opts := RestoreOptions{Staged: true, Worktree: true}
+	err := w.Restore(&opts)
+	c.Assert(err, Equals, ErrNoRestorePaths)
+
+	// Restore Staged files in 2 groups and confirm status
+	opts.Files = []string{names[0], names[1]}
+	err = w.Restore(&opts)
+	c.Assert(err, IsNil)
+	verifyStatus(c, "Restored First", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Modified, Staging: Modified},
+		{Worktree: Unmodified, Staging: Deleted},
+	})
+
+	opts.Files = []string{names[2], names[3]}
+	err = w.Restore(&opts)
+	c.Assert(err, IsNil)
+	verifyStatus(c, "Restored Second", w, names, []FileStatus{
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+		{Worktree: Untracked, Staging: Untracked},
+	})
 }
