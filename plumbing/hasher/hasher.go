@@ -15,7 +15,7 @@ import (
 
 type ObjectID interface {
 	String() string
-	Sum() []byte
+	Bytes() []byte
 }
 
 // ObjectHasher computes hashes for Git objects. A few differences

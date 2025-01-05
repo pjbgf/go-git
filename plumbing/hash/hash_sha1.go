@@ -1,6 +1,3 @@
-//go:build !sha256
-// +build !sha256
-
 package hash
 
 import (
@@ -26,20 +23,16 @@ func (ih SHA1Hash) Size() int {
 	return len(ih.hash)
 }
 
-func (ih SHA1Hash) Empty() bool {
+func (ih SHA1Hash) IsZero() bool {
 	var empty SHA1Hash
 	return ih == empty
-}
-
-func (ih SHA1Hash) IsZero() bool {
-	return ih.Empty()
 }
 
 func (ih SHA1Hash) String() string {
 	return hex.EncodeToString(ih.hash[:])
 }
 
-func (ih SHA1Hash) Sum() []byte {
+func (ih SHA1Hash) Bytes() []byte {
 	return ih.hash[:]
 }
 

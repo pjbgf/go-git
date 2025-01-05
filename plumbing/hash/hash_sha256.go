@@ -13,19 +13,16 @@ func (ih SHA256Hash) Size() int {
 	return len(ih.hash)
 }
 
-func (ih SHA256Hash) Empty() bool {
+func (ih SHA256Hash) IsZero() bool {
 	var empty SHA256Hash
 	return ih == empty
-}
-func (ih SHA256Hash) IsZero() bool {
-	return ih.Empty()
 }
 
 func (ih SHA256Hash) String() string {
 	return hex.EncodeToString(ih.hash[:])
 }
 
-func (ih SHA256Hash) Sum() []byte {
+func (ih SHA256Hash) Bytes() []byte {
 	return ih.hash[:]
 }
 

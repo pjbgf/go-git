@@ -37,7 +37,7 @@ func TestFromHex(t *testing.T) {
 
 			assert.Equal(t, tc.ok, ok, "OK did not match")
 			if tc.ok {
-				assert.Equal(t, tc.empty, h.Empty(), "Empty did not match expectations")
+				assert.Equal(t, tc.empty, h.IsZero(), "Empty did not match expectations")
 			} else {
 				assert.Nil(t, h)
 			}
@@ -61,7 +61,7 @@ func TestZeroFromHash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := ZeroFromHash(tc.h)
 			assert.Equal(t, tc.want, got.String())
-			assert.True(t, got.Empty(), "should be empty")
+			assert.True(t, got.IsZero(), "should be empty")
 		})
 	}
 }
@@ -81,7 +81,7 @@ func TestZeroFromObjectFormat(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := ZeroFromObjectFormat(tc.of)
 			assert.Equal(t, tc.want, got.String())
-			assert.True(t, got.Empty(), "should be empty")
+			assert.True(t, got.IsZero(), "should be empty")
 		})
 	}
 }
@@ -113,13 +113,13 @@ func TestNotLeakingBackingArray(t *testing.T) {
 		h, ok := FromHex(tc.in)
 		assert.True(t, ok)
 		assert.Equal(t, tc.in, h.String())
-		assert.Equal(t, tc.sum, h.Sum())
+		assert.Equal(t, tc.sum, h.Bytes())
 
-		sum := h.Sum()
+		sum := h.Bytes()
 		for i := range sum {
 			sum[i] = 0
 		}
-		assert.Equal(t, tc.sum, h.Sum())
+		assert.Equal(t, tc.sum, h.Bytes())
 	}
 }
 

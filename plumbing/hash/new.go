@@ -7,6 +7,22 @@ import (
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
+func MustFromHex(in string) ObjectID {
+	h, ok := FromHex(in)
+	if !ok {
+		panic("cannot create hash from " + in)
+	}
+	return h
+}
+
+func MustFromBytes(in []byte) ObjectID {
+	h, ok := FromBytes(in)
+	if !ok {
+		panic("cannot create hash from " + string(in))
+	}
+	return h
+}
+
 // FromHex parses a hexadecimal string and returns an ImmutableHash
 // and a boolean confirming whether the operation was successful.
 // The hash (and object format) is inferred from the length of the
@@ -14,7 +30,7 @@ import (
 //
 // If the operation was not successful, the resulting hash is nil
 // instead of a zeroed hash.
-func FromHex(in string) (StaticHash, bool) {
+func FromHex(in string) (ObjectID, bool) {
 	if len(in) < SHA1HexSize ||
 		len(in) > SHA256HexSize {
 		return nil, false
@@ -48,7 +64,7 @@ func FromHex(in string) (StaticHash, bool) {
 //
 // If the operation was not successful, the resulting hash is nil
 // instead of a zeroed hash.
-func FromBytes(in []byte) (StaticHash, bool) {
+func FromBytes(in []byte) (ObjectID, bool) {
 	if len(in) < SHA1Size ||
 		len(in) > SHA256Size {
 		return nil, false
@@ -73,7 +89,7 @@ func FromBytes(in []byte) (StaticHash, bool) {
 // ZeroFromHash returns a zeroed hash based on the given hash.Hash.
 //
 // Defaults to SHA1-sized hash if the provided hash is not supported.
-func ZeroFromHash(h hash.Hash) StaticHash {
+func ZeroFromHash(h hash.Hash) ObjectID {
 	switch h.Size() {
 	case SHA256Size:
 		return SHA256Hash{}
@@ -85,7 +101,7 @@ func ZeroFromHash(h hash.Hash) StaticHash {
 // ZeroFromHash returns a zeroed hash based on the given ObjectFormat.
 //
 // Defaults to SHA1-sized hash if the provided format is not supported.
-func ZeroFromObjectFormat(f format.ObjectFormat) StaticHash {
+func ZeroFromObjectFormat(f format.ObjectFormat) ObjectID {
 	switch f {
 	case format.SHA256:
 		return SHA256Hash{}
