@@ -1896,7 +1896,7 @@ func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []p
 	}
 	iter.ForEach(func(obj plumbing.EncodedObject) error {
 		h := obj.Hash()
-		if bytes.HasPrefix(h[:], prefix) {
+		if h.HasPrefix(prefix) {
 			hashes = append(hashes, h)
 		}
 		return nil
