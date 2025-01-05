@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/idxfile"
-	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/go-git/go-billy/v5/memfs"
@@ -33,11 +32,9 @@ func (s *EncoderSuite) TestCorrectPackHeader(c *C) {
 	h, err := s.enc.Encode([]plumbing.Hash{}, 10)
 	c.Assert(err, IsNil)
 
-	hb := [hash.Size]byte(h)
-
 	// PACK + VERSION + OBJECTS + HASH
 	expectedResult := []byte{'P', 'A', 'C', 'K', 0, 0, 0, 2, 0, 0, 0, 0}
-	expectedResult = append(expectedResult, hb[:]...)
+	expectedResult = append(expectedResult, h.Bytes()...)
 
 	result := s.buf.Bytes()
 
@@ -64,8 +61,7 @@ func (s *EncoderSuite) TestCorrectPackWithOneEmptyObject(c *C) {
 		[]byte{120, 156, 1, 0, 0, 255, 255, 0, 0, 0, 1}...)
 
 	// + HASH
-	hb := [hash.Size]byte(h)
-	expectedResult = append(expectedResult, hb[:]...)
+	expectedResult = append(expectedResult, h.Bytes()...)
 
 	result := s.buf.Bytes()
 
