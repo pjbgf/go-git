@@ -3331,7 +3331,6 @@ func (s *WorktreeSuite) TestRestoreBoth(c *C) {
 }
 
 func TestFilePermissions(t *testing.T) {
-
 	// Initialize an in memory repository
 	remoteUrl := t.TempDir()
 
@@ -3340,6 +3339,9 @@ func TestFilePermissions(t *testing.T) {
 	remoteStorage := filesystem.NewStorage(remoteFs, cache.NewObjectLRUDefault())
 
 	remoteRepository, err := Init(remoteStorage, inMemoryFs)
+	assert.NoError(t, err)
+
+	err = inMemoryFs.Symlink("target", "symlink")
 	assert.NoError(t, err)
 
 	err = util.WriteFile(inMemoryFs, "fileWithExecuteBit", []byte("Initial data"), 0755)
@@ -3355,6 +3357,9 @@ func TestFilePermissions(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = remoteWorktree.Add("regularFile")
+	assert.NoError(t, err)
+
+	_, err = remoteWorktree.Add("symlink")
 	assert.NoError(t, err)
 
 	_, err = remoteWorktree.Commit("my commit", &CommitOptions{})
@@ -3379,6 +3384,10 @@ func TestFilePermissions(t *testing.T) {
 		{
 			Name: "regularFile",
 			Mode: filemode.Regular,
+		},
+		{
+			Name: "symlink",
+			Mode: filemode.Symlink,
 		},
 	}
 
