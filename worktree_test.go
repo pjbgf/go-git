@@ -24,6 +24,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
@@ -3397,5 +3398,21 @@ func TestFilePermissions(t *testing.T) {
 		assert.Equal(t, expectedEntry.Name, idx.Entries[i].Name)
 		assert.Equal(t, expectedEntry.Mode, idx.Entries[i].Mode)
 	}
+}
 
+func TestWin(t *testing.T) {
+	ref := plumbing.Revision("0.16.0")
+	repo, err := PlainClone(t.TempDir(), false, &CloneOptions{
+		URL:   "https://github.com/arduino-libraries/WiFi101.git",
+		Depth: 0,
+	})
+	require.NoError(t, err)
+	if ref != "" {
+		h, err := repo.ResolveRevision(ref)
+		require.NoError(t, err)
+		w, err := repo.Worktree()
+		require.NoError(t, err)
+		err = w.Checkout(&CheckoutOptions{Hash: plumbing.NewHash(h.String())})
+		require.NoError(t, err)
+	}
 }
