@@ -256,9 +256,9 @@ func PlainInitWithOptions(path string, opts *PlainInitOptions) (*Repository, err
 	var wt, dot billy.Filesystem
 
 	if opts.Bare {
-		dot = osfs.New(path)
+		dot = osfs.New(path, osfs.WithBoundOS())
 	} else {
-		wt = osfs.New(path)
+		wt = osfs.New(path, osfs.WithBoundOS())
 		dot, _ = wt.Chroot(GitDirName)
 	}
 
