@@ -1,9 +1,6 @@
 name: Test
 on: 
   push:
-    branches:
-    - releases/v5.x
-    - main
   pull_request:
 
 permissions: {}
