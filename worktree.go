@@ -807,10 +807,15 @@ func (w *Worktree) addIndexFromFile(name string, h plumbing.Hash, mode filemode.
 		return err
 	}
 
+	m, err := filemode.NewFromOSFileMode(fi.Mode())
+	if err != nil {
+		return err
+	}
+
 	e := &index.Entry{
 		Hash:       h,
 		Name:       name,
-		Mode:       mode,
+		Mode:       m,
 		ModifiedAt: fi.ModTime(),
 		Size:       uint32(fi.Size()),
 	}
