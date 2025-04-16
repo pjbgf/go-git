@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	fixtures "github.com/go-git/go-git-fixtures/v5"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/cache"
@@ -21,14 +22,14 @@ func TestGet(t *testing.T) {
 	idx := getIndexFromIdxFile(f.Idx())
 
 	p := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(idx), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 
 	for h := range expectedEntries {
 		obj, err := p.Get(h)
 
-		assert.NoError(t, err)
-		assert.NotNil(t, obj)
+		require.NoError(t, err)
+		require.NotNil(t, obj)
 		assert.Equal(t, h.String(), obj.Hash().String())
 	}
 
@@ -36,7 +37,7 @@ func TestGet(t *testing.T) {
 	assert.ErrorIs(t, err, plumbing.ErrObjectNotFound)
 
 	id, err := p.ID()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f.PackfileHash, id.String())
 }
 
@@ -47,12 +48,12 @@ func TestGetByOffset(t *testing.T) {
 	idx := getIndexFromIdxFile(f.Idx())
 
 	p := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(idx), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 
 	for h, o := range expectedEntries {
 		obj, err := p.GetByOffset(o)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, obj)
 		assert.Equal(t, h.String(), obj.Hash().String())
 	}
@@ -69,10 +70,10 @@ func TestGetAll(t *testing.T) {
 
 	p := packfile.NewPackfile(f.Packfile(),
 		packfile.WithIdx(idx),
-		packfile.WithFs(fixtures.Filesystem))
+		packfile.WithFs(osfs.New(t.TempDir())))
 
 	iter, err := p.GetAll()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var objects int
 	for {
@@ -80,7 +81,8 @@ func TestGetAll(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		require.NotNil(t, o)
 
 		objects++
 		h := o.Hash()
@@ -91,7 +93,7 @@ func TestGetAll(t *testing.T) {
 	assert.Len(t, expectedEntries, objects)
 
 	iter.Close()
-	assert.NoError(t, p.Close())
+	require.NoError(t, p.Close())
 }
 
 func TestDecode(t *testing.T) {
@@ -105,18 +107,18 @@ func TestDecode(t *testing.T) {
 		index := getIndexFromIdxFile(f.Idx())
 
 		p := packfile.NewPackfile(f.Packfile(),
-			packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+			packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 		)
 
 		for _, h := range expectedHashes {
 			h := h
 			obj, err := p.Get(plumbing.NewHash(h))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, obj.Hash().String(), h)
 		}
 
 		err := p.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -128,10 +130,10 @@ func TestDecodeByTypeRefDelta(t *testing.T) {
 	index := getIndexFromIdxFile(f.Idx())
 
 	packfile := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem))
+		packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())))
 
 	iter, err := packfile.GetByType(plumbing.CommitObject)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var count int
 	for {
@@ -141,13 +143,13 @@ func TestDecodeByTypeRefDelta(t *testing.T) {
 		}
 
 		count++
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, obj.Type(), plumbing.CommitObject)
 	}
 
 	err = packfile.Close()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Greater(t, count, 0)
 }
 
@@ -168,18 +170,18 @@ func TestDecodeByType(t *testing.T) {
 			index := getIndexFromIdxFile(f.Idx())
 
 			packfile := packfile.NewPackfile(f.Packfile(),
-				packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+				packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 			)
 			defer packfile.Close()
 
 			iter, err := packfile.GetByType(typ)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = iter.ForEach(func(obj plumbing.EncodedObject) error {
 				assert.Equal(t, typ, obj.Type())
 				return nil
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -191,7 +193,7 @@ func TestDecodeByTypeConstructor(t *testing.T) {
 	index := getIndexFromIdxFile(f.Idx())
 
 	packfile := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 	defer packfile.Close()
 
@@ -225,23 +227,23 @@ func TestSize(t *testing.T) {
 
 	packfile := packfile.NewPackfile(f.Packfile(),
 		packfile.WithIdx(index),
-		packfile.WithFs(fixtures.Filesystem),
+		packfile.WithFs(osfs.New(t.TempDir())),
 	)
 	defer packfile.Close()
 
 	// Get the size of binary.jpg, which is not delta-encoded.
 	offset, err := packfile.FindOffset(plumbing.NewHash("d5c0f4ab811897cadf03aec358ae60d21f91c50d"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	size, err := packfile.GetSizeByOffset(offset)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(76110), size)
 
 	// Get the size of the root commit, which is delta-encoded.
 	offset, err = packfile.FindOffset(plumbing.NewHash(f.Head))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	size, err = packfile.GetSizeByOffset(offset)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(245), size)
 }
 
@@ -255,7 +257,7 @@ func BenchmarkGetByOffset(b *testing.B) {
 
 	b.Run("with storage",
 		benchmarkGetByOffset(packfile.NewPackfile(f.Packfile(),
-			packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+			packfile.WithIdx(idx), packfile.WithFs(osfs.New(b.TempDir())),
 			packfile.WithCache(cache),
 		)))
 	b.Run("without storage",
