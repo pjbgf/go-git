@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	fixtures "github.com/go-git/go-git-fixtures/v5"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/cache"
@@ -21,7 +22,7 @@ func TestGet(t *testing.T) {
 	idx := getIndexFromIdxFile(f.Idx())
 
 	p := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(idx), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 
 	for h := range expectedEntries {
@@ -47,7 +48,7 @@ func TestGetByOffset(t *testing.T) {
 	idx := getIndexFromIdxFile(f.Idx())
 
 	p := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(idx), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 
 	for h, o := range expectedEntries {
@@ -69,7 +70,7 @@ func TestGetAll(t *testing.T) {
 
 	p := packfile.NewPackfile(f.Packfile(),
 		packfile.WithIdx(idx),
-		packfile.WithFs(fixtures.Filesystem))
+		packfile.WithFs(osfs.New(t.TempDir())))
 
 	iter, err := p.GetAll()
 	require.NoError(t, err)
@@ -81,6 +82,7 @@ func TestGetAll(t *testing.T) {
 			break
 		}
 		require.NoError(t, err)
+		require.NotNil(t, o)
 
 		objects++
 		h := o.Hash()
@@ -105,7 +107,7 @@ func TestDecode(t *testing.T) {
 		index := getIndexFromIdxFile(f.Idx())
 
 		p := packfile.NewPackfile(f.Packfile(),
-			packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+			packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 		)
 
 		for _, h := range expectedHashes {
@@ -128,7 +130,7 @@ func TestDecodeByTypeRefDelta(t *testing.T) {
 	index := getIndexFromIdxFile(f.Idx())
 
 	packfile := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem))
+		packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())))
 
 	iter, err := packfile.GetByType(plumbing.CommitObject)
 	require.NoError(t, err)
@@ -168,7 +170,7 @@ func TestDecodeByType(t *testing.T) {
 			index := getIndexFromIdxFile(f.Idx())
 
 			packfile := packfile.NewPackfile(f.Packfile(),
-				packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+				packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 			)
 			defer packfile.Close()
 
@@ -191,7 +193,7 @@ func TestDecodeByTypeConstructor(t *testing.T) {
 	index := getIndexFromIdxFile(f.Idx())
 
 	packfile := packfile.NewPackfile(f.Packfile(),
-		packfile.WithIdx(index), packfile.WithFs(fixtures.Filesystem),
+		packfile.WithIdx(index), packfile.WithFs(osfs.New(t.TempDir())),
 	)
 	defer packfile.Close()
 
@@ -225,7 +227,7 @@ func TestSize(t *testing.T) {
 
 	packfile := packfile.NewPackfile(f.Packfile(),
 		packfile.WithIdx(index),
-		packfile.WithFs(fixtures.Filesystem),
+		packfile.WithFs(osfs.New(t.TempDir())),
 	)
 	defer packfile.Close()
 
@@ -255,7 +257,7 @@ func BenchmarkGetByOffset(b *testing.B) {
 
 	b.Run("with storage",
 		benchmarkGetByOffset(packfile.NewPackfile(f.Packfile(),
-			packfile.WithIdx(idx), packfile.WithFs(fixtures.Filesystem),
+			packfile.WithIdx(idx), packfile.WithFs(osfs.New(b.TempDir())),
 			packfile.WithCache(cache),
 		)))
 	b.Run("without storage",
