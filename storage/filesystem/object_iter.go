@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/cache"
 	"github.com/go-git/go-git/v6/plumbing/format/idxfile"
 	"github.com/go-git/go-git/v6/plumbing/format/packfile"
+	"github.com/go-git/go-git/v6/plumbing/hash"
 	"github.com/go-git/go-git/v6/plumbing/storer"
 )
 
@@ -79,7 +80,8 @@ func NewPackfileIter(
 	keepPack bool,
 	largeObjectThreshold int64,
 ) (storer.EncodedObjectIter, error) {
-	idx := idxfile.NewMemoryIndex()
+	// TODO: Support SHA256
+	idx := idxfile.NewMemoryIndex(hash.SHA1Size)
 	if err := idxfile.NewDecoder(idxFile).Decode(idx); err != nil {
 		return nil, err
 	}

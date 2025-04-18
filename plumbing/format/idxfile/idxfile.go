@@ -9,7 +9,6 @@ import (
 	encbin "encoding/binary"
 
 	"github.com/go-git/go-git/v6/plumbing"
-	"github.com/go-git/go-git/v6/plumbing/hash"
 )
 
 const (
@@ -55,23 +54,25 @@ type MemoryIndex struct {
 	Offset32         [][]byte
 	CRC32            [][]byte
 	Offset64         []byte
-	PackfileChecksum [hash.Size]byte
-	IdxChecksum      [hash.Size]byte
+	PackfileChecksum plumbing.Hash
+	IdxChecksum      plumbing.Hash
 
 	offsetHash       map[int64]plumbing.Hash
 	offsetHashIsFull bool
 	mu               sync.RWMutex
+
+	objectIDLength int
 }
 
 var _ Index = (*MemoryIndex)(nil)
 
 // NewMemoryIndex returns an instance of a new MemoryIndex.
-func NewMemoryIndex() *MemoryIndex {
-	return &MemoryIndex{}
+func NewMemoryIndex(objectIDLength int) *MemoryIndex {
+	return &MemoryIndex{objectIDLength: objectIDLength}
 }
 
 func (idx *MemoryIndex) findHashIndex(h plumbing.Hash) (int, bool) {
-	k := idx.FanoutMapping[h[0]]
+	k := idx.FanoutMapping[h.Bytes()[0]]
 	if k == noMapping {
 		return 0, false
 	}
@@ -89,9 +90,9 @@ func (idx *MemoryIndex) findHashIndex(h plumbing.Hash) (int, bool) {
 	low := uint64(0)
 	for {
 		mid := (low + high) >> 1
-		offset := mid * objectIDLength
+		offset := mid * uint64(idx.objectIDLength)
 
-		cmp := bytes.Compare(h[:], data[offset:offset+objectIDLength])
+		cmp := bytes.Compare(h.Bytes(), data[offset:offset+uint64(idx.objectIDLength)])
 		if cmp < 0 {
 			high = mid
 		} else if cmp == 0 {
@@ -116,11 +117,12 @@ func (idx *MemoryIndex) Contains(h plumbing.Hash) (bool, error) {
 
 // FindOffset implements the Index interface.
 func (idx *MemoryIndex) FindOffset(h plumbing.Hash) (int64, error) {
-	if len(idx.FanoutMapping) <= int(h[0]) {
+	fo := h.Bytes()[0]
+	if len(idx.FanoutMapping) <= int(fo) {
 		return 0, plumbing.ErrObjectNotFound
 	}
 
-	k := idx.FanoutMapping[h[0]]
+	k := idx.FanoutMapping[fo]
 	i, ok := idx.findHashIndex(h)
 	if !ok {
 		return 0, plumbing.ErrObjectNotFound
@@ -158,7 +160,7 @@ func (idx *MemoryIndex) getOffset(firstLevel, secondLevel int) uint64 {
 
 // FindCRC32 implements the Index interface.
 func (idx *MemoryIndex) FindCRC32(h plumbing.Hash) (uint32, error) {
-	k := idx.FanoutMapping[h[0]]
+	k := idx.FanoutMapping[h.Bytes()[0]]
 	i, ok := idx.findHashIndex(h)
 	if !ok {
 		return 0, plumbing.ErrObjectNotFound
@@ -220,7 +222,7 @@ func (idx *MemoryIndex) genOffsetHash() error {
 	for firstLevel, fanoutValue := range idx.Fanout {
 		mappedFirstLevel := idx.FanoutMapping[firstLevel]
 		for secondLevel := uint32(0); i < fanoutValue; i++ {
-			copy(hash[:], idx.Names[mappedFirstLevel][secondLevel*objectIDLength:])
+			copy(hash.Bytes(), idx.Names[mappedFirstLevel][secondLevel*uint32(idx.objectIDLength):])
 			offset := int64(idx.getOffset(mappedFirstLevel, int(secondLevel)))
 			idx.offsetHash[offset] = hash
 			secondLevel++
@@ -298,7 +300,7 @@ func (i *idxfileEntryIter) Next() (*Entry, error) {
 
 		mappedFirstLevel := i.idx.FanoutMapping[i.firstLevel]
 		entry := new(Entry)
-		copy(entry.Hash[:], i.idx.Names[mappedFirstLevel][i.secondLevel*objectIDLength:])
+		copy(entry.Hash.Bytes(), i.idx.Names[mappedFirstLevel][i.secondLevel*i.idx.objectIDLength:])
 		entry.Offset = i.idx.getOffset(mappedFirstLevel, i.secondLevel)
 		entry.CRC32 = i.idx.getCRC32(mappedFirstLevel, i.secondLevel)
 

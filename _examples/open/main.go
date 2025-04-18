@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/go-git/go-git/v6"
 	. "github.com/go-git/go-git/v6/_examples"
@@ -11,8 +10,10 @@ import (
 
 // Open an existing repository in a specific folder.
 func main() {
-	CheckArgs("<path>")
-	path := os.Args[1]
+	// CheckArgs("<path>")
+	// path := os.Args[1]
+
+	path := "~/git/go-git/sha256"
 
 	// We instantiate a new repository targeting the given path (the .git folder)
 	r, err := git.PlainOpen(path)
@@ -33,6 +34,7 @@ func main() {
 	var cCount int
 	err = cIter.ForEach(func(c *object.Commit) error {
 		cCount++
+		Info(c.String())
 
 		return nil
 	})

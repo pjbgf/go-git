@@ -5,6 +5,7 @@ package binary
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/go-git/go-git/v6/plumbing"
@@ -139,10 +140,16 @@ func ReadUint16(r io.Reader) (uint16, error) {
 }
 
 // ReadHash reads a plumbing.Hash from r
-func ReadHash(r io.Reader) (plumbing.Hash, error) {
+func ReadHash(r io.Reader, hexSize int) (plumbing.Hash, error) {
 	var h plumbing.Hash
-	if err := binary.Read(r, binary.BigEndian, h[:]); err != nil {
+	a := make([]byte, hexSize)
+
+	if err := binary.Read(r, binary.BigEndian, a); err != nil {
 		return plumbing.ZeroHash, err
+	}
+
+	if _, err := h.Write(a); err != nil {
+		return plumbing.ZeroHash, fmt.Errorf("write binary hash: %w", err)
 	}
 
 	return h, nil

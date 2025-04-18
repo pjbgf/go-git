@@ -10,18 +10,14 @@ import (
 // NewHash return a new Hash256 from a hexadecimal hash representation.
 func NewHash256(s string) Hash256 {
 	h, _ := FromHex(s)
-	return h.(immutableHashSHA256)
+	return h.(SHA256Hash)
 }
 
 // Hash256 represents SHA256 hashed content.
-type Hash256 = immutableHashSHA256
+type Hash256 = SHA256Hash
 
 // ZeroHash is Hash256 with value zero.
-var ZeroHash256 immutableHashSHA256
-
-func (h Hash256) IsZero() bool {
-	return h.Empty()
-}
+var ZeroHash256 SHA256Hash
 
 // ComputeHash compute the hash for a given ObjectType and content.
 func ComputeHash256(t ObjectType, content []byte) Hash256 {

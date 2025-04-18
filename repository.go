@@ -766,10 +766,11 @@ func (r *Repository) CreateTag(name string, hash plumbing.Hash, opts *CreateTagO
 
 	var target plumbing.Hash
 	if opts != nil {
-		target, err = r.createTagObject(name, hash, opts)
+		t, err := r.createTagObject(name, hash, opts)
 		if err != nil {
 			return nil, err
 		}
+		target = *t
 	} else {
 		target = hash
 	}
@@ -782,14 +783,14 @@ func (r *Repository) CreateTag(name string, hash plumbing.Hash, opts *CreateTagO
 	return ref, nil
 }
 
-func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *CreateTagOptions) (plumbing.Hash, error) {
+func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *CreateTagOptions) (*plumbing.Hash, error) {
 	if err := opts.Validate(r, hash); err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 
 	rawobj, err := object.GetObject(r.Storer, hash)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 
 	tag := &object.Tag{
@@ -803,7 +804,7 @@ func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *Crea
 	if opts.SignKey != nil {
 		sig, err := r.buildTagSignature(tag, opts.SignKey)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return nil, err
 		}
 
 		tag.PGPSignature = sig
@@ -811,10 +812,14 @@ func (r *Repository) createTagObject(name string, hash plumbing.Hash, opts *Crea
 
 	obj := r.Storer.NewEncodedObject()
 	if err := tag.Encode(obj); err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 
-	return r.Storer.SetEncodedObject(obj)
+	h, err := r.Storer.SetEncodedObject(obj)
+	if err != nil {
+		return nil, err
+	}
+	return &h, nil
 }
 
 func (r *Repository) buildTagSignature(tag *object.Tag, signKey *openpgp.Entity) (string, error) {
@@ -879,22 +884,22 @@ func (r *Repository) DeleteTag(name string) error {
 	return r.Storer.RemoveReference(plumbing.ReferenceName(path.Join("refs", "tags", name)))
 }
 
-func (r *Repository) resolveToCommitHash(h plumbing.Hash) (plumbing.Hash, error) {
+func (r *Repository) resolveToCommitHash(h plumbing.Hash) (*plumbing.Hash, error) {
 	obj, err := r.Storer.EncodedObject(plumbing.AnyObject, h)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return nil, err
 	}
 	switch obj.Type() {
 	case plumbing.TagObject:
 		t, err := object.DecodeTag(r.Storer, obj)
 		if err != nil {
-			return plumbing.ZeroHash, err
+			return nil, err
 		}
 		return r.resolveToCommitHash(t.Target)
 	case plumbing.CommitObject:
-		return h, nil
+		return &h, nil
 	default:
-		return plumbing.ZeroHash, ErrUnableToResolveCommit
+		return nil, ErrUnableToResolveCommit
 	}
 }
 
@@ -1120,7 +1125,7 @@ func (r *Repository) updateReferences(spec []config.RefSpec,
 		if err != nil {
 			return false, err
 		}
-		head := plumbing.NewHashReference(plumbing.HEAD, h)
+		head := plumbing.NewHashReference(plumbing.HEAD, *h)
 		return updateReferenceStorerIfNeeded(r.Storer, head)
 	}
 
@@ -1567,7 +1572,7 @@ func expand_ref(s storer.ReferenceStorer, ref plumbing.ReferenceName) (*plumbing
 func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, error) {
 	rev := in.String()
 	if rev == "" {
-		return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+		return nil, plumbing.ErrReferenceNotFound
 	}
 
 	p := revision.NewParserFromString(rev)
@@ -1614,7 +1619,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 					// error bubble up.
 					tagCommit, err := tagObj.Commit()
 					if err != nil {
-						return &plumbing.ZeroHash, err
+						return nil, err
 					}
 					commit = tagCommit
 					gotOne = true
@@ -1623,7 +1628,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			}
 
 			if !gotOne {
-				return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+				return nil, plumbing.ErrReferenceNotFound
 			}
 
 		case revision.CaretPath:
@@ -1638,7 +1643,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			c, err := iter.Next()
 
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return nil, err
 			}
 
 			if depth == 1 {
@@ -1650,7 +1655,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 			c, err = iter.Next()
 
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return nil, err
 			}
 
 			commit = c
@@ -1659,7 +1664,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 				c, err := commit.Parents().Next()
 
 				if err != nil {
-					return &plumbing.ZeroHash, err
+					return nil, err
 				}
 
 				commit = c
@@ -1686,11 +1691,11 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 				return nil
 			})
 			if err != nil {
-				return &plumbing.ZeroHash, err
+				return nil, err
 			}
 
 			if c == nil {
-				return &plumbing.ZeroHash, fmt.Errorf("no commit message match regexp: %q", re.String())
+				return nil, fmt.Errorf("no commit message match regexp: %q", re.String())
 			}
 
 			commit = c
@@ -1698,7 +1703,7 @@ func (r *Repository) ResolveRevision(in plumbing.Revision) (*plumbing.Hash, erro
 	}
 
 	if commit == nil {
-		return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+		return nil, plumbing.ErrReferenceNotFound
 	}
 
 	return &commit.Hash, nil
@@ -1714,14 +1719,16 @@ func (r *Repository) resolveHashPrefix(hashStr string) []plumbing.Hash {
 	if hashStr == "" {
 		return nil
 	}
-	if len(hashStr) == len(plumbing.ZeroHash)*2 {
+	if len(hashStr) == plumbing.ZeroHash.HexSize() {
 		// Only a full hash is possible.
 		hexb, err := hex.DecodeString(hashStr)
 		if err != nil {
 			return nil
 		}
 		var h plumbing.Hash
-		copy(h[:], hexb)
+		if _, err := h.Write(hexb); err != nil {
+			return nil
+		}
 		return []plumbing.Hash{h}
 	}
 
@@ -1895,7 +1902,7 @@ func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []p
 	}
 	iter.ForEach(func(obj plumbing.EncodedObject) error {
 		h := obj.Hash()
-		if bytes.HasPrefix(h[:], prefix) {
+		if bytes.HasPrefix(h.Bytes(), prefix) {
 			hashes = append(hashes, h)
 		}
 		return nil

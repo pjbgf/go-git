@@ -3,12 +3,13 @@ package plumbing
 import (
 	"crypto"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 
-	"github.com/go-git/go-git/v5/plumbing/hash"
+	"github.com/go-git/go-git/v6/plumbing/hash"
 
-	format "github.com/go-git/go-git/v5/plumbing/format/config"
+	format "github.com/go-git/go-git/v6/plumbing/format/config"
 )
 
 // ObjectHasher computes hashes for Git objects. A few differences
@@ -25,6 +26,7 @@ type ObjectHasher interface {
 	// first writing the object header, which contains the object type
 	// and content size, followed by the content itself.
 	Compute(ot ObjectType, d []byte) (ImmutableHash, error)
+	io.Writer
 }
 
 // FromObjectFormat returns the correct ObjectHasher for the given
@@ -81,7 +83,7 @@ func (h *objectHasherSHA1) Compute(ot ObjectType, d []byte) (ImmutableHash, erro
 		return nil, fmt.Errorf("failed to compute hash: %w", err)
 	}
 
-	var out immutableHashSHA1
+	var out SHA1Hash
 	copy(out[:], h.hasher.Sum(out[:0]))
 	h.m.Unlock()
 	return out, nil
@@ -89,6 +91,10 @@ func (h *objectHasherSHA1) Compute(ot ObjectType, d []byte) (ImmutableHash, erro
 
 func (h *objectHasherSHA1) Size() int {
 	return h.hasher.Size()
+}
+
+func (h *objectHasherSHA1) Write(p []byte) (int, error) {
+	return h.hasher.Write(p)
 }
 
 func newHasherSHA256() *objectHasherSHA256 {
@@ -113,7 +119,7 @@ func (h *objectHasherSHA256) Compute(ot ObjectType, d []byte) (ImmutableHash, er
 		return nil, fmt.Errorf("failed to compute hash: %w", err)
 	}
 
-	out := immutableHashSHA256{}
+	out := SHA256Hash{}
 	copy(out[:], h.hasher.Sum(out[:0]))
 	h.m.Unlock()
 	return out, nil
@@ -121,6 +127,10 @@ func (h *objectHasherSHA256) Compute(ot ObjectType, d []byte) (ImmutableHash, er
 
 func (h *objectHasherSHA256) Size() int {
 	return h.hasher.Size()
+}
+
+func (h *objectHasherSHA256) Write(p []byte) (int, error) {
+	return h.hasher.Write(p)
 }
 
 func writeHeader(h hash.Hash, ot ObjectType, sz int64) {

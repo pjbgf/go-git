@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 
-	"github.com/go-git/go-git/v6/plumbing/hash"
 	"github.com/go-git/go-git/v6/utils/binary"
 )
 
@@ -19,8 +18,7 @@ var (
 )
 
 const (
-	fanout         = 256
-	objectIDLength = hash.Size
+	fanout = 256
 )
 
 // Decoder reads and decodes idx files from an input stream.
@@ -113,7 +111,7 @@ func readObjectNames(idx *MemoryIndex, r io.Reader) error {
 
 		idx.FanoutMapping[k] = len(idx.Names)
 
-		nameLen := int(buckets * objectIDLength)
+		nameLen := int(buckets * uint32(idx.objectIDLength))
 		bin := make([]byte, nameLen)
 		if _, err := io.ReadFull(r, bin); err != nil {
 			return err
@@ -166,11 +164,11 @@ func readOffsets(idx *MemoryIndex, r io.Reader) error {
 }
 
 func readChecksums(idx *MemoryIndex, r io.Reader) error {
-	if _, err := io.ReadFull(r, idx.PackfileChecksum[:]); err != nil {
+	if _, err := io.Copy(&idx.PackfileChecksum, r); err != nil {
 		return err
 	}
 
-	if _, err := io.ReadFull(r, idx.IdxChecksum[:]); err != nil {
+	if _, err := io.Copy(&idx.IdxChecksum, r); err != nil {
 		return err
 	}
 

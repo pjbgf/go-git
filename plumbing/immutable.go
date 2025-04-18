@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	format "github.com/go-git/go-git/v5/plumbing/format/config"
-	"github.com/go-git/go-git/v5/plumbing/hash"
+	format "github.com/go-git/go-git/v6/plumbing/format/config"
+	"github.com/go-git/go-git/v6/plumbing/hash"
 )
 
 // ImmutableHash represents a calculated hash.
@@ -19,8 +19,10 @@ type ImmutableHash interface {
 	// String returns the hexadecimal representation of the hash's sum.
 	String() string
 	// Sum returns the slice of bytes containing the hash.
-	Sum() []byte
+	Bytes() []byte
 	HasPrefix([]byte) bool
+
+	IsZero() bool
 }
 
 // FromHex parses a hexadecimal string and returns an ImmutableHash
@@ -36,25 +38,24 @@ func FromHex(in string) (ImmutableHash, bool) {
 		return nil, false
 	}
 
-	b, err := hex.DecodeString(in)
-	if err != nil {
-		return nil, false
-	}
+	h := StringHash{}
+	h.WriteHex(in)
+	return h, true
 
-	switch len(in) {
-	case hash.SHA1HexSize:
-		h := immutableHashSHA1{}
-		copy(h[:], b)
-		return h, true
+	// switch len(in) {
+	// case hash.SHA1HexSize:
+	// 	h := SHA1Hash{}
+	// 	copy(h[:], b)
+	// 	return h, true
 
-	case hash.SHA256HexSize:
-		h := immutableHashSHA256{}
-		copy(h[:], b)
-		return h, true
+	// case hash.SHA256HexSize:
+	// 	h := SHA256Hash{}
+	// 	copy(h[:], b)
+	// 	return h, true
 
-	default:
-		return nil, false
-	}
+	// default:
+	// 	return nil, false
+	// }
 }
 
 // FromBytes creates an ImmutableHash object based on the value its
@@ -72,12 +73,12 @@ func FromBytes(in []byte) (ImmutableHash, bool) {
 
 	switch len(in) {
 	case hash.SHA1Size:
-		h := immutableHashSHA1{}
+		h := SHA1Hash{}
 		copy(h[:], in)
 		return h, true
 
 	case hash.SHA256Size:
-		h := immutableHashSHA256{}
+		h := SHA256Hash{}
 		copy(h[:], in)
 		return h, true
 
@@ -92,9 +93,9 @@ func FromBytes(in []byte) (ImmutableHash, bool) {
 func ZeroFromHash(h hash.Hash) ImmutableHash {
 	switch h.Size() {
 	case hash.SHA256Size:
-		return immutableHashSHA256{}
+		return SHA256Hash{}
 	default:
-		return immutableHashSHA1{}
+		return SHA1Hash{}
 	}
 }
 
@@ -104,63 +105,70 @@ func ZeroFromHash(h hash.Hash) ImmutableHash {
 func ZeroFromObjectFormat(f format.ObjectFormat) ImmutableHash {
 	switch f {
 	case format.SHA256:
-		return immutableHashSHA256{}
+		return SHA256Hash{}
 	default:
-		return immutableHashSHA1{}
+		return SHA1Hash{}
 	}
 }
 
-type immutableHashSHA1 [hash.SHA1Size]byte
+type SHA1Hash [hash.SHA1Size]byte
 
-func (ih immutableHashSHA1) Size() int {
+func (ih SHA1Hash) Size() int {
 	return len(ih)
 }
 
-func (ih immutableHashSHA1) Empty() bool {
-	var empty immutableHashSHA1
+func (ih SHA1Hash) Empty() bool {
+	var empty SHA1Hash
 	return ih == empty
 }
 
-func (ih immutableHashSHA1) String() string {
+func (ih SHA1Hash) IsZero() bool {
+	return ih.Empty()
+}
+
+func (ih SHA1Hash) String() string {
 	return hex.EncodeToString(ih[:])
 }
 
-func (ih immutableHashSHA1) Sum() []byte {
+func (ih SHA1Hash) Bytes() []byte {
 	return ih[:]
 }
 
-func (ih immutableHashSHA1) Compare(in []byte) int {
+func (ih SHA1Hash) Compare(in []byte) int {
 	return bytes.Compare(ih[:], in)
 }
 
-func (ih immutableHashSHA1) HasPrefix(prefix []byte) bool {
+func (ih SHA1Hash) HasPrefix(prefix []byte) bool {
 	return bytes.HasPrefix(ih[:], prefix)
 }
 
-type immutableHashSHA256 [hash.SHA256Size]byte
+type SHA256Hash [hash.SHA256Size]byte
 
-func (ih immutableHashSHA256) Size() int {
+func (ih SHA256Hash) Size() int {
 	return len(ih)
 }
 
-func (ih immutableHashSHA256) Empty() bool {
-	var empty immutableHashSHA256
+func (ih SHA256Hash) Empty() bool {
+	var empty SHA256Hash
 	return ih == empty
 }
+func (ih SHA256Hash) IsZero() bool {
+	return ih.Empty()
+}
 
-func (ih immutableHashSHA256) String() string {
+func (ih SHA256Hash) String() string {
 	return hex.EncodeToString(ih[:])
 }
 
-func (ih immutableHashSHA256) Sum() []byte {
+func (ih SHA256Hash) Bytes() []byte {
 	return ih[:]
 }
 
-func (ih immutableHashSHA256) Compare(in []byte) int {
+func (ih SHA256Hash) Compare(in []byte) int {
 	return bytes.Compare(ih[:], in)
 }
 
-func (ih immutableHashSHA256) HasPrefix(prefix []byte) bool {
+func (ih SHA256Hash) HasPrefix(prefix []byte) bool {
 	return bytes.HasPrefix(ih[:], prefix)
 }
 

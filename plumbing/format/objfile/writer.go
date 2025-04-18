@@ -81,7 +81,10 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		overwrite = true
 	}
 
-	n, err = w.multi.Write(p)
+	// encoder := hex.NewEncoder(w.multi)
+	encoder := w.multi
+
+	n, err = encoder.Write(p)
 	w.pending -= int64(n)
 	if err == nil && overwrite {
 		err = ErrOverflow

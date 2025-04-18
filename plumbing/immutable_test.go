@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	format "github.com/go-git/go-git/v5/plumbing/format/config"
+	format "github.com/go-git/go-git/v6/plumbing/format/config"
 	"github.com/pjbgf/sha1cd"
 	"github.com/stretchr/testify/assert"
 )
@@ -86,8 +86,8 @@ func TestZeroFromObjectFormat(t *testing.T) {
 
 func TestNotLeakingBackingArray(t *testing.T) {
 	tests := []struct {
-		in  string
-		sum []byte
+		in    string
+		bytes []byte
 	}{
 		{
 			"9f361d484fcebb869e1919dc7467b82ac6ca5fad",
@@ -111,13 +111,13 @@ func TestNotLeakingBackingArray(t *testing.T) {
 		h, ok := FromHex(tc.in)
 		assert.True(t, ok)
 		assert.Equal(t, tc.in, h.String())
-		assert.Equal(t, tc.sum, h.Sum())
+		assert.Equal(t, tc.bytes, h.Bytes())
 
-		sum := h.Sum()
-		for i := range sum {
-			sum[i] = 0
+		bytes := h.Bytes()
+		for i := range bytes {
+			bytes[i] = 0
 		}
-		assert.Equal(t, tc.sum, h.Sum())
+		assert.Equal(t, tc.bytes, h.Bytes())
 	}
 }
 
