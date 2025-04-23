@@ -1714,14 +1714,11 @@ func (r *Repository) resolveHashPrefix(hashStr string) []plumbing.Hash {
 	if hashStr == "" {
 		return nil
 	}
-	if len(hashStr) == len(plumbing.ZeroHash)*2 {
-		// Only a full hash is possible.
-		hexb, err := hex.DecodeString(hashStr)
-		if err != nil {
+	if len(hashStr) == plumbing.ZeroHash.HexSize() {
+		h, ok := plumbing.FromHex(hashStr)
+		if !ok {
 			return nil
 		}
-		var h plumbing.Hash
-		copy(h[:], hexb)
 		return []plumbing.Hash{h}
 	}
 
@@ -1895,7 +1892,7 @@ func expandPartialHash(st storer.EncodedObjectStorer, prefix []byte) (hashes []p
 	}
 	iter.ForEach(func(obj plumbing.EncodedObject) error {
 		h := obj.Hash()
-		if bytes.HasPrefix(h[:], prefix) {
+		if h.HasPrefix(prefix) {
 			hashes = append(hashes, h)
 		}
 		return nil
