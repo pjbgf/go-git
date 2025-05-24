@@ -71,7 +71,7 @@ func (p *Parser) storeOrCache(oh *ObjectHeader) error {
 
 		defer w.Close()
 
-		_, err = io.Copy(w, bytes.NewReader(oh.content.Bytes()))
+		_, err = ioutil.Copy(w, &oh.content)
 		if err != nil {
 			return err
 		}

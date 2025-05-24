@@ -86,9 +86,7 @@ func ApplyDelta(target, base plumbing.EncodedObject, delta []byte) (err error) {
 
 	target.SetSize(int64(dst.Len()))
 
-	b := sync.GetByteSlice()
-	n, err := io.CopyBuffer(w, dst, *b)
-	sync.PutByteSlice(b, int(n))
+	_, err = ioutil.Copy(w, dst)
 	return err
 }
 
@@ -201,7 +199,7 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 					basePos += uint(n)
 					discard -= uint(n)
 				}
-				if _, err := io.Copy(dstWr, io.LimitReader(baseBuf, int64(sz))); err != nil {
+				if _, err := ioutil.Copy(dstWr, io.LimitReader(baseBuf, int64(sz))); err != nil {
 					_ = dstWr.CloseWithError(err)
 					return
 				}
@@ -214,7 +212,7 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 					_ = dstWr.CloseWithError(ErrInvalidDelta)
 					return
 				}
-				if _, err := io.Copy(dstWr, io.LimitReader(deltaBuf, int64(sz))); err != nil {
+				if _, err := ioutil.Copy(dstWr, io.LimitReader(deltaBuf, int64(sz))); err != nil {
 					_ = dstWr.CloseWithError(err)
 					return
 				}
@@ -346,16 +344,12 @@ func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
 	hasher := plumbing.NewHasher(typ, int64(targetSz))
 	mw := io.MultiWriter(dst, hasher)
 
-	bufp := sync.GetByteSlice()
-	defer sync.PutByteSlice(bufp, 0)
-
 	sr := io.NewSectionReader(base, int64(0), int64(srcSz))
 	// Keep both the io.LimitedReader types, so we can reset N.
 	baselr := io.LimitReader(sr, 0).(*io.LimitedReader)
 	deltalr := io.LimitReader(deltaBuf, 0).(*io.LimitedReader)
 
 	for {
-		buf := *bufp
 		cmd, err := deltaBuf.ReadByte()
 		if err == io.EOF {
 			return 0, plumbing.ZeroHash, ErrInvalidDelta
@@ -383,7 +377,7 @@ func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
 				return 0, plumbing.ZeroHash, err
 			}
 			baselr.N = int64(sz)
-			if _, err := io.CopyBuffer(mw, baselr, buf); err != nil {
+			if _, err := ioutil.Copy(mw, baselr); err != nil {
 				return 0, plumbing.ZeroHash, err
 			}
 			remainingTargetSz -= sz
@@ -393,7 +387,7 @@ func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
 				return 0, plumbing.ZeroHash, ErrInvalidDelta
 			}
 			deltalr.N = int64(sz)
-			if _, err := io.CopyBuffer(mw, deltalr, buf); err != nil {
+			if _, err := ioutil.Copy(mw, deltalr); err != nil {
 				return 0, plumbing.ZeroHash, err
 			}
 
