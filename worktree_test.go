@@ -2403,6 +2403,16 @@ func TestIssue55(t *testing.T) {
 	h, err := wt.Commit("test", defaultTestCommitOptions())
 	require.NoError(t, err)
 	assert.False(t, h.IsZero())
+
+	err = os.WriteFile(filepath.Join(d, ".anyfile2"), []byte("foo"), 0o644)
+	require.NoError(t, err)
+
+	err = wt.AddGlob("*")
+	require.NoError(t, err)
+
+	h, err = wt.Commit("test", defaultTestCommitOptions())
+	require.NoError(t, err)
+	assert.False(t, h.IsZero())
 }
 
 func (s *WorktreeSuite) testAddSkipStatus(filePath string, expectedEntries int, expectedStaging StatusCode) {
