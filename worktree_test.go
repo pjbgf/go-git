@@ -2382,6 +2382,29 @@ func (s *WorktreeSuite) TestAddGlobErrorNoMatches() {
 	s.ErrorIs(err, ErrGlobNoMatches)
 }
 
+func TestIssue55(t *testing.T) {
+	t.Parallel()
+
+	d := t.TempDir()
+	r, err := PlainInit(d, false)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+
+	wt, err := r.Worktree()
+	require.NoError(t, err)
+	require.NotNil(t, wt)
+
+	err = os.WriteFile(filepath.Join(d, ".anyfile"), []byte("foo"), 0o644)
+	require.NoError(t, err)
+
+	err = wt.AddGlob("*")
+	require.NoError(t, err)
+
+	h, err := wt.Commit("test", defaultTestCommitOptions())
+	require.NoError(t, err)
+	assert.False(t, h.IsZero())
+}
+
 func (s *WorktreeSuite) testAddSkipStatus(filePath string, expectedEntries int, expectedStaging StatusCode) {
 	fs := memfs.New()
 	w := &Worktree{
