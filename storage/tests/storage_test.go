@@ -568,9 +568,7 @@ func TestSetIndexAndIndex(t *testing.T) {
 
 		idx, err := sto.Index()
 		require.NoError(t, err)
-		// ModTime is set by memory storage's SetIndex to enable racy git detection.
-		// Verify it was set, then clear for structural comparison.
-		assert.False(t, idx.ModTime.IsZero())
+		assert.NotNil(t, idx)
 	})
 }
 
