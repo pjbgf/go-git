@@ -13,14 +13,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/go-git/go-billy/v6"
-	"github.com/go-git/go-billy/v6/helper/chroot"
 
 	"github.com/go-git/go-git/v6/plumbing"
 	formatcfg "github.com/go-git/go-git/v6/plumbing/format/config"
@@ -1341,14 +1339,15 @@ func (d *DotGit) Alternates() ([]*DotGit, error) {
 		seen[path] = struct{}{}
 
 		if filepath.IsAbs(path) {
-			// Handling absolute paths should be straight-forward. However, the default osfs (Chroot)
-			// tries to concatenate an abs path with the root path in some operations (e.g. Stat),
-			// which leads to unexpected errors. Therefore, make the path relative to the current FS instead.
-			if reflect.TypeOf(fs) == reflect.TypeFor[*chroot.ChrootHelper]() {
-				path, err = filepath.Rel(fs.Root(), path)
+			// Billy filesystems (BoundOS, ChrootHelper) join absolute paths onto their
+			// root, which duplicates the prefix. Make the path relative to fs.Root()
+			// when it falls under it.
+			if root := fs.Root(); root != "" && root != string(filepath.Separator) {
+				rel, err := filepath.Rel(root, path)
 				if err != nil {
 					return nil, fmt.Errorf("cannot make path %q relative: %w", path, err)
 				}
+				path = rel
 			}
 		} else {
 			// By Git conventions, relative paths should be based on the object database (.git/objects/info)
